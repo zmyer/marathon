@@ -30,7 +30,9 @@ class InfoResource @Inject() (
     "reconciliation_initial_delay" -> conf.reconciliationInitialDelay.get,
     "reconciliation_interval" -> conf.reconciliationInterval.get,
     "marathon_store_timeout" -> conf.marathonStoreTimeout.get,
-    "mesos_user" -> conf.mesosUser.get)
+    "mesos_user" -> conf.mesosUser.get,
+    "max_uptime" -> conf.maxUptime.get
+  )
 
   // Zookeeper congiurations
   private[this] lazy val zookeeperConfigValues = Map(
@@ -72,6 +74,7 @@ class InfoResource @Inject() (
         "elected" -> schedulerService.isLeader,
         "leader" -> schedulerService.getLeader,
         "frameworkId" -> schedulerService.frameworkId.map(_.getValue),
+        "uptimeSeconds" -> schedulerService.uptime(),
         "marathon_config" -> marathonConfigValues,
         "zookeeper_config" -> zookeeperConfigValues,
         "event_subscriber" -> conf.eventSubscriber.get.map(_ => eventHandlerConfigValues),

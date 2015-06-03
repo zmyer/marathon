@@ -39,6 +39,7 @@ object MarathonSchedulerServiceTest {
     when(config.reconciliationInitialDelay).thenReturn(scallopOption(Some(ReconciliationDelay)))
     when(config.reconciliationInterval).thenReturn(scallopOption(Some(ReconciliationInterval)))
     when(config.zkFutureTimeout).thenReturn(Timeout(1.second))
+    when(config.maxUptime).thenReturn(scallopOption[Long](None))
 
     config
   }

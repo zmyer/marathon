@@ -61,9 +61,30 @@ class MarathonSchedulerService @Inject() (
   val reconciliationInterval =
     Duration(config.reconciliationInterval(), MILLISECONDS)
 
+  // Schedule shutdown horizon, if the max_uptime option is set
+  for (maxUptime <- config.maxUptime.get.map(Duration(_, MILLISECONDS))) {
+    log.info(s"Scheduling shutdown after maximum uptime [$maxUptime]")
+    system.scheduler.scheduleOnce(maxUptime) {
+      log.info(s"Shutting down because the maximum uptime has been reached! ACTUAL: ${uptime()} MAXIMUM: [$maxUptime]")
+      log.warn("Marathon is going down NOW!")
+      System.exit(0)
+    }
+  }
+
+  private[this] val startTime: Timestamp = Timestamp.now()
+
+  /**
+    * Returns the amount of time that has elapsed since this Marathon instance
+    * was started.
+    */
+  def uptime(): Duration = Duration(
+    math.max(0, Timestamp.now().dateTime.getMillis - startTime.dateTime.getMillis),
+    MILLISECONDS
+  )
+
   private[mesosphere] var reconciliationTimer = newTimer()
 
-  val log = Logger.getLogger(getClass.getName)
+  lazy val log = Logger.getLogger(getClass.getName)
 
   def frameworkId: Option[FrameworkID] = {
     val fid = frameworkIdUtil.fetch

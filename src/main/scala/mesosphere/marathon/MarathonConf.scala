@@ -97,4 +97,11 @@ trait MarathonConf extends ScallopConf with ZookeeperConf {
     descr = "Mesos Authentication Secret",
     noshort = true
   )
+
+  lazy val maxUptime = opt[Long]("max_uptime",
+    descr = "Maximum time, in milliseconds, that Marathon will run before shutting down. " +
+      "If this value is not supplied, then there is no maximum.",
+    noshort = true
+  )
+
 }
