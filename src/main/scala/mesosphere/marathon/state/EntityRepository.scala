@@ -73,7 +73,7 @@ trait EntityRepository[T <: MarathonState[_, T]] extends StateMetrics {
     }
   }
 
-  def limitNumberOfVersions(id: String): Future[Iterable[Boolean]] = timedWrite {
+  private[this] def limitNumberOfVersions(id: String): Future[Iterable[Boolean]] = {
     val maximum = maxVersions.map { maximum =>
       listVersions(id).flatMap { versions =>
         Future.sequence(versions.drop(maximum).map(version => store.expunge(id + ID_DELIMITER + version)))
@@ -84,9 +84,16 @@ trait EntityRepository[T <: MarathonState[_, T]] extends StateMetrics {
 
   protected def storeWithVersion(id: String, version: Timestamp, t: T): Future[T] = {
     for {
-      alias <- this.store.store(id, t)
-      result <- this.store.store(id + ID_DELIMITER + version, t)
+      alias <- storeByName(id, t)
+      result <- storeByName(id + ID_DELIMITER + version, t)
       limit <- limitNumberOfVersions(id)
     } yield result
+  }
+
+  /**
+    * Stores the given entity directly under the given id without a second versioned store.
+    */
+  protected def storeByName(id: String, t: T): Future[T] = timedWrite {
+    this.store.store(id, t)
   }
 }

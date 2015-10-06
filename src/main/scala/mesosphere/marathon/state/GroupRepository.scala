@@ -13,9 +13,9 @@ class GroupRepository(
 
   val zkRootName = "root"
 
-  def group(id: String): Future[Option[Group]] = this.store.fetch(id)
+  def group(id: String): Future[Option[Group]] = timedRead { this.store.fetch(id) }
 
-  def rootGroup(): Future[Option[Group]] = this.store.fetch(zkRootName)
+  def rootGroup(): Future[Option[Group]] = timedRead { this.store.fetch(zkRootName) }
 
   def group(id: String, version: Timestamp): Future[Option[Group]] = entity(id, version)
 
