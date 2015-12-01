@@ -241,8 +241,8 @@ object ModelValidation {
     * @return
     */
   def idErrors[T](basePathId: PathId, pathId: PathId, log: LogViolation[T]): Result = {
-    validate(pathId) and
-      idErrorBase(basePathId, pathId, log)
+    val validPathId = validate(pathId)
+    idErrorBase(basePathId, pathId, log)
   }
 
   def dependencyErrors[T](
@@ -252,9 +252,8 @@ object ModelValidation {
     if(set.isEmpty)
       com.wix.accord.Success
     else {
-      val results = for ((id, pos) <- set.zipWithIndex) yield {
-        idErrors(base, id, log.copy(prop = s"${log.prop}[$pos]"))
-      }
+      val result = validate(set)
+      val results = set.zipWithIndex.map({ case (id, pos) => idErrors(base, id, log.copy(prop = s"${log.prop}[$pos]"))})
 
       results.tail.foldLeft(results.head)((res, t) => res and t)
     }
@@ -312,4 +311,13 @@ object ModelValidation {
     } yield s"Requested service port $existingServicePort conflicts with a service port in app ${existingApp.id}"
   }
 
+  /*
+ * Validation specific exceptions
+ */
+  abstract class ModelValidationException(msg: String) extends Exception(msg)
+
+  class DeploymentCanceledException(msg: String) extends ModelValidationException(msg)
+  class AppStartCanceledException(msg: String) extends ModelValidationException(msg)
+  class AppStopCanceledException(msg: String) extends ModelValidationException(msg)
+  class ResolveArtifactsCanceledException(msg: String) extends ModelValidationException(msg)
 }

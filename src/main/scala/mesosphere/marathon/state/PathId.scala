@@ -103,10 +103,30 @@ object PathId {
     "^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])|(\\.|\\.\\.)$".r
 
   implicit val pathIdValidator = validator[PathId] { pathId =>
+    pathId.path.seq.each should matchRegex(ID_PATH_SEGMENT_PATTERN.pattern)
+    // pathId.path.forall(.matcher(_).matches()) s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""" is true
+    /*
     if (!pathId.path.forall(ID_PATH_SEGMENT_PATTERN.pattern.matcher(_).matches()))
       ModelValidation.failureWithRuleViolation(pathId,
         s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
         Some(pathId.toString))
-    else com.wix.accord.Success
+    else ModelValidation.failureWithRuleViolation(pathId,
+      s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
+      Some(pathId.toString))
+      */
+  }
+
+  implicit val pathSetIdValidator = validator[Set[PathId]] { setPathId =>
+    setPathId.seq.each is valid
+    // pathId.path.forall(.matcher(_).matches()) s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""" is true
+    /*
+    if (!pathId.path.forall(ID_PATH_SEGMENT_PATTERN.pattern.matcher(_).matches()))
+      ModelValidation.failureWithRuleViolation(pathId,
+        s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
+        Some(pathId.toString))
+    else ModelValidation.failureWithRuleViolation(pathId,
+      s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
+      Some(pathId.toString))
+      */
   }
 }

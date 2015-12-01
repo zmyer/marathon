@@ -134,7 +134,12 @@ class AppsResource @Inject() (
       val app = Json.parse(body).as[V2AppUpdate].copy(id = Some(appId))
 
       // TODO AW: throw exception
-      validate(app)
+      validate(app) match {
+        case failure: Failure =>
+          val test = failure.violations
+          println(test)
+        case _ =>
+      }
 
       val now = clock.now()
       val plan = result(groupManager.updateApp(appId, updateOrCreate(appId, _, app, now), now, force))
