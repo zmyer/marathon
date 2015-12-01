@@ -123,10 +123,13 @@ object ModelValidation {
     groups: Iterable[V2Group],
     path: String = "res",
     parent: PathId = PathId.empty): Result = {
-    val results = for ((group, pos) <- groups.zipWithIndex) yield {
-      checkGroup(group, s"$path[$pos].", parent)
+    if(groups.isEmpty) com.wix.accord.Success
+    else {
+      val results = for ((group, pos) <- groups.zipWithIndex) yield {
+        checkGroup(group, s"$path[$pos].", parent)
+      }
+      results.tail.foldLeft(results.head)((res, t) => res and t)
     }
-    results.tail.foldLeft(results.head)((res, t) => res and t)
   }
 
   def checkUpdates(
@@ -192,14 +195,17 @@ object ModelValidation {
       }
     }.getOrElse(false)
 
-    val results: List[Result] = urls.toList
-      .zipWithIndex
-      .collect {
-        case (url, pos) if !urlIsValid(url) =>
-          failureWithRuleViolation(urls, s"Can not resolve url $url", Some(s"${log.prop}[$pos]"))
-        case _ => com.wix.accord.Success
-      }
-    results.tail.foldLeft(results.head)((res, t) => res and t)
+    if(urls.isEmpty) com.wix.accord.Success
+    else {
+      val results: List[Result] = urls.toList
+        .zipWithIndex
+        .collect {
+          case (url, pos) if !urlIsValid(url) =>
+            failureWithRuleViolation(urls, s"Can not resolve url $url", Some(s"${log.prop}[$pos]"))
+          case _ => com.wix.accord.Success
+        }
+      results.tail.foldLeft(results.head)((res, t) => res and t)
+    }
   }
 
   case class LogViolation[T](obj: T, prop: String)
@@ -243,11 +249,15 @@ object ModelValidation {
     base: PathId,
     set: Set[PathId],
     log: LogViolation[T]): Result = {
-    val results = for ((id, pos) <- set.zipWithIndex) yield {
-      idErrors(base, id, log.copy(prop = s"${log.prop}[$pos]"))
-    }
+    if(set.isEmpty)
+      com.wix.accord.Success
+    else {
+      val results = for ((id, pos) <- set.zipWithIndex) yield {
+        idErrors(base, id, log.copy(prop = s"${log.prop}[$pos]"))
+      }
 
-    results.tail.foldLeft(results.head)((res, t) => res and t)
+      results.tail.foldLeft(results.head)((res, t) => res and t)
+    }
   }
 
   // TODO: app.upgradeStrategy may be implemented in an own class validator
