@@ -101,7 +101,10 @@ class GroupsResource @Inject() (
                      @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
     doIfAuthorized(req, resp, CreateAppOrGroup, id.toRootPath) { implicit identity =>
       val update = Json.parse(body).as[V2GroupUpdate]
-      BeanValidation.requireValid(ModelValidation.checkGroupUpdate(update, needsId = true))
+
+      // TODO AW: throw exception
+      ModelValidation.checkGroupUpdate(update, needsId = false)
+
       val effectivePath = update.id.map(_.canonicalPath(id.toRootPath)).getOrElse(id.toRootPath)
       val current = result(groupManager.rootGroup()).findGroup(_.id == effectivePath)
       if (current.isDefined)
@@ -137,7 +140,10 @@ class GroupsResource @Inject() (
              @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
     doIfAuthorized(req, resp, UpdateAppOrGroup, id.toRootPath) { implicit identity =>
       val update = Json.parse(body).as[V2GroupUpdate]
-      BeanValidation.requireValid(ModelValidation.checkGroupUpdate(update, needsId = false))
+
+      // TODO AW: throw exception
+      ModelValidation.checkGroupUpdate(update, needsId = false)
+
       if (dryRun) {
         val planFuture = groupManager.group(id.toRootPath).map { maybeOldGroup =>
           val oldGroup = maybeOldGroup.getOrElse(Group.empty)

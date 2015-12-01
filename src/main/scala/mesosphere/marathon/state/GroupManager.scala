@@ -6,6 +6,7 @@ import javax.inject.{ Inject, Named }
 
 import akka.event.EventStream
 import com.google.inject.Singleton
+
 import mesosphere.marathon.Protos.MarathonTask
 import mesosphere.marathon.api.v2.{ BeanValidation, ModelValidation }
 import mesosphere.marathon.event.{ EventModule, GroupChangeFailed, GroupChangeSuccess }
@@ -157,7 +158,10 @@ class GroupManager @Singleton @Inject() (
       from <- rootGroup()
       (toUnversioned, resolve) <- resolveStoreUrls(assignDynamicServicePorts(from, change(from)))
       to = GroupVersioningUtil.updateVersionInfoForChangedApps(version, from, toUnversioned)
-      _ = BeanValidation.requireValid(ModelValidation.checkGroup(to, "", PathId.empty, config.maxApps.get))
+      _ = {
+        // TODO AW: throw exception
+        ModelValidation.checkGroup(to, "", PathId.empty, config.maxApps.get)
+      }
       plan = DeploymentPlan(from, to, resolve, version, toKill)
       _ = log.info(s"Computed new deployment plan:\n$plan")
       _ <- scheduler.deploy(plan, force)

@@ -24,6 +24,9 @@ import play.api.libs.json.Json
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
+// Accord validation
+import com.wix.accord._
+
 @Path("v2/apps")
 @Consumes(Array(MediaType.APPLICATION_JSON))
 @Produces(Array(MarathonMediaType.PREFERRED_APPLICATION_JSON))
@@ -128,11 +131,13 @@ class AppsResource @Inject() (
     @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
     val appId = id.toRootPath
     doIfAuthorized(req, resp, UpdateAppOrGroup, appId) { identity =>
-      val appUpdate = Json.parse(body).as[V2AppUpdate].copy(id = Some(appId))
-      BeanValidation.requireValid(ModelValidation.checkUpdate(appUpdate, needsId = false))
+      val app = Json.parse(body).as[V2AppUpdate].copy(id = Some(appId))
+
+      // TODO AW: throw exception
+      validate(app)
 
       val now = clock.now()
-      val plan = result(groupManager.updateApp(appId, updateOrCreate(appId, _, appUpdate, now), now, force))
+      val plan = result(groupManager.updateApp(appId, updateOrCreate(appId, _, app, now), now, force))
 
       val response = plan.original.app(appId)
         .map(_ => Response.ok())
@@ -148,7 +153,10 @@ class AppsResource @Inject() (
                       body: Array[Byte],
                       @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
     val updates = Json.parse(body).as[Seq[V2AppUpdate]].map(_.withCanonizedIds())
-    BeanValidation.requireValid(ModelValidation.checkUpdates(updates))
+
+    // TODO AW: throw exception
+    ModelValidation.checkUpdates(updates)
+
     doIfAuthorized(req, resp, UpdateAppOrGroup, updates.flatMap(_.id): _*) { identity =>
       val version = clock.now()
       def updateGroup(root: Group): Group = updates.foldLeft(root) { (group, update) =>
@@ -223,7 +231,9 @@ class AppsResource @Inject() (
   }
 
   private def validateApp(app: AppDefinition): AppDefinition = {
-    BeanValidation.requireValid(ModelValidation.checkAppConstraints(V2AppDefinition(app), app.id.parent))
+    // TODO AW: throw exception
+    ModelValidation.checkAppConstraints(V2AppDefinition(app), app.id.parent)
+
     val conflicts = ModelValidation.checkAppConflicts(app, result(groupManager.rootGroup()))
     if (conflicts.nonEmpty) throw new ConflictingChangeException(conflicts.mkString(","))
     app

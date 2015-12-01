@@ -2,6 +2,11 @@ package mesosphere.marathon.api.v2.json
 
 import java.lang.{ Integer => JInt, Double => JDouble }
 
+import akka.actor.Status.Success
+import com.wix.accord.dsl._
+import mesosphere.marathon.api.v2.ModelValidation
+import mesosphere.marathon.api.v2.ModelValidation.LogViolation
+
 import mesosphere.marathon.api.v2.json.V2AppDefinition.VersionInfo
 import mesosphere.marathon.api.validation.FieldConstraints._
 import mesosphere.marathon.health.HealthCheck
@@ -16,6 +21,21 @@ import mesosphere.marathon.state.{
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.FiniteDuration
+
+object V2AppUpdate {
+  implicit val appUpdateValidator = validator[V2AppUpdate] { appUp =>
+    /*
+    appUp.id.map(com.wix.accord.validate(_)).getOrElse(com.wix.accord.Success) and
+      appUp.upgradeStrategy.map(ModelValidation.upgradeStrategyErrors(_, LogViolation(appUp, "upgradeStrategy")))
+      .getOrElse(com.wix.accord.Success) and
+      appUp.dependencies.map(ModelValidation.dependencyErrors(PathId.empty, _, LogViolation(appUp, "dependencies")))
+      .getOrElse(com.wix.accord.Success) and
+      appUp.storeUrls.map(ModelValidation.urlsCanBeResolved(_, LogViolation(appUp, "storeUrls")))
+      .getOrElse(com.wix.accord.Success)
+      */
+    com.wix.accord.Success
+  }
+}
 
 case class V2AppUpdate(
 
