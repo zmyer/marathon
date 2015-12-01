@@ -24,8 +24,10 @@ import scala.concurrent.duration.FiniteDuration
 
 object V2AppUpdate {
   implicit val appUpdateValidator = validator[V2AppUpdate] { appUp =>
+
+    //val test = appUp.id.map(com.wix.accord.validate(_)).getOrElse(com.wix.accord.Success)
     /*
-    appUp.id.map(com.wix.accord.validate(_)).getOrElse(com.wix.accord.Success) and
+    test and
       appUp.upgradeStrategy.map(ModelValidation.upgradeStrategyErrors(_, LogViolation(appUp, "upgradeStrategy")))
       .getOrElse(com.wix.accord.Success) and
       appUp.dependencies.map(ModelValidation.dependencyErrors(PathId.empty, _, LogViolation(appUp, "dependencies")))

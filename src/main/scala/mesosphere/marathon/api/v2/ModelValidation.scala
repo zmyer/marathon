@@ -163,7 +163,8 @@ object ModelValidation {
     path: String = "",
     needsId: Boolean = false): Result = {
 
-    app.id.map(validate(_)).getOrElse(com.wix.accord.Success) and
+    val test = app.id.map(validate(_))
+    test.getOrElse(com.wix.accord.Success) and
       app.upgradeStrategy.map(upgradeStrategyErrors(_, LogViolation(app, "upgradeStrategy"))).getOrElse(com.wix.accord.Success) and
       app.dependencies.map(dependencyErrors(PathId.empty, _, LogViolation(app, "dependencies"))).getOrElse(com.wix.accord.Success) and
       app.storeUrls.map(urlsCanBeResolved(_, LogViolation(app, "storeUrls"))).getOrElse(com.wix.accord.Success)
