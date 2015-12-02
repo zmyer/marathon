@@ -169,7 +169,7 @@ object ModelValidation {
     val test = app.id.map(validate(_))
     test.getOrElse(com.wix.accord.Success) and
       app.upgradeStrategy.map(upgradeStrategyErrors(_, LogViolation(app, "upgradeStrategy"))).getOrElse(com.wix.accord.Success) and
-      app.dependencies.map(dependencyErrors(PathId.empty, _, LogViolation(app, "dependencies"))).getOrElse(com.wix.accord.Success) and
+      // app.dependencies.map(dependencyErrors(PathId.empty, _, LogViolation(app, "dependencies"))).getOrElse(com.wix.accord.Success) and
       app.storeUrls.map(urlsCanBeResolved(_, LogViolation(app, "storeUrls"))).getOrElse(com.wix.accord.Success)
   }
 
@@ -178,7 +178,7 @@ object ModelValidation {
     idErrors(parent, app.id, LogViolation(app, path + "id")) and
       checkPath(parent, app.id, LogViolation(app, path + "id")) and
       upgradeStrategyErrors(app.upgradeStrategy, LogViolation(app, path + "upgradeStrategy")) and
-      dependencyErrors(parent, app.dependencies, LogViolation(app, path + "upgradeStrategy")) and
+      // dependencyErrors(parent, app.dependencies, LogViolation(app, path + "upgradeStrategy")) and
       urlsCanBeResolved(app.storeUrls, LogViolation(app, path + "storeUrls"))
   }
 
@@ -243,20 +243,6 @@ object ModelValidation {
   def idErrors[T](basePathId: PathId, pathId: PathId, log: LogViolation[T]): Result = {
     val validPathId = validate(pathId)
     idErrorBase(basePathId, pathId, log)
-  }
-
-  def dependencyErrors[T](
-    base: PathId,
-    set: Set[PathId],
-    log: LogViolation[T]): Result = {
-    if(set.isEmpty)
-      com.wix.accord.Success
-    else {
-      val result = validate(set)
-      val results = set.zipWithIndex.map({ case (id, pos) => idErrors(base, id, log.copy(prop = s"${log.prop}[$pos]"))})
-
-      results.tail.foldLeft(results.head)((res, t) => res and t)
-    }
   }
 
   // TODO: app.upgradeStrategy may be implemented in an own class validator

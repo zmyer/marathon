@@ -11,6 +11,8 @@ import mesosphere.marathon.upgrade.DeploymentPlan
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{ Writes, JsArray, JsObject, Json }
 
+import com.wix.accord._
+
 import scala.concurrent.{ Await, Awaitable }
 
 trait RestResource {
@@ -47,4 +49,14 @@ trait RestResource {
   protected def jsonArrString(fields: JsValueWrapper*): String = Json.stringify(Json.arr(fields: _*))
 
   protected def result[T](fn: Awaitable[T]): T = Await.result(fn, config.zkTimeoutDuration)
+
+  protected def withValid[T](t: T)(fn:T => Response)(implicit validator: Validator[T]): Response = {
+    validate(t) match {
+      case f: Failure =>
+        // TODO AW: impicit writes for Failure trait
+        val entity = jsonObjString()
+        Response.status(Status.BAD_REQUEST).entity(entity).build()
+      case Success => fn(t)
+    }
+  }
 }

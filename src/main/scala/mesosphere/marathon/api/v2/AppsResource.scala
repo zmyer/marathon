@@ -26,6 +26,7 @@ import scala.concurrent.Future
 
 // Accord validation
 import com.wix.accord._
+import GenericValidation._
 
 @Path("v2/apps")
 @Consumes(Array(MediaType.APPLICATION_JSON))
@@ -157,20 +158,18 @@ class AppsResource @Inject() (
   def replaceMultiple(@DefaultValue("false")@QueryParam("force") force: Boolean,
                       body: Array[Byte],
                       @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
-    val updates = Json.parse(body).as[Seq[V2AppUpdate]].map(_.withCanonizedIds())
 
-    // TODO AW: throw exception
-    ModelValidation.checkUpdates(updates)
-
-    doIfAuthorized(req, resp, UpdateAppOrGroup, updates.flatMap(_.id): _*) { identity =>
-      val version = clock.now()
-      def updateGroup(root: Group): Group = updates.foldLeft(root) { (group, update) =>
-        update.id match {
-          case Some(id) => group.updateApp(id, updateOrCreate(id, _, update, version), version)
-          case None     => group
+    withValid(Json.parse(body).as[Seq[V2AppUpdate]].map(_.withCanonizedIds())) { updates =>
+      doIfAuthorized(req, resp, UpdateAppOrGroup, updates.flatMap(_.id): _*) { identity =>
+        val version = clock.now()
+        def updateGroup(root: Group): Group = updates.foldLeft(root) { (group, update) =>
+          update.id match {
+            case Some(id) => group.updateApp(id, updateOrCreate(id, _, update, version), version)
+            case None => group
+          }
         }
+        deploymentResult(result(groupManager.update(PathId.empty, updateGroup, version, force)))
       }
-      deploymentResult(result(groupManager.update(PathId.empty, updateGroup, version, force)))
     }
   }
 

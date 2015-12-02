@@ -103,7 +103,7 @@ object PathId {
     "^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])|(\\.|\\.\\.)$".r
 
   implicit val pathIdValidator = validator[PathId] { pathId =>
-    pathId.path.seq.each should matchRegex(ID_PATH_SEGMENT_PATTERN.pattern)
+    pathId.path.each should matchRegex(ID_PATH_SEGMENT_PATTERN.pattern)
     // pathId.path.forall(.matcher(_).matches()) s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""" is true
     /*
     if (!pathId.path.forall(ID_PATH_SEGMENT_PATTERN.pattern.matcher(_).matches()))
@@ -116,8 +116,8 @@ object PathId {
       */
   }
 
-  implicit val pathSetIdValidator = validator[Set[PathId]] { setPathId =>
-    setPathId.seq.each is valid
+/*  implicit val pathSetIdValidator = validator[Set[PathId]] { setPathId =>
+    setPathId.zipWithIndex.each is validWithPosition
     // pathId.path.forall(.matcher(_).matches()) s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""" is true
     /*
     if (!pathId.path.forall(ID_PATH_SEGMENT_PATTERN.pattern.matcher(_).matches()))
@@ -128,5 +128,30 @@ object PathId {
       s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
       Some(pathId.toString))
       */
-  }
+  }*/
+
+
+
+/*
+  def validWithPosition[T](implicit validator: Validator[T]): Validator[(T, Int)] =
+    new Validator[(T, Int)] {
+      def apply(value: (T, Int)) = {
+        validate(value._1) match {
+          case f: Failure => Failure(Set(GroupViolation(value._1, s"at position ${value._2}", None, f.violations)))
+          case Success => Success
+        }
+
+        /*
+        val violations = values.zipWithIndex.flatMap({ case (item, pos) =>
+            validate(item) match {
+              case f: Failure => Some(RuleViolation(item, s"at position $pos", None))
+              case Success => None
+            }
+        })
+        if(violations.nonEmpty)
+          Failure(violations.toSet)
+        else
+          Success*/
+      }
+    }*/
 }

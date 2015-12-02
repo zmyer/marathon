@@ -3,7 +3,9 @@ package mesosphere.marathon.api.v2.json
 import java.lang.{ Integer => JInt, Double => JDouble }
 
 import com.wix.accord.dsl._
-import mesosphere.marathon.api.v2.ModelValidation
+import mesosphere.marathon.api.v2.GenericValidation._
+
+import mesosphere.marathon.api.v2.{GenericValidation, ModelValidation}
 
 import mesosphere.marathon.api.v2.json.V2AppDefinition.VersionInfo
 import mesosphere.marathon.api.validation.FieldConstraints._
@@ -22,7 +24,14 @@ import scala.concurrent.duration.FiniteDuration
 
 object V2AppUpdate {
   implicit val appUpdateValidator = validator[V2AppUpdate] { appUp =>
-    appUp.id.get is valid
+    appUp.id is valid
+    appUp.dependencies is valid
+    appUp.upgradeStrategy is valid
+
+    appUp.storeUrls is GenericValidation.noneOrValid(
+      GenericValidation.seqValidator(
+        GenericValidation.urlsCanBeResolvedValidator))
+    //appUp.args is valid
 
     // TODO AW: rest of validation
     /*
