@@ -3,9 +3,9 @@ package mesosphere.marathon.api.v2.json
 import java.lang.{ Integer => JInt, Double => JDouble }
 
 import com.wix.accord.dsl._
-import mesosphere.marathon.api.v2.GenericValidation._
+import mesosphere.marathon.api.v2.Validation._
 
-import mesosphere.marathon.api.v2.{GenericValidation, ModelValidation}
+import mesosphere.marathon.api.v2.{Validation, ModelValidation}
 
 import mesosphere.marathon.api.v2.json.V2AppDefinition.VersionInfo
 import mesosphere.marathon.api.validation.FieldConstraints._
@@ -27,10 +27,8 @@ object V2AppUpdate {
     appUp.id is valid
     appUp.dependencies is valid
     appUp.upgradeStrategy is valid
+    appUp.storeUrls is optional(every(urlsCanBeResolvedValidator))
 
-    appUp.storeUrls is GenericValidation.noneOrValid(
-      GenericValidation.seqValidator(
-        GenericValidation.urlsCanBeResolvedValidator))
     //appUp.args is valid
 
     // TODO AW: rest of validation

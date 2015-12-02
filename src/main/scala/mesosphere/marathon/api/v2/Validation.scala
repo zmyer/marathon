@@ -6,30 +6,17 @@ import com.wix.accord._
 
 import scala.util.Try
 
-object GenericValidation {
-  implicit def noneOrValid[T](implicit validator: Validator[T]): Validator[Option[T]] = {
+object Validation {
+
+  implicit def optional[T](implicit validator: Validator[T]): Validator[Option[T]] = {
     new Validator[Option[T]] {
       override def apply(option: Option[T]): Result = option.map(validator).getOrElse(Success)
     }
   }
 
-  implicit def seqValidator[T](implicit validator: Validator[T]): Validator[Seq[T]] = {
-    new Validator[Seq[T]] {
-      override def apply(seq: Seq[T]): Result = {
-
-        val violations = seq.map(item => (item, validator(item))).zipWithIndex.collect {
-          case ((item, f: Failure), pos: Int) => GroupViolation(item, "not valid", Some(s"[$pos]"), f.violations)
-        }
-
-        if(violations.isEmpty) Success
-        else Failure(Set(GroupViolation(seq, "seq contains elements, which are not valid", None, violations.toSet)))
-      }
-    }
-  }
-
-  implicit def setValidator[T](implicit validator: Validator[T]): Validator[Set[T]] = {
-    new Validator[Set[T]] {
-      override def apply(seq: Set[T]): Result = {
+  implicit def every[T](implicit validator: Validator[T]): Validator[Iterable[T]] = {
+    new Validator[Iterable[T]] {
+      override def apply(seq: Iterable[T]): Result = {
 
         val violations = seq.map(item => (item, validator(item))).zipWithIndex.collect {
           case ((item, f: Failure), pos: Int) => GroupViolation(item, "not valid", Some(s"[$pos]"), f.violations)

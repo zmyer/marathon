@@ -26,7 +26,7 @@ import scala.concurrent.Future
 
 // Accord validation
 import com.wix.accord._
-import GenericValidation._
+import Validation._
 
 @Path("v2/apps")
 @Consumes(Array(MediaType.APPLICATION_JSON))
