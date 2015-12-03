@@ -1,10 +1,8 @@
 package mesosphere.marathon.api.v2
 
-import java.net.{URLConnection, HttpURLConnection, URL}
-
 import com.wix.accord._
 
-import scala.util.Try
+import play.api.libs.json._
 
 object Validation {
 
@@ -28,23 +26,34 @@ object Validation {
     }
   }
 
-  def urlsCanBeResolvedValidator: Validator[String] = {
-    new Validator[String] {
-      def apply(url: String) = {
-        Try {
-          new URL(url).openConnection() match {
-            case http: HttpURLConnection =>
-              http.setRequestMethod("HEAD")
-              if(http.getResponseCode == HttpURLConnection.HTTP_OK) Success
-              else Failure(Set(RuleViolation(url, "url could not be resolved", None)))
-            case other: URLConnection =>
-              other.getInputStream
-              Success //if we come here, we could read the stream
-          }
-        }.getOrElse(
-          Failure(Set(RuleViolation(url, "url could not be resolved", None)))
-        )
-      }
-    }
+  implicit lazy val failureWrites: Writes[Failure] = Writes { f =>
+      Json.obj(
+        "violations" -> JsArray(violationsToJsvalue(f.violations))
+      )
+  }
+
+  implicit lazy val ruleViolationWrites: Writes[RuleViolation] = Writes { v =>
+      Json.obj(
+        "value" -> v.value.toString,
+        "constraint" -> v.constraint,
+        "description" -> v.description
+      )
+  }
+
+  implicit lazy val groupViolationWrites: Writes[GroupViolation] = Writes { v =>
+    Json.obj(
+      "value" -> v.value.toString,
+      "constraint" -> v.constraint,
+      "description" -> v.description,
+      "children" -> JsArray(violationsToJsvalue(v.children))
+    )
+  }
+
+  private def violationsToJsvalue(violations: Set[Violation]): Seq[JsValue] = {
+    // TODO AW: get rid of toSeq
+    violations.toSeq.map(_ match {
+      case r: RuleViolation => Json.toJson(r)
+      case g: GroupViolation => Json.toJson(g)
+    })
   }
 }

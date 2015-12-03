@@ -1,11 +1,11 @@
 package mesosphere.marathon.api.v2.json
 
 import java.lang.{ Integer => JInt, Double => JDouble }
+import java.net.{URLConnection, HttpURLConnection, URL}
 
+import com.wix.accord.{RuleViolation, Failure, Success, Validator}
 import com.wix.accord.dsl._
 import mesosphere.marathon.api.v2.Validation._
-
-import mesosphere.marathon.api.v2.{Validation, ModelValidation}
 
 import mesosphere.marathon.api.v2.json.V2AppDefinition.VersionInfo
 import mesosphere.marathon.api.validation.FieldConstraints._
@@ -21,28 +21,7 @@ import mesosphere.marathon.state.{
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.FiniteDuration
-
-object V2AppUpdate {
-  implicit val appUpdateValidator = validator[V2AppUpdate] { appUp =>
-    appUp.id is valid
-    appUp.dependencies is valid
-    appUp.upgradeStrategy is valid
-    appUp.storeUrls is optional(every(urlsCanBeResolvedValidator))
-
-    //appUp.args is valid
-
-    // TODO AW: rest of validation
-    /*
-    and
-      appUp.upgradeStrategy.map(ModelValidation.upgradeStrategyErrors(_, LogViolation(appUp, "upgradeStrategy")))
-      .getOrElse(com.wix.accord.Success) and
-      appUp.dependencies.map(ModelValidation.dependencyErrors(PathId.empty, _, LogViolation(appUp, "dependencies")))
-      .getOrElse(com.wix.accord.Success) and
-      appUp.storeUrls.map(ModelValidation.urlsCanBeResolved(_, LogViolation(appUp, "storeUrls")))
-      .getOrElse(com.wix.accord.Success)
-      */
-  }
-}
+import scala.util.Try
 
 case class V2AppUpdate(
 
@@ -146,4 +125,33 @@ case class V2AppUpdate(
     id = id.map(_.canonicalPath(base)),
     dependencies = dependencies.map(_.map(_.canonicalPath(base)))
   )
+}
+
+object V2AppUpdate {
+  implicit val appUpdateValidator = validator[V2AppUpdate] { appUp =>
+    appUp.id is valid
+    appUp.dependencies is valid
+    appUp.upgradeStrategy is valid
+    appUp.storeUrls is optional(every(urlsCanBeResolvedValidator))
+  }
+
+  def urlsCanBeResolvedValidator: Validator[String] = {
+    new Validator[String] {
+      def apply(url: String) = {
+        Try {
+          new URL(url).openConnection() match {
+            case http: HttpURLConnection =>
+              http.setRequestMethod("HEAD")
+              if(http.getResponseCode == HttpURLConnection.HTTP_OK) Success
+              else Failure(Set(RuleViolation(url, "url could not be resolved", None)))
+            case other: URLConnection =>
+              other.getInputStream
+              Success //if we come here, we could read the stream
+          }
+        }.getOrElse(
+          Failure(Set(RuleViolation(url, "url could not be resolved", None)))
+        )
+      }
+    }
+  }
 }
