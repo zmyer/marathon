@@ -27,33 +27,35 @@ object Validation {
   }
 
   implicit lazy val failureWrites: Writes[Failure] = Writes { f =>
-      Json.obj(
-        "violations" -> JsArray(violationsToJsvalue(f.violations))
-      )
+    // TODO AW: get rid of toSeq
+      JsArray(f.violations.toSeq.map(violationToJsValue))
   }
 
   implicit lazy val ruleViolationWrites: Writes[RuleViolation] = Writes { v =>
       Json.obj(
-        "value" -> v.value.toString,
-        "constraint" -> v.constraint,
-        "description" -> v.description
+        // "value" -> v.value.toString,
+        "error" -> v.constraint,
+        "attribute" -> v.description
       )
   }
 
   implicit lazy val groupViolationWrites: Writes[GroupViolation] = Writes { v =>
-    Json.obj(
-      "value" -> v.value.toString,
-      "constraint" -> v.constraint,
-      "description" -> v.description,
-      "children" -> JsArray(violationsToJsvalue(v.children))
-    )
+    // TODO AW: get rid of toSeq
+    v.value match {
+      case Some(s) => violationToJsValue(v.children.head.withDescription(v.description.getOrElse("")))
+      case _ => v.children.size match {
+        case 1 => violationToJsValue(v.children.head)
+        case _ => JsObject(Seq(v.description.getOrElse("") -> {
+          JsObject(v.children.toSeq.map(c => c.description.getOrElse("") -> violationToJsValue(c)))
+        }))
+      }
+    }
   }
 
-  private def violationsToJsvalue(violations: Set[Violation]): Seq[JsValue] = {
-    // TODO AW: get rid of toSeq
-    violations.toSeq.map(_ match {
+  private def violationToJsValue(violation: Violation): JsValue = {
+    violation match {
       case r: RuleViolation => Json.toJson(r)
       case g: GroupViolation => Json.toJson(g)
-    })
+    }
   }
 }
