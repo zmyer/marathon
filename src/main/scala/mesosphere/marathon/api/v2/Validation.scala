@@ -45,9 +45,9 @@ object Validation {
       case Some(s) => violationToJsValue(v.children.head.withDescription(v.description.getOrElse("")))
       case _ => v.children.size match {
         case 1 => violationToJsValue(v.children.head)
-        case _ => JsObject(Seq(v.description.getOrElse("") -> {
-          JsObject(v.children.toSeq.map(c => c.description.getOrElse("") -> violationToJsValue(c)))
-        }))
+        case _ => JsObject(v.children.toSeq.map(c =>
+          v.description.getOrElse("") + c.description.getOrElse("") -> violationToJsValue(c)
+        ))
       }
     }
   }
