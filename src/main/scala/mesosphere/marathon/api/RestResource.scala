@@ -51,10 +51,11 @@ trait RestResource {
 
   protected def result[T](fn: Awaitable[T]): T = Await.result(fn, config.zkTimeoutDuration)
 
-  protected def withValid[T](t: T)(fn:T => Response)(implicit validator: Validator[T]): Response = {
+  protected def withValid[T](t: T, description: Option[String] = None)
+                            (fn:T => Response)(implicit validator: Validator[T]): Response = {
     validate(t) match {
       case f: Failure =>
-        val entity = jsonObjString("Failure" -> Json.toJson(f))
+        val entity = Json.toJson(description.map(f.withDescription).getOrElse(f)).toString
         Response.status(Status.BAD_REQUEST).entity(entity).build()
       case Success => fn(t)
     }

@@ -28,34 +28,47 @@ object Validation {
 
   implicit lazy val failureWrites: Writes[Failure] = Writes { f =>
     // TODO AW: get rid of toSeq
-      JsArray(f.violations.toSeq.map(violationToJsValue))
+    Json.obj("errors" -> {f.violations.size match {
+      case 1 => violationToJsValue(f.violations.head)
+      case _ => JsArray(f.violations.toSeq.map(violationToJsValue(_)))
+    }})
   }
 
   implicit lazy val ruleViolationWrites: Writes[RuleViolation] = Writes { v =>
       Json.obj(
-        // "value" -> v.value.toString,
-        "error" -> v.constraint,
-        "attribute" -> v.description
+        "attribute" -> v.description,
+        "error" -> v.constraint
       )
   }
 
   implicit lazy val groupViolationWrites: Writes[GroupViolation] = Writes { v =>
     // TODO AW: get rid of toSeq
     v.value match {
-      case Some(s) => violationToJsValue(v.children.head.withDescription(v.description.getOrElse("")))
+      case Some(s) =>
+        violationToJsValue(v.children.head, v.description)
       case _ => v.children.size match {
-        case 1 => violationToJsValue(v.children.head)
-        case _ => JsObject(v.children.toSeq.map(c =>
-          v.description.getOrElse("") + c.description.getOrElse("") -> violationToJsValue(c)
+        case 1 => violationToJsValue(v.children.head, v.description)
+        case _ => JsArray(v.children.toSeq.map(c =>
+          violationToJsValue(c, v.description, parentSeq = true)
         ))
       }
     }
   }
 
-  private def violationToJsValue(violation: Violation): JsValue = {
+  private def concatPath(parent: String, child: Option[String], parentSeq: Boolean): String = {
+    child.map(c => parent + { if(parentSeq) "" else "." } + c).getOrElse(parent)
+  }
+
+  private def violationToJsValue(violation: Violation,
+                                 parentDesc: Option[String] = None,
+                                 parentSeq: Boolean = false): JsValue = {
     violation match {
-      case r: RuleViolation => Json.toJson(r)
-      case g: GroupViolation => Json.toJson(g)
+      case r: RuleViolation => Json.toJson(parentDesc.map(p =>
+        r.withDescription(concatPath(p, r.description, parentSeq)))
+        .getOrElse(r))
+      case g: GroupViolation => Json.toJson(parentDesc.map(p =>
+        g.withDescription(concatPath(p, g.description, parentSeq)))
+        .getOrElse(g))
     }
   }
 }
