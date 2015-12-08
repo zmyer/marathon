@@ -269,6 +269,10 @@ object Dependencies {
     datadog % "compile",
     marathonApiConsole % "compile",
     wixAccord % "compile",
+    jtoCore % "compile",
+    jtoForm % "compile",
+    jtoJson % "compile",
+
 
     // test
     Test.diffson % "test",
@@ -309,6 +313,7 @@ object Dependency {
     val Logback = "1.1.3"
     val WixAccord = "0.5"
     val WixAccordScalaTest = "0.5"
+    val Jto = "1.1"
 
     // test deps versions
     val Mockito = "1.9.5"
@@ -347,6 +352,9 @@ object Dependency {
   val graphite = "io.dropwizard.metrics" % "metrics-graphite" % V.Graphite
   val datadog = "org.coursera" % "dropwizard-metrics-datadog" % V.DataDog exclude("ch.qos.logback", "logback-classic")
   val wixAccord = "com.wix" %% "accord-core" % V.WixAccord
+  val jtoCore = "io.github.jto" %% "validation-core" % V.Jto
+  val jtoJson = "io.github.jto" %% "validation-json" % V.Jto
+  val jtoForm = "io.github.jto" %% "validation-form" % V.Jto
 
 
   object Test {

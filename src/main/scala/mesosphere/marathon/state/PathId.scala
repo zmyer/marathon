@@ -1,10 +1,10 @@
 package mesosphere.marathon.state
 
 // Accord validation.
-import com.wix.accord.dsl._
-import mesosphere.marathon.api.v2.ModelValidation
 
 import mesosphere.marathon.plugin
+import play.api.data.mapping.Rule
+import play.api.data.mapping._
 
 import scala.language.implicitConversions
 
@@ -102,18 +102,12 @@ object PathId {
   private[this] val ID_PATH_SEGMENT_PATTERN =
     "^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])|(\\.|\\.\\.)$".r
 
-  implicit val pathIdValidator = validator[PathId] { pathId =>
-    pathId.path.each should matchRegex(ID_PATH_SEGMENT_PATTERN.pattern)
-    // pathId.path.forall(.matcher(_).matches()) s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""" is true
-    /*
-    if (!pathId.path.forall(ID_PATH_SEGMENT_PATTERN.pattern.matcher(_).matches()))
-      ModelValidation.failureWithRuleViolation(pathId,
-        s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
-        Some(pathId.toString))
-    else ModelValidation.failureWithRuleViolation(pathId,
-      s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""",
-      Some(pathId.toString))
-      */
+  val pathIdValidator: Rule[PathId, PathId] = Rule.fromMapping { pathId =>
+      if (!pathId.path.forall(ID_PATH_SEGMENT_PATTERN.pattern.matcher(_).matches()))
+        Failure(Seq(ValidationError(
+          s"""path contains invalid characters (allowed: lowercase letters, digits, hyphens, ".", "..")""")))
+      else
+        Success(pathId)
   }
 
 /*  implicit val pathSetIdValidator = validator[Set[PathId]] { setPathId =>
