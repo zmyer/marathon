@@ -431,4 +431,6 @@ object AppDefinition {
 
   def fromProto(proto: Protos.ServiceDefinition): AppDefinition =
     AppDefinition().mergeFromProto(proto)
+
+
 }

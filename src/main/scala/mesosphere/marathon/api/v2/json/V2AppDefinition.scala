@@ -2,7 +2,10 @@ package mesosphere.marathon.api.v2.json
 
 import java.lang.{ Double => JDouble, Integer => JInt }
 
+import com.wix.accord.dsl._
+import com.wix.accord.{RuleViolation, Failure, Success, Validator}
 import mesosphere.marathon.Protos.Constraint
+import mesosphere.marathon.api.v2.Validation._
 import mesosphere.marathon.api.validation.FieldConstraints._
 import mesosphere.marathon.api.validation.{ PortIndices, ValidV2AppDefinition }
 import mesosphere.marathon.health.HealthCheck
@@ -125,5 +128,10 @@ object V2AppDefinition {
       container = app.container, healthChecks = app.healthChecks, dependencies = app.dependencies,
       upgradeStrategy = app.upgradeStrategy, labels = app.labels, acceptedResourceRoles = app.acceptedResourceRoles,
       version = app.version, versionInfo = maybeVersionInfo)
+  }
+
+  implicit val appDefinitionValidator = validator[V2AppDefinition] { appDef =>
+    // TODO AW: implement the rest of validation
+    appDef.dependencies is valid
   }
 }

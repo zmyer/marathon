@@ -68,26 +68,29 @@ class AppsResource @Inject() (
   def create(body: Array[Byte],
              @DefaultValue("false")@QueryParam("force") force: Boolean,
              @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
-    val app = validateApp(Json.parse(body).as[V2AppDefinition].withCanonizedIds().toAppDefinition)
-    doIfAuthorized(req, resp, CreateAppOrGroup, app.id) { identity =>
-      def createOrThrow(opt: Option[AppDefinition]) = opt
-        .map(_ => throw new ConflictingChangeException(s"An app with id [${app.id}] already exists."))
-        .getOrElse(app)
+    // val app = validateApp(Json.parse(body).as[V2AppDefinition].withCanonizedIds().toAppDefinition)
+    withValid(Json.parse(body).as[V2AppDefinition].withCanonizedIds()) { appDef =>
+      val app = appDef.toAppDefinition
+      doIfAuthorized(req, resp, CreateAppOrGroup, app.id) { identity =>
+        def createOrThrow(opt: Option[AppDefinition]) = opt
+          .map(_ => throw new ConflictingChangeException(s"An app with id [${app.id}] already exists."))
+          .getOrElse(app)
 
-      val plan = result(groupManager.updateApp(app.id, createOrThrow, app.version, force))
+        val plan = result(groupManager.updateApp(app.id, createOrThrow, app.version, force))
 
-      val appWithDeployments = AppInfo(
-        app,
-        maybeCounts = Some(TaskCounts.zero),
-        maybeTasks = Some(Seq.empty),
-        maybeDeployments = Some(Seq(Identifiable(plan.id)))
-      )
+        val appWithDeployments = AppInfo(
+          app,
+          maybeCounts = Some(TaskCounts.zero),
+          maybeTasks = Some(Seq.empty),
+          maybeDeployments = Some(Seq(Identifiable(plan.id)))
+        )
 
-      maybePostEvent(req, appWithDeployments.app)
-      Response
-        .created(new URI(app.id.toString))
-        .entity(jsonString(appWithDeployments))
-        .build()
+        maybePostEvent(req, appWithDeployments.app)
+        Response
+          .created(new URI(app.id.toString))
+          .entity(jsonString(appWithDeployments))
+          .build()
+      }
     }
   }
 
@@ -159,7 +162,7 @@ class AppsResource @Inject() (
                       body: Array[Byte],
                       @Context req: HttpServletRequest, @Context resp: HttpServletResponse): Response = {
 
-    withValid(Json.parse(body).as[Seq[V2AppUpdate]].map(_.withCanonizedIds())) { updates =>
+    withValid(Json.parse(body).as[Seq[V2AppUpdate]].map(_.withCanonizedIds()), Some("V2AppUpdates")) { updates =>
       doIfAuthorized(req, resp, UpdateAppOrGroup, updates.flatMap(_.id): _*) { identity =>
         val version = clock.now()
         def updateGroup(root: Group): Group = updates.foldLeft(root) { (group, update) =>
@@ -235,11 +238,15 @@ class AppsResource @Inject() (
   }
 
   private def validateApp(app: AppDefinition): AppDefinition = {
-    // TODO AW: throw exception
-    ModelValidation.checkAppConstraints(V2AppDefinition(app), app.id.parent)
+    withValid(V2AppDefinition(app)) { appDef =>
 
-    val conflicts = ModelValidation.checkAppConflicts(app, result(groupManager.rootGroup()))
-    if (conflicts.nonEmpty) throw new ConflictingChangeException(conflicts.mkString(","))
+      // TODO AW: put in AppDefinition validation
+      val conflicts = ModelValidation.checkAppConflicts(app, result(groupManager.rootGroup()))
+      if (conflicts.nonEmpty) throw new ConflictingChangeException(conflicts.mkString(","))
+      throw new ConflictingChangeException(conflicts.mkString(","))
+    }
+    // ModelValidation.checkAppConstraints(V2AppDefinition(app), app.id.parent)
+
     app
   }
 
