@@ -64,6 +64,10 @@ case class Task(
 }
 
 object Task {
+  def minimalTask(appId: PathId, agentInfo: AgentInfo): Task = {
+    Task(taskId = Task.Id.forApp(appId), agentInfo = agentInfo)
+  }
+
   def tasksById(tasks: Iterable[Task]): Map[Task.Id, Task] = tasks.iterator.map(task => task.taskId -> task).toMap
 
   case class Id(idString: String) {
@@ -136,6 +140,17 @@ object Task {
     host: String,
     agentId: Option[String],
     attributes: Iterable[MesosProtos.Attribute])
+
+  object AgentInfo {
+    def forOffer(offer: MesosProtos.Offer): AgentInfo = {
+      import scala.collection.JavaConverters._
+      AgentInfo(
+        host = offer.getHostname,
+        agentId = Option(offer.getSlaveId).map(_.getValue),
+        attributes = offer.getAttributesList.asScala
+      )
+    }
+  }
 
   /**
     * Contains information about the status of a launched task including timestamps for important

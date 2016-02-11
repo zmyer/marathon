@@ -11,7 +11,12 @@ trait TaskFactory {
   /**
     * Return the corresponding task if and only if the offer matches the app.
     */
-  def newTask(app: AppDefinition, offer: Offer, runningTasks: Iterable[Task]): Option[CreatedTask]
+  def newTask(
+    app: AppDefinition,
+    offer: Offer,
+    runningTasks: Iterable[Task],
+    existingTask: Option[Task] = None
+  ): Option[CreatedTask]
 }
 
 object TaskFactory {
