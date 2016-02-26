@@ -21,7 +21,7 @@ title: Marathon Resources
 - [Service Discovery with Mesosphere](http://mesosphere.com/docs/getting-started/service-discovery)  
   _November 2014_  
   This document outlines the "well-known port" approach to service discovery
-  for web services running on Mesosphere’s Marathon.
+  for web services running on Mesosphere's Marathon.
 
 - [Mesosphere on a Single CoreOS Instance](https://mesosphere.com/docs/tutorials/mesosphere-on-a-single-coreos-instance)  
   _14 November 2014_  

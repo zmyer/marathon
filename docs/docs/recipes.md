@@ -243,7 +243,7 @@ Configure an app to run on top of resources of your special role:
 ### Limitations of Static Partitioning with Roles
 
 The biggest limitation is that one framework can currently only be assigned to one role. So if you have
-multiple types of special nodes you cannot handle them within one framework — you need to have separate frameworks
+multiple types of special nodes you cannot handle them within one framework - you need to have separate frameworks
 for them. Another limitation is that you have to reconfigure your Mesos master and some of your agents.
 
 ### Using constraints

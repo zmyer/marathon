@@ -61,6 +61,7 @@ GEM
       ffi (>= 0.5.0)
     rdiscount (2.1.8)
     redcarpet (3.3.2)
+    rouge (1.10.1)
     safe_yaml (1.0.4)
     sass (3.4.16)
     timers (4.0.1)
@@ -82,6 +83,6 @@ DEPENDENCIES
   kramdown
   liquid
   maruku
-  pygments.rb
   rdiscount
   redcarpet
+  rouge
