@@ -545,7 +545,7 @@ object MarathonTestHelper {
     volumes = Seq[Volume](
       PersistentVolume(
         containerPath = "persistent-volume",
-        persistent = PersistentVolumeInfo(10), // must match persistentVolumeResources
+        persistent = PersistentVolumeInfo(Some(10)), // must match persistentVolumeResources
         mode = Mesos.Volume.Mode.RW
       )
     ),
