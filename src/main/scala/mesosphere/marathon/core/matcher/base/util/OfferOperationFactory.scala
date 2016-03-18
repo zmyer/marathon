@@ -85,14 +85,10 @@ class OfferOperationFactory(
           .setLabels(TaskLabels.labelsForTask(taskId).mesosLabels)
           .build()
 
-      val size = vol.persistentVolume.persistent.size match {
-        case Some(size) => size
-        case _          => throw new WrongConfigurationException("No size set for persistent volume info.")
-      }
       Mesos.Resource.newBuilder()
         .setName("disk")
         .setType(Mesos.Value.Type.SCALAR)
-        .setScalar(Mesos.Value.Scalar.newBuilder().setValue(size.toDouble).build())
+        .setScalar(Mesos.Value.Scalar.newBuilder().setValue(vol.persistentVolume.persistent.size.get.toDouble).build())
         .setRole(role)
         .setReservation(reservation)
         .setDisk(disk)
