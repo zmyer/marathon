@@ -188,8 +188,13 @@ message ExtendedContainerInfo {
 // versa. Both paths can either refer to a directory or a file.
 message Volume {
 
-  // Defining properties of persistent volumes
+  // Defining properties of local persistent volumes
   message PersistentVolumeInfo {
+    required uint64 size = 1;
+  }
+
+  // Defining properties of external persistent volumes
+  message ExternalVolumeInfo {
     optional uint64 size = 1;
     optional string name = 2;
     optional string providerName = 3;
@@ -217,6 +222,9 @@ message Volume {
 
   // Defines a Persistent Volume. In this case hostPath must not be set
   optional PersistentVolumeInfo persistent = 5;
+
+  // Defines an External Volume. In this case hostPath must not be set
+  optional ExternalVolumeInfo external = 6;
 }
 
 message EventSubscribers {

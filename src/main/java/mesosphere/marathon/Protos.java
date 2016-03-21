@@ -20726,6 +20726,32 @@ public final class Protos {
      * </pre>
      */
     mesosphere.marathon.Protos.Volume.PersistentVolumeInfoOrBuilder getPersistentOrBuilder();
+
+    // optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;
+    /**
+     * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+     *
+     * <pre>
+     * Defines an External Volume. In this case hostPath must not be set
+     * </pre>
+     */
+    boolean hasExternal();
+    /**
+     * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+     *
+     * <pre>
+     * Defines an External Volume. In this case hostPath must not be set
+     * </pre>
+     */
+    mesosphere.marathon.Protos.Volume.ExternalVolumeInfo getExternal();
+    /**
+     * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+     *
+     * <pre>
+     * Defines an External Volume. In this case hostPath must not be set
+     * </pre>
+     */
+    mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder getExternalOrBuilder();
   }
   /**
    * Protobuf type {@code mesosphere.marathon.Volume}
@@ -20831,6 +20857,19 @@ public final class Protos {
               bitField0_ |= 0x00000010;
               break;
             }
+            case 50: {
+              mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000020) == 0x00000020)) {
+                subBuilder = external_.toBuilder();
+              }
+              external_ = input.readMessage(mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(external_);
+                external_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000020;
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -20871,6 +20910,418 @@ public final class Protos {
     }
 
     public interface PersistentVolumeInfoOrBuilder
+        extends com.google.protobuf.MessageOrBuilder {
+
+      // required uint64 size = 1;
+      /**
+       * <code>required uint64 size = 1;</code>
+       */
+      boolean hasSize();
+      /**
+       * <code>required uint64 size = 1;</code>
+       */
+      long getSize();
+    }
+    /**
+     * Protobuf type {@code mesosphere.marathon.Volume.PersistentVolumeInfo}
+     *
+     * <pre>
+     * Defining properties of local persistent volumes
+     * </pre>
+     */
+    public static final class PersistentVolumeInfo extends
+        com.google.protobuf.GeneratedMessage
+        implements PersistentVolumeInfoOrBuilder {
+      // Use PersistentVolumeInfo.newBuilder() to construct.
+      private PersistentVolumeInfo(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+        this.unknownFields = builder.getUnknownFields();
+      }
+      private PersistentVolumeInfo(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+      private static final PersistentVolumeInfo defaultInstance;
+      public static PersistentVolumeInfo getDefaultInstance() {
+        return defaultInstance;
+      }
+
+      public PersistentVolumeInfo getDefaultInstanceForType() {
+        return defaultInstance;
+      }
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
+      }
+      private PersistentVolumeInfo(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!parseUnknownField(input, unknownFields,
+                                       extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 8: {
+                bitField0_ |= 0x00000001;
+                size_ = input.readUInt64();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.class, mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<PersistentVolumeInfo> PARSER =
+          new com.google.protobuf.AbstractParser<PersistentVolumeInfo>() {
+        public PersistentVolumeInfo parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new PersistentVolumeInfo(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<PersistentVolumeInfo> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required uint64 size = 1;
+      public static final int SIZE_FIELD_NUMBER = 1;
+      private long size_;
+      /**
+       * <code>required uint64 size = 1;</code>
+       */
+      public boolean hasSize() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required uint64 size = 1;</code>
+       */
+      public long getSize() {
+        return size_;
+      }
+
+      private void initFields() {
+        size_ = 0L;
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasSize()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeUInt64(1, size_);
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeUInt64Size(1, size_);
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(mesosphere.marathon.Protos.Volume.PersistentVolumeInfo prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code mesosphere.marathon.Volume.PersistentVolumeInfo}
+       *
+       * <pre>
+       * Defining properties of local persistent volumes
+       * </pre>
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements mesosphere.marathon.Protos.Volume.PersistentVolumeInfoOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.class, mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.Builder.class);
+        }
+
+        // Construct using mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          size_ = 0L;
+          bitField0_ = (bitField0_ & ~0x00000001);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor;
+        }
+
+        public mesosphere.marathon.Protos.Volume.PersistentVolumeInfo getDefaultInstanceForType() {
+          return mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.getDefaultInstance();
+        }
+
+        public mesosphere.marathon.Protos.Volume.PersistentVolumeInfo build() {
+          mesosphere.marathon.Protos.Volume.PersistentVolumeInfo result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public mesosphere.marathon.Protos.Volume.PersistentVolumeInfo buildPartial() {
+          mesosphere.marathon.Protos.Volume.PersistentVolumeInfo result = new mesosphere.marathon.Protos.Volume.PersistentVolumeInfo(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.size_ = size_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof mesosphere.marathon.Protos.Volume.PersistentVolumeInfo) {
+            return mergeFrom((mesosphere.marathon.Protos.Volume.PersistentVolumeInfo)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(mesosphere.marathon.Protos.Volume.PersistentVolumeInfo other) {
+          if (other == mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.getDefaultInstance()) return this;
+          if (other.hasSize()) {
+            setSize(other.getSize());
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasSize()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (mesosphere.marathon.Protos.Volume.PersistentVolumeInfo) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+        private int bitField0_;
+
+        // required uint64 size = 1;
+        private long size_ ;
+        /**
+         * <code>required uint64 size = 1;</code>
+         */
+        public boolean hasSize() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>required uint64 size = 1;</code>
+         */
+        public long getSize() {
+          return size_;
+        }
+        /**
+         * <code>required uint64 size = 1;</code>
+         */
+        public Builder setSize(long value) {
+          bitField0_ |= 0x00000001;
+          size_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>required uint64 size = 1;</code>
+         */
+        public Builder clearSize() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          size_ = 0L;
+          onChanged();
+          return this;
+        }
+
+        // @@protoc_insertion_point(builder_scope:mesosphere.marathon.Volume.PersistentVolumeInfo)
+      }
+
+      static {
+        defaultInstance = new PersistentVolumeInfo(true);
+        defaultInstance.initFields();
+      }
+
+      // @@protoc_insertion_point(class_scope:mesosphere.marathon.Volume.PersistentVolumeInfo)
+    }
+
+    public interface ExternalVolumeInfoOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
 
       // optional uint64 size = 1;
@@ -20939,28 +21390,28 @@ public final class Protos {
           int index);
     }
     /**
-     * Protobuf type {@code mesosphere.marathon.Volume.PersistentVolumeInfo}
+     * Protobuf type {@code mesosphere.marathon.Volume.ExternalVolumeInfo}
      *
      * <pre>
-     * Defining properties of persistent volumes
+     * Defining properties of external persistent volumes
      * </pre>
      */
-    public static final class PersistentVolumeInfo extends
+    public static final class ExternalVolumeInfo extends
         com.google.protobuf.GeneratedMessage
-        implements PersistentVolumeInfoOrBuilder {
-      // Use PersistentVolumeInfo.newBuilder() to construct.
-      private PersistentVolumeInfo(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        implements ExternalVolumeInfoOrBuilder {
+      // Use ExternalVolumeInfo.newBuilder() to construct.
+      private ExternalVolumeInfo(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private PersistentVolumeInfo(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private ExternalVolumeInfo(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
-      private static final PersistentVolumeInfo defaultInstance;
-      public static PersistentVolumeInfo getDefaultInstance() {
+      private static final ExternalVolumeInfo defaultInstance;
+      public static ExternalVolumeInfo getDefaultInstance() {
         return defaultInstance;
       }
 
-      public PersistentVolumeInfo getDefaultInstanceForType() {
+      public ExternalVolumeInfo getDefaultInstanceForType() {
         return defaultInstance;
       }
 
@@ -20970,7 +21421,7 @@ public final class Protos {
           getUnknownFields() {
         return this.unknownFields;
       }
-      private PersistentVolumeInfo(
+      private ExternalVolumeInfo(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
@@ -21033,28 +21484,28 @@ public final class Protos {
       }
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor;
+        return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_descriptor;
       }
 
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_fieldAccessorTable
+        return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.class, mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.Builder.class);
+                mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.class, mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<PersistentVolumeInfo> PARSER =
-          new com.google.protobuf.AbstractParser<PersistentVolumeInfo>() {
-        public PersistentVolumeInfo parsePartialFrom(
+      public static com.google.protobuf.Parser<ExternalVolumeInfo> PARSER =
+          new com.google.protobuf.AbstractParser<ExternalVolumeInfo>() {
+        public ExternalVolumeInfo parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
             throws com.google.protobuf.InvalidProtocolBufferException {
-          return new PersistentVolumeInfo(input, extensionRegistry);
+          return new ExternalVolumeInfo(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<PersistentVolumeInfo> getParserForType() {
+      public com.google.protobuf.Parser<ExternalVolumeInfo> getParserForType() {
         return PARSER;
       }
 
@@ -21270,53 +21721,53 @@ public final class Protos {
         return super.writeReplace();
       }
 
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(
           com.google.protobuf.ByteString data)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(
           com.google.protobuf.ByteString data,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(byte[] data)
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(byte[] data)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(
           byte[] data,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(java.io.InputStream input)
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(java.io.InputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(
           java.io.InputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseDelimitedFrom(java.io.InputStream input)
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseDelimitedFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseDelimitedFrom(
           java.io.InputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(
           com.google.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
-      public static mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parseFrom(
+      public static mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parseFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
@@ -21325,7 +21776,7 @@ public final class Protos {
 
       public static Builder newBuilder() { return Builder.create(); }
       public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(mesosphere.marathon.Protos.Volume.PersistentVolumeInfo prototype) {
+      public static Builder newBuilder(mesosphere.marathon.Protos.Volume.ExternalVolumeInfo prototype) {
         return newBuilder().mergeFrom(prototype);
       }
       public Builder toBuilder() { return newBuilder(this); }
@@ -21337,28 +21788,28 @@ public final class Protos {
         return builder;
       }
       /**
-       * Protobuf type {@code mesosphere.marathon.Volume.PersistentVolumeInfo}
+       * Protobuf type {@code mesosphere.marathon.Volume.ExternalVolumeInfo}
        *
        * <pre>
-       * Defining properties of persistent volumes
+       * Defining properties of external persistent volumes
        * </pre>
        */
       public static final class Builder extends
           com.google.protobuf.GeneratedMessage.Builder<Builder>
-         implements mesosphere.marathon.Protos.Volume.PersistentVolumeInfoOrBuilder {
+         implements mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder {
         public static final com.google.protobuf.Descriptors.Descriptor
             getDescriptor() {
-          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor;
+          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_descriptor;
         }
 
         protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_fieldAccessorTable
+          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.class, mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.Builder.class);
+                  mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.class, mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder.class);
         }
 
-        // Construct using mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.newBuilder()
+        // Construct using mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.newBuilder()
         private Builder() {
           maybeForceBuilderInitialization();
         }
@@ -21400,23 +21851,23 @@ public final class Protos {
 
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor;
+          return mesosphere.marathon.Protos.internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_descriptor;
         }
 
-        public mesosphere.marathon.Protos.Volume.PersistentVolumeInfo getDefaultInstanceForType() {
-          return mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.getDefaultInstance();
+        public mesosphere.marathon.Protos.Volume.ExternalVolumeInfo getDefaultInstanceForType() {
+          return mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance();
         }
 
-        public mesosphere.marathon.Protos.Volume.PersistentVolumeInfo build() {
-          mesosphere.marathon.Protos.Volume.PersistentVolumeInfo result = buildPartial();
+        public mesosphere.marathon.Protos.Volume.ExternalVolumeInfo build() {
+          mesosphere.marathon.Protos.Volume.ExternalVolumeInfo result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
           return result;
         }
 
-        public mesosphere.marathon.Protos.Volume.PersistentVolumeInfo buildPartial() {
-          mesosphere.marathon.Protos.Volume.PersistentVolumeInfo result = new mesosphere.marathon.Protos.Volume.PersistentVolumeInfo(this);
+        public mesosphere.marathon.Protos.Volume.ExternalVolumeInfo buildPartial() {
+          mesosphere.marathon.Protos.Volume.ExternalVolumeInfo result = new mesosphere.marathon.Protos.Volume.ExternalVolumeInfo(this);
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -21446,16 +21897,16 @@ public final class Protos {
         }
 
         public Builder mergeFrom(com.google.protobuf.Message other) {
-          if (other instanceof mesosphere.marathon.Protos.Volume.PersistentVolumeInfo) {
-            return mergeFrom((mesosphere.marathon.Protos.Volume.PersistentVolumeInfo)other);
+          if (other instanceof mesosphere.marathon.Protos.Volume.ExternalVolumeInfo) {
+            return mergeFrom((mesosphere.marathon.Protos.Volume.ExternalVolumeInfo)other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(mesosphere.marathon.Protos.Volume.PersistentVolumeInfo other) {
-          if (other == mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.getDefaultInstance()) return this;
+        public Builder mergeFrom(mesosphere.marathon.Protos.Volume.ExternalVolumeInfo other) {
+          if (other == mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance()) return this;
           if (other.hasSize()) {
             setSize(other.getSize());
           }
@@ -21513,11 +21964,11 @@ public final class Protos {
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          mesosphere.marathon.Protos.Volume.PersistentVolumeInfo parsedMessage = null;
+          mesosphere.marathon.Protos.Volume.ExternalVolumeInfo parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
           } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (mesosphere.marathon.Protos.Volume.PersistentVolumeInfo) e.getUnfinishedMessage();
+            parsedMessage = (mesosphere.marathon.Protos.Volume.ExternalVolumeInfo) e.getUnfinishedMessage();
             throw e;
           } finally {
             if (parsedMessage != null) {
@@ -21949,15 +22400,15 @@ public final class Protos {
           return optionsBuilder_;
         }
 
-        // @@protoc_insertion_point(builder_scope:mesosphere.marathon.Volume.PersistentVolumeInfo)
+        // @@protoc_insertion_point(builder_scope:mesosphere.marathon.Volume.ExternalVolumeInfo)
       }
 
       static {
-        defaultInstance = new PersistentVolumeInfo(true);
+        defaultInstance = new ExternalVolumeInfo(true);
         defaultInstance.initFields();
       }
 
-      // @@protoc_insertion_point(class_scope:mesosphere.marathon.Volume.PersistentVolumeInfo)
+      // @@protoc_insertion_point(class_scope:mesosphere.marathon.Volume.ExternalVolumeInfo)
     }
 
     private int bitField0_;
@@ -22170,12 +22621,47 @@ public final class Protos {
       return persistent_;
     }
 
+    // optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;
+    public static final int EXTERNAL_FIELD_NUMBER = 6;
+    private mesosphere.marathon.Protos.Volume.ExternalVolumeInfo external_;
+    /**
+     * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+     *
+     * <pre>
+     * Defines an External Volume. In this case hostPath must not be set
+     * </pre>
+     */
+    public boolean hasExternal() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+    /**
+     * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+     *
+     * <pre>
+     * Defines an External Volume. In this case hostPath must not be set
+     * </pre>
+     */
+    public mesosphere.marathon.Protos.Volume.ExternalVolumeInfo getExternal() {
+      return external_;
+    }
+    /**
+     * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+     *
+     * <pre>
+     * Defines an External Volume. In this case hostPath must not be set
+     * </pre>
+     */
+    public mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder getExternalOrBuilder() {
+      return external_;
+    }
+
     private void initFields() {
       mode_ = org.apache.mesos.Protos.Volume.Mode.RW;
       containerPath_ = "";
       hostPath_ = "";
       image_ = org.apache.mesos.Protos.Image.getDefaultInstance();
       persistent_ = mesosphere.marathon.Protos.Volume.PersistentVolumeInfo.getDefaultInstance();
+      external_ = mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -22202,6 +22688,12 @@ public final class Protos {
           return false;
         }
       }
+      if (hasExternal()) {
+        if (!getExternal().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -22223,6 +22715,9 @@ public final class Protos {
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeMessage(5, persistent_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeMessage(6, external_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -22252,6 +22747,10 @@ public final class Protos {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(5, persistent_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(6, external_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -22369,6 +22868,7 @@ public final class Protos {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getImageFieldBuilder();
           getPersistentFieldBuilder();
+          getExternalFieldBuilder();
         }
       }
       private static Builder create() {
@@ -22395,6 +22895,12 @@ public final class Protos {
           persistentBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000010);
+        if (externalBuilder_ == null) {
+          external_ = mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance();
+        } else {
+          externalBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -22451,6 +22957,14 @@ public final class Protos {
         } else {
           result.persistent_ = persistentBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        if (externalBuilder_ == null) {
+          result.external_ = external_;
+        } else {
+          result.external_ = externalBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -22486,6 +23000,9 @@ public final class Protos {
         if (other.hasPersistent()) {
           mergePersistent(other.getPersistent());
         }
+        if (other.hasExternal()) {
+          mergeExternal(other.getExternal());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -22507,6 +23024,12 @@ public final class Protos {
         }
         if (hasPersistent()) {
           if (!getPersistent().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasExternal()) {
+          if (!getExternal().isInitialized()) {
             
             return false;
           }
@@ -23102,6 +23625,159 @@ public final class Protos {
           persistent_ = null;
         }
         return persistentBuilder_;
+      }
+
+      // optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;
+      private mesosphere.marathon.Protos.Volume.ExternalVolumeInfo external_ = mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          mesosphere.marathon.Protos.Volume.ExternalVolumeInfo, mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder, mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder> externalBuilder_;
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public boolean hasExternal() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public mesosphere.marathon.Protos.Volume.ExternalVolumeInfo getExternal() {
+        if (externalBuilder_ == null) {
+          return external_;
+        } else {
+          return externalBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public Builder setExternal(mesosphere.marathon.Protos.Volume.ExternalVolumeInfo value) {
+        if (externalBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          external_ = value;
+          onChanged();
+        } else {
+          externalBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000020;
+        return this;
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public Builder setExternal(
+          mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder builderForValue) {
+        if (externalBuilder_ == null) {
+          external_ = builderForValue.build();
+          onChanged();
+        } else {
+          externalBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000020;
+        return this;
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public Builder mergeExternal(mesosphere.marathon.Protos.Volume.ExternalVolumeInfo value) {
+        if (externalBuilder_ == null) {
+          if (((bitField0_ & 0x00000020) == 0x00000020) &&
+              external_ != mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance()) {
+            external_ =
+              mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.newBuilder(external_).mergeFrom(value).buildPartial();
+          } else {
+            external_ = value;
+          }
+          onChanged();
+        } else {
+          externalBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000020;
+        return this;
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public Builder clearExternal() {
+        if (externalBuilder_ == null) {
+          external_ = mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.getDefaultInstance();
+          onChanged();
+        } else {
+          externalBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000020);
+        return this;
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder getExternalBuilder() {
+        bitField0_ |= 0x00000020;
+        onChanged();
+        return getExternalFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      public mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder getExternalOrBuilder() {
+        if (externalBuilder_ != null) {
+          return externalBuilder_.getMessageOrBuilder();
+        } else {
+          return external_;
+        }
+      }
+      /**
+       * <code>optional .mesosphere.marathon.Volume.ExternalVolumeInfo external = 6;</code>
+       *
+       * <pre>
+       * Defines an External Volume. In this case hostPath must not be set
+       * </pre>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          mesosphere.marathon.Protos.Volume.ExternalVolumeInfo, mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder, mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder> 
+          getExternalFieldBuilder() {
+        if (externalBuilder_ == null) {
+          externalBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              mesosphere.marathon.Protos.Volume.ExternalVolumeInfo, mesosphere.marathon.Protos.Volume.ExternalVolumeInfo.Builder, mesosphere.marathon.Protos.Volume.ExternalVolumeInfoOrBuilder>(
+                  external_,
+                  getParentForChildren(),
+                  isClean());
+          external_ = null;
+        }
+        return externalBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:mesosphere.marathon.Volume)
@@ -30403,6 +31079,11 @@ public final class Protos {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_mesosphere_marathon_EventSubscribers_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -30538,41 +31219,44 @@ public final class Protos {
       "tMapping\022\021\n\thost_port\030\001 \002(\r\022\026\n\016container" +
       "_port\030\002 \002(\r\022\020\n\010protocol\030\003 \001(\t\022\014\n\004name\030\004 " +
       "\001(\t\022\034\n\006labels\030\005 \003(\0132\014.mesos.Label\022\027\n\014ser" +
-      "vice_port\030d \001(\r:\0010\"\241\002\n\006Volume\022 \n\004mode\030\003 " +
+      "vice_port\030d \001(\r:\0010\"\207\003\n\006Volume\022 \n\004mode\030\003 " +
       "\002(\0162\022.mesos.Volume.Mode\022\026\n\016container_pat" +
       "h\030\001 \002(\t\022\021\n\thost_path\030\002 \001(\t\022\033\n\005image\030\004 \001(",
       "\0132\014.mesos.Image\022D\n\npersistent\030\005 \001(\01320.me" +
       "sosphere.marathon.Volume.PersistentVolum" +
-      "eInfo\032g\n\024PersistentVolumeInfo\022\014\n\004size\030\001 " +
-      "\001(\004\022\014\n\004name\030\002 \001(\t\022\024\n\014providerName\030\003 \001(\t\022" +
-      "\035\n\007options\030\004 \003(\0132\014.mesos.Label\")\n\020EventS" +
-      "ubscribers\022\025\n\rcallback_urls\030\001 \003(\t\"=\n\016Sto" +
-      "rageVersion\022\r\n\005major\030\001 \002(\r\022\r\n\005minor\030\002 \002(" +
-      "\r\022\r\n\005patch\030\003 \002(\r\"Z\n\031UpgradeStrategyDefin" +
-      "ition\022\035\n\025minimumHealthCapacity\030\001 \002(\001\022\036\n\023" +
-      "maximumOverCapacity\030\002 \001(\001:\0011\"\260\001\n\017GroupDe",
-      "finition\022\n\n\002id\030\001 \002(\t\022\017\n\007version\030\002 \002(\t\0224\n" +
-      "\004apps\030\003 \003(\0132&.mesosphere.marathon.Servic" +
-      "eDefinition\0224\n\006groups\030\004 \003(\0132$.mesosphere" +
-      ".marathon.GroupDefinition\022\024\n\014dependencie" +
-      "s\030\005 \003(\t\"\245\001\n\030DeploymentPlanDefinition\022\n\n\002" +
-      "id\030\001 \002(\t\022\017\n\007version\030\002 \002(\t\0226\n\010original\030\004 " +
-      "\002(\0132$.mesosphere.marathon.GroupDefinitio" +
-      "n\0224\n\006target\030\005 \002(\0132$.mesosphere.marathon." +
-      "GroupDefinition\"\306\001\n\013TaskFailure\022\016\n\006app_i" +
-      "d\030\001 \002(\t\022\036\n\007task_id\030\002 \002(\0132\r.mesos.TaskID\022",
-      "\037\n\005state\030\003 \002(\0162\020.mesos.TaskState\022\021\n\007mess" +
-      "age\030\004 \001(\t:\000\022\016\n\004host\030\005 \001(\t:\000\022\017\n\007version\030\006" +
-      " \002(\t\022\021\n\ttimestamp\030\007 \002(\t\022\037\n\007slaveId\030\010 \001(\013" +
-      "2\016.mesos.SlaveID\"T\n\014ZKStoreEntry\022\014\n\004name" +
-      "\030\001 \002(\t\022\014\n\004uuid\030\002 \002(\014\022\r\n\005value\030\003 \002(\014\022\031\n\nc" +
-      "ompressed\030\004 \001(\010:\005false\"\326\001\n\023ResidencyDefi" +
-      "nition\022(\n relaunchEscalationTimeoutSecon" +
-      "ds\030\001 \001(\003\022S\n\020taskLostBehavior\030\002 \001(\01629.mes" +
-      "osphere.marathon.ResidencyDefinition.Tas" +
-      "kLostBehavior\"@\n\020TaskLostBehavior\022\032\n\026REL",
-      "AUNCH_AFTER_TIMEOUT\020\000\022\020\n\014WAIT_FOREVER\020\001B" +
-      "\035\n\023mesosphere.marathonB\006Protos"
+      "eInfo\022@\n\010external\030\006 \001(\0132..mesosphere.mar" +
+      "athon.Volume.ExternalVolumeInfo\032$\n\024Persi" +
+      "stentVolumeInfo\022\014\n\004size\030\001 \002(\004\032e\n\022Externa" +
+      "lVolumeInfo\022\014\n\004size\030\001 \001(\004\022\014\n\004name\030\002 \001(\t\022" +
+      "\024\n\014providerName\030\003 \001(\t\022\035\n\007options\030\004 \003(\0132\014" +
+      ".mesos.Label\")\n\020EventSubscribers\022\025\n\rcall" +
+      "back_urls\030\001 \003(\t\"=\n\016StorageVersion\022\r\n\005maj" +
+      "or\030\001 \002(\r\022\r\n\005minor\030\002 \002(\r\022\r\n\005patch\030\003 \002(\r\"Z",
+      "\n\031UpgradeStrategyDefinition\022\035\n\025minimumHe" +
+      "althCapacity\030\001 \002(\001\022\036\n\023maximumOverCapacit" +
+      "y\030\002 \001(\001:\0011\"\260\001\n\017GroupDefinition\022\n\n\002id\030\001 \002" +
+      "(\t\022\017\n\007version\030\002 \002(\t\0224\n\004apps\030\003 \003(\0132&.meso" +
+      "sphere.marathon.ServiceDefinition\0224\n\006gro" +
+      "ups\030\004 \003(\0132$.mesosphere.marathon.GroupDef" +
+      "inition\022\024\n\014dependencies\030\005 \003(\t\"\245\001\n\030Deploy" +
+      "mentPlanDefinition\022\n\n\002id\030\001 \002(\t\022\017\n\007versio" +
+      "n\030\002 \002(\t\0226\n\010original\030\004 \002(\0132$.mesosphere.m" +
+      "arathon.GroupDefinition\0224\n\006target\030\005 \002(\0132",
+      "$.mesosphere.marathon.GroupDefinition\"\306\001" +
+      "\n\013TaskFailure\022\016\n\006app_id\030\001 \002(\t\022\036\n\007task_id" +
+      "\030\002 \002(\0132\r.mesos.TaskID\022\037\n\005state\030\003 \002(\0162\020.m" +
+      "esos.TaskState\022\021\n\007message\030\004 \001(\t:\000\022\016\n\004hos" +
+      "t\030\005 \001(\t:\000\022\017\n\007version\030\006 \002(\t\022\021\n\ttimestamp\030" +
+      "\007 \002(\t\022\037\n\007slaveId\030\010 \001(\0132\016.mesos.SlaveID\"T" +
+      "\n\014ZKStoreEntry\022\014\n\004name\030\001 \002(\t\022\014\n\004uuid\030\002 \002" +
+      "(\014\022\r\n\005value\030\003 \002(\014\022\031\n\ncompressed\030\004 \001(\010:\005f" +
+      "alse\"\326\001\n\023ResidencyDefinition\022(\n relaunch" +
+      "EscalationTimeoutSeconds\030\001 \001(\003\022S\n\020taskLo",
+      "stBehavior\030\002 \001(\01629.mesosphere.marathon.R" +
+      "esidencyDefinition.TaskLostBehavior\"@\n\020T" +
+      "askLostBehavior\022\032\n\026RELAUNCH_AFTER_TIMEOU" +
+      "T\020\000\022\020\n\014WAIT_FOREVER\020\001B\035\n\023mesosphere.mara" +
+      "thonB\006Protos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -30674,12 +31358,18 @@ public final class Protos {
           internal_static_mesosphere_marathon_Volume_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_mesosphere_marathon_Volume_descriptor,
-              new java.lang.String[] { "Mode", "ContainerPath", "HostPath", "Image", "Persistent", });
+              new java.lang.String[] { "Mode", "ContainerPath", "HostPath", "Image", "Persistent", "External", });
           internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor =
             internal_static_mesosphere_marathon_Volume_descriptor.getNestedTypes().get(0);
           internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_mesosphere_marathon_Volume_PersistentVolumeInfo_descriptor,
+              new java.lang.String[] { "Size", });
+          internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_descriptor =
+            internal_static_mesosphere_marathon_Volume_descriptor.getNestedTypes().get(1);
+          internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_mesosphere_marathon_Volume_ExternalVolumeInfo_descriptor,
               new java.lang.String[] { "Size", "Name", "ProviderName", "Options", });
           internal_static_mesosphere_marathon_EventSubscribers_descriptor =
             getDescriptor().getMessageTypes().get(11);

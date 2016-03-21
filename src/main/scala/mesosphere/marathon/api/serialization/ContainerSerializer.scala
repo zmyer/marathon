@@ -42,6 +42,13 @@ object ContainerSerializer {
 object VolumeSerializer {
 
   def toProto(volume: Volume): Protos.Volume = volume match {
+    case e: ExternalVolume =>
+      Protos.Volume.newBuilder()
+        .setContainerPath(e.containerPath)
+        .setExternal(ExternalVolumeInfoSerializer.toProto(e.external))
+        .setMode(e.mode)
+        .build()
+
     case p: PersistentVolume =>
       Protos.Volume.newBuilder()
         .setContainerPath(p.containerPath)
@@ -68,7 +75,13 @@ object VolumeSerializer {
 
 object PersistentVolumeInfoSerializer {
   def toProto(info: PersistentVolumeInfo): Protos.Volume.PersistentVolumeInfo = {
-    val builder = Protos.Volume.PersistentVolumeInfo.newBuilder()
+    Protos.Volume.PersistentVolumeInfo.newBuilder().setSize(info.size).build
+  }
+}
+
+object ExternalVolumeInfoSerializer {
+  def toProto(info: ExternalVolumeInfo): Protos.Volume.ExternalVolumeInfo = {
+    val builder = Protos.Volume.ExternalVolumeInfo.newBuilder()
     info.size.foreach(builder.setSize)
     info.name.foreach(builder.setName)
     info.providerName.foreach(builder.setProviderName)

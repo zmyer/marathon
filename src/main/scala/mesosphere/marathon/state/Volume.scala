@@ -19,47 +19,56 @@ object Volume {
     containerPath: String,
     hostPath: Option[String],
     mode: Mesos.Volume.Mode,
-    persistent: Option[PersistentVolumeInfo]): Volume =
-    persistent match {
-      case Some(persistentVolumeInfo) =>
-        PersistentVolume(
-          containerPath = containerPath,
-          persistent = persistentVolumeInfo,
-          mode = mode
-        )
-      case None =>
-        DockerVolume(
-          containerPath = containerPath,
-          hostPath = hostPath.getOrElse(""),
-          mode = mode
-        )
-    }
+    volumeInfo: Option[VolumeInfo]): Volume =
+    volumeInfo.fold(
+      DockerVolume(
+        containerPath = containerPath,
+        hostPath = hostPath.getOrElse(""),
+        mode = mode
+      ).asInstanceOf[Volume]
+    ){ info =>
+        info match {
+          case pvi: PersistentVolumeInfo =>
+            PersistentVolume(
+              containerPath = containerPath,
+              persistent = pvi,
+              mode = mode
+            )
+          case evi: ExternalVolumeInfo =>
+            ExternalVolume(
+              containerPath = containerPath,
+              external = evi,
+              mode = mode
+            )
+        }
+      }
 
   def apply(proto: Protos.Volume): Volume = {
-    val persistent: Option[PersistentVolumeInfo] =
-      if (proto.hasPersistent) Some(PersistentVolumeInfo(
-        if (proto.getPersistent.hasSize) Some(proto.getPersistent.getSize) else None,
-        if (proto.getPersistent.hasName) Some(proto.getPersistent.getName) else None,
-        if (proto.getPersistent.hasProviderName) Some(proto.getPersistent.getProviderName) else None,
-        if (proto.getPersistent.getOptionsCount() > 0)
-          Some(proto.getPersistent.getOptionsList.asScala.map { p => p.getKey -> p.getValue }.toMap)
-        else None
-      ))
-      else None
-
-    persistent match {
-      case Some(persistentVolumeInfo) =>
-        PersistentVolume(
-          containerPath = proto.getContainerPath,
-          persistent = persistentVolumeInfo,
-          mode = proto.getMode
-        )
-      case None =>
-        DockerVolume(
-          containerPath = proto.getContainerPath,
-          hostPath = proto.getHostPath,
-          mode = proto.getMode
-        )
+    if (proto.hasPersistent) {
+      new PersistentVolume(
+        containerPath = proto.getContainerPath,
+        persistent = PersistentVolumeInfo(proto.getPersistent.getSize),
+        mode = proto.getMode)
+    }
+    else if (proto.hasExternal) {
+      new ExternalVolume(
+        containerPath = proto.getContainerPath,
+        ExternalVolumeInfo(
+          if (proto.getExternal.hasSize) Some(proto.getExternal.getSize) else None,
+          if (proto.getExternal.hasName) Some(proto.getExternal.getName) else None,
+          if (proto.getExternal.hasProviderName) Some(proto.getExternal.getProviderName) else None,
+          if (proto.getExternal.getOptionsCount() > 0)
+            Some(proto.getExternal.getOptionsList.asScala.map { p => p.getKey -> p.getValue }.toMap)
+          else None
+        ),
+        mode = proto.getMode)
+    }
+    else {
+      new DockerVolume(
+        containerPath = proto.getContainerPath,
+        hostPath = proto.getHostPath,
+        mode = proto.getMode
+      )
     }
   }
 
@@ -70,8 +79,10 @@ object Volume {
       mode = proto.getMode
     )
 
-  def unapply(volume: Volume): Option[(String, Option[String], Mesos.Volume.Mode, Option[PersistentVolumeInfo])] =
+  def unapply(volume: Volume): Option[(String, Option[String], Mesos.Volume.Mode, Option[VolumeInfo])] =
     volume match {
+      case externalVolume: ExternalVolume =>
+        Some((externalVolume.containerPath, None, externalVolume.mode, Some(externalVolume.external)))
       case persistentVolume: PersistentVolume =>
         Some((persistentVolume.containerPath, None, persistentVolume.mode, Some(persistentVolume.persistent)))
       case dockerVolume: DockerVolume =>
@@ -80,6 +91,7 @@ object Volume {
 
   implicit val validVolume: Validator[Volume] = new Validator[Volume] {
     override def apply(volume: Volume): Result = volume match {
+      case ev: ExternalVolume   => validate(ev)(ExternalVolume.validExternalVolume)
       case pv: PersistentVolume => validate(pv)(PersistentVolume.validPersistentVolume)
       case dv: DockerVolume     => validate(dv)(DockerVolume.validDockerVolume)
     }
@@ -106,8 +118,35 @@ object DockerVolume {
   }
 }
 
+sealed trait VolumeInfo
+
+case class PersistentVolumeInfo(size: Long) extends VolumeInfo
+
+object PersistentVolumeInfo {
+  implicit val validPersistentVolumeInfo = validator[PersistentVolumeInfo] { info =>
+    info.size should be > 0L
+  }
+}
+
+case class PersistentVolume(
+  containerPath: String,
+  persistent: PersistentVolumeInfo,
+  mode: Mesos.Volume.Mode)
+    extends Volume
+
+object PersistentVolume {
+  import org.apache.mesos.Protos.Volume.Mode
+  implicit val validPersistentVolume = validator[PersistentVolume] { vol =>
+    vol.containerPath is notEmpty
+    vol.persistent is valid
+    vol.mode is equalTo(Mode.RW)
+    //persistent volumes require those CLI parameters provided
+    vol is configValueSet("mesos_authentication_principal", "mesos_role", "mesos_authentication_secret_file")
+  }
+}
+
 /**
-  * PersistentVolumeInfo captures the specification for a volume that survives task restarts.
+  * ExternalVolumeInfo captures the specification for a volume that survives task restarts.
   *
   * `name` is the *unique name* of the storage volume. names should be treated as case insensitive labels
   * derived from an alpha-numeric character range [a-z0-9]. while there is no prescribed length limit for
@@ -138,13 +177,13 @@ object DockerVolume {
   * @param providerName identifies the storage provider responsible for volume lifecycle operations.
   * @param options contains storage provider-specific configuration configuration
   */
-case class PersistentVolumeInfo(
+case class ExternalVolumeInfo(
   size: Option[Long] = None,
   name: Option[String] = None,
   providerName: Option[String] = None,
-  options: Option[Map[String, String]] = None) // = Map.empty[String, String])
+  options: Option[Map[String, String]] = None) extends VolumeInfo // = Map.empty[String, String])
 
-object PersistentVolumeInfo {
+object ExternalVolumeInfo {
   private val OptionNamespaceSeparator = "/"
   private val OptionNamePattern = "[A-Za-z0-9](?:[-A-Za-z0-9\\._:]*[A-Za-z0-9])?"
   private val LabelPattern = "[a-z0-9](?:[-a-z0-9]*[a-z0-9])?"
@@ -156,7 +195,7 @@ object PersistentVolumeInfo {
     option => option.keys.each should matchRegex(OptionKeyRegex)
   }
 
-  implicit val validPersistentVolumeInfo = validator[PersistentVolumeInfo] { info =>
+  implicit val validExternalVolumeInfo = validator[ExternalVolumeInfo] { info =>
     info.size.each should be > 0L
     info.name.each should matchRegex(LabelRegex)
     info.providerName.each should matchRegex(LabelRegex)
@@ -164,21 +203,17 @@ object PersistentVolumeInfo {
   }
 }
 
-case class PersistentVolume(
+case class ExternalVolume(
   containerPath: String,
-  persistent: PersistentVolumeInfo,
+  external: ExternalVolumeInfo,
   mode: Mesos.Volume.Mode)
     extends Volume
 
-object PersistentVolume {
-  import org.apache.mesos.Protos.Volume.Mode
-  implicit val validPersistentVolume = validator[PersistentVolume] { vol =>
+object ExternalVolume {
+  implicit val validExternalVolume = validator[ExternalVolume] { vol =>
     vol.containerPath is notEmpty
-    vol.persistent is valid
-    vol.mode is equalTo(Mode.RW)
-    //persistent volumes require those CLI parameters provided
-    vol is configValueSet("mesos_authentication_principal", "mesos_role", "mesos_authentication_secret_file")
-    vol.persistent.providerName is Volumes.knownProvider
-    vol is Volumes.approved(vol.persistent.providerName)
+    vol.external is valid
+    vol.external.providerName is Volumes.knownProvider
+    vol is Volumes.approved(vol.external.providerName)
   }
 }
