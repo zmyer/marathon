@@ -1,20 +1,21 @@
 package mesosphere.marathon.state
 
-import java.io.{ ByteArrayInputStream, ObjectInputStream }
+import java.io.{ByteArrayInputStream, ObjectInputStream}
 import javax.inject.Inject
 
-import mesosphere.marathon.Protos.{ MarathonTask, StorageVersion }
+import mesosphere.marathon.Protos.{MarathonTask, StorageVersion}
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.StorageVersions._
-import mesosphere.marathon.{ BuildInfo, MarathonConf, MigrationFailedException }
+import mesosphere.marathon.{BuildInfo, MarathonConf, MigrationFailedException}
 import mesosphere.util.Logging
+
 import scala.concurrent.ExecutionContext.Implicits.global
-import mesosphere.util.state.{ PersistentStore, PersistentStoreManagement }
+import mesosphere.util.state.{PersistentEntity, PersistentStore, PersistentStoreManagement}
 import org.slf4j.LoggerFactory
 
 import scala.collection.SortedSet
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{Await, Future}
 import scala.util.control.NonFatal
 
 class Migration @Inject() (
@@ -86,13 +87,16 @@ class Migration @Inject() (
   def migrate(): StorageVersion = {
     val versionFuture = for {
       _ <- initializeStore()
+      _ <- startMigration
       changes <- currentStorageVersion.flatMap(applyMigrationSteps)
       storedVersion <- storeCurrentVersion
     } yield storedVersion
 
-    val result = versionFuture.map { version =>
-      log.info(s"Migration successfully applied for version ${version.str}")
-      version
+    val result: Future[StorageVersion] = versionFuture.flatMap { version =>
+      finishMigration.map { successful =>
+        log.info(s"Migration successfully applied for version ${version.str}")
+        version
+      }
     }.recover {
       case ex: MigrationFailedException => throw ex
       case NonFatal(ex) => throw new MigrationFailedException("MigrationFailed", ex)
@@ -102,6 +106,45 @@ class Migration @Inject() (
   }
 
   private val storageVersionName = "internal:storage:version"
+  private val migrationInProgressName = "internal:storage:migrationInProgress"
+  private val strictMigrationName = "internal:storage:strictMigration"
+
+  private def isMigrationStrict: Future[Boolean] = {
+    store.load(strictMigrationName).map {
+      case Some(variable) =>
+        String.valueOf(variable.bytes) match {
+          case "true" => true
+          case _ => false
+        }
+      case None => false
+    }
+  }
+
+  private def finishMigration: Future[Boolean] = {
+    store.load(migrationInProgressName).flatMap {
+      case Some(variable) => store.delete(variable.id)
+      case None =>
+        log.warn("Remove of isMigrationInProgress not possible, flag already removed!")
+        Future.successful(false)
+    }
+  }
+
+  private def startMigration: Future[PersistentEntity] = {
+    store.load(migrationInProgressName).flatMap {
+      case Some(variable) =>
+        isMigrationStrict.map {
+          case true =>
+            throw new MigrationFailedException(s"A migration is/was in progress, but '$strictMigrationName' is set. " +
+              s"A new migration can not be started. Please remove '$strictMigrationName' to continue migration or " +
+              s"restore a backup.");
+          case false =>
+            log.warn(s"A migration is/was in progress, but '$strictMigrationName' is not set. " +
+              "Therefore continuing with migration.")
+            variable
+        }
+      case None => store.create(migrationInProgressName, IndexedSeq.empty)
+    }
+  }
 
   def currentStorageVersion: Future[StorageVersion] = {
     store.load(storageVersionName).map {
