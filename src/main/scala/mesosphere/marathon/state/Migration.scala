@@ -111,11 +111,7 @@ class Migration @Inject() (
 
   private def isMigrationStrict: Future[Boolean] = {
     store.load(strictMigrationName).map {
-      case Some(variable) =>
-        new String(variable.bytes.toArray) match {
-          case "true" => true
-          case _ => false
-        }
+      case Some(variable) => true
       case None => false
     }
   }
