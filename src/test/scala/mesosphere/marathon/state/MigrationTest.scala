@@ -93,6 +93,8 @@ class MigrationTest extends MarathonSpec with Mockito with Matchers with GivenWh
     f.groupRepo.rootGroup() returns Future.successful(None)
     f.groupRepo.store(any, any) returns Future.successful(Group.empty)
 
+    f.store.load("internal:storage:migrationInProgress") returns Future.successful(None)
+    f.store.create(any, any) returns Future.successful(mock[PersistentEntity])
     f.store.load("internal:storage:version") returns Future.successful(Some(InMemoryEntity(
       id = "internal:storage:version", version = 0, bytes = minVersion.toByteArray)))
     f.store.initialize() returns Future.successful(())
