@@ -112,7 +112,7 @@ class Migration @Inject() (
   private def isMigrationStrict: Future[Boolean] = {
     store.load(strictMigrationName).map {
       case Some(variable) =>
-        String.valueOf(variable.bytes) match {
+        new String(variable.bytes.toArray) match {
           case "true" => true
           case _ => false
         }
@@ -122,7 +122,9 @@ class Migration @Inject() (
 
   private def finishMigration: Future[Boolean] = {
     store.load(migrationInProgressName).flatMap {
-      case Some(variable) => store.delete(variable.id)
+      case Some(variable) => {
+        store.delete(variable.id)
+      }
       case None =>
         log.warn("Remove of isMigrationInProgress not possible, flag already removed!")
         Future.successful(false)
