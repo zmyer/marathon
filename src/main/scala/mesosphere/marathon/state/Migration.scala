@@ -1,21 +1,21 @@
 package mesosphere.marathon.state
 
-import java.io.{ByteArrayInputStream, ObjectInputStream}
+import java.io.{ ByteArrayInputStream, ObjectInputStream }
 import javax.inject.Inject
 
-import mesosphere.marathon.Protos.{MarathonTask, StorageVersion}
+import mesosphere.marathon.Protos.{ MarathonTask, StorageVersion }
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.StorageVersions._
-import mesosphere.marathon.{BuildInfo, MarathonConf, MigrationFailedException}
+import mesosphere.marathon.{ BuildInfo, MarathonConf, MigrationFailedException }
 import mesosphere.util.Logging
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import mesosphere.util.state.{PersistentEntity, PersistentStore, PersistentStoreManagement}
+import mesosphere.util.state.{ PersistentEntity, PersistentStore, PersistentStoreManagement }
 import org.slf4j.LoggerFactory
 
 import scala.collection.SortedSet
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.util.control.NonFatal
 
 class Migration @Inject() (
