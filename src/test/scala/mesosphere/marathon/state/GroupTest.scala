@@ -6,8 +6,9 @@ import mesosphere.marathon.state.AppDefinition.VersionInfo
 import mesosphere.marathon.state.PathId._
 import org.scalatest.{ FunSpec, GivenWhenThen, Matchers }
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable.Seq
+
+import scalax.collection.GraphPredef.nodeSetToOuter
 
 class GroupTest extends FunSpec with GivenWhenThen with Matchers {
 
@@ -287,7 +288,7 @@ class GroupTest extends FunSpec with GivenWhenThen with Matchers {
 
       When("the dependency graph is computed")
       val dependencyGraph = current.dependencyGraph
-      val ids: Set[PathId] = dependencyGraph.vertexSet.asScala.map(_.id).toSet
+      val ids: Set[PathId] = nodeSetToOuter(dependencyGraph.nodes).map(_.id).toSet
 
       Then("the dependency graph is correct")
       ids should have size 8
@@ -304,7 +305,7 @@ class GroupTest extends FunSpec with GivenWhenThen with Matchers {
       )
       ids should equal (expectedIds)
 
-      current.appsWithNoDependencies should have size 2
+      current.appsWithNoDependencies should be(2)
     }
 
     it("can turn a group with app dependencies into a dependency graph") {
@@ -338,7 +339,7 @@ class GroupTest extends FunSpec with GivenWhenThen with Matchers {
 
       When("the dependency graph is calculated")
       val dependencyGraph = current.dependencyGraph
-      val ids: Set[PathId] = dependencyGraph.vertexSet.asScala.map(_.id).toSet
+      val ids: Set[PathId] = nodeSetToOuter(dependencyGraph.nodes).map(_.id).toSet
 
       Then("the dependency graph is correct")
       ids should have size 8
@@ -355,7 +356,7 @@ class GroupTest extends FunSpec with GivenWhenThen with Matchers {
       )
       ids should be(expected)
 
-      current.appsWithNoDependencies should have size 2
+      current.appsWithNoDependencies should be(2)
     }
 
     it("can turn a group without dependencies into a dependency graph") {
@@ -393,7 +394,7 @@ class GroupTest extends FunSpec with GivenWhenThen with Matchers {
       val dependencyGraph = current.dependencyGraph
 
       Then("the dependency graph is correct")
-      current.appsWithNoDependencies should have size 8
+      current.appsWithNoDependencies should be(8)
     }
 
     it("detects a cyclic dependency graph") {

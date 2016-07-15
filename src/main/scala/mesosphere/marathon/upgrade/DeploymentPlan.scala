@@ -13,8 +13,6 @@ import mesosphere.marathon.storage.TwitterZk
 import mesosphere.marathon.{ MarathonConf, Protos }
 import org.slf4j.LoggerFactory
 
-import scala.collection.JavaConverters._
-import scala.collection.SortedMap
 import scala.collection.immutable.Seq
 
 sealed trait DeploymentAction {
@@ -177,33 +175,8 @@ object DeploymentPlan {
     * where # α is less than # β: α does not transitively depend on β, by
     * similar logic.
     */
-  private[upgrade] def appsGroupedByLongestPath(
-    group: Group): SortedMap[Int, Set[AppDefinition]] = {
-
-    import org.jgrapht.DirectedGraph
-    import org.jgrapht.graph.DefaultEdge
-
-    def longestPathFromVertex[V](g: DirectedGraph[V, DefaultEdge], vertex: V): Seq[V] = {
-      val outgoingEdges: Set[DefaultEdge] =
-        if (g.containsVertex(vertex)) g.outgoingEdgesOf(vertex).asScala.toSet
-        else Set[DefaultEdge]()
-
-      if (outgoingEdges.isEmpty)
-        Seq(vertex)
-
-      else
-        outgoingEdges.map { e =>
-          vertex +: longestPathFromVertex(g, g.getEdgeTarget(e))
-        }.maxBy(_.length)
-
-    }
-
-    val unsortedEquivalenceClasses = group.transitiveApps.groupBy { app =>
-      longestPathFromVertex(group.dependencyGraph, app).length
-    }
-
-    SortedMap(unsortedEquivalenceClasses.toSeq: _*)
-  }
+  private[upgrade] def appsGroupedByLongestPath(group: Group) =
+    group.dependencyGraph.topologicalSort.right.get.toLayered
 
   /**
     * Returns a sequence of deployment steps, the order of which is derived
@@ -213,10 +186,9 @@ object DeploymentPlan {
     toKill: Map[PathId, Iterable[Task]]): Seq[DeploymentStep] = {
     val originalApps: Map[PathId, AppDefinition] = original.transitiveAppsById
 
-    val appsByLongestPath: SortedMap[Int, Set[AppDefinition]] = appsGroupedByLongestPath(target)
-
-    appsByLongestPath.valuesIterator.map { (equivalenceClass: Set[AppDefinition]) =>
-      val actions: Set[DeploymentAction] = equivalenceClass.flatMap { (newApp: AppDefinition) =>
+    appsGroupedByLongestPath(target).map { layer =>
+      val (_, equivalenceClass) = layer
+      val actions: Iterable[DeploymentAction] = equivalenceClass.flatMap { newApp =>
         originalApps.get(newApp.id) match {
           // New app.
           case None =>

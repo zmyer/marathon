@@ -8,9 +8,9 @@ import mesosphere.marathon.Protos.GroupDefinition
 import mesosphere.marathon.state.Group._
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.core.externalvolume.ExternalVolumes
-import org.jgrapht.DirectedGraph
-import org.jgrapht.alg.CycleDetector
-import org.jgrapht.graph._
+
+import scalax.collection.mutable.Graph
+import scalax.collection.GraphEdge.DiEdge
 
 import scala.collection.JavaConversions._
 
@@ -150,23 +150,22 @@ case class Group(
     result
   }
 
-  lazy val dependencyGraph: DirectedGraph[AppDefinition, DefaultEdge] = {
+  lazy val dependencyGraph: Graph[AppDefinition, DiEdge] = {
     require(id.isRoot)
-    val graph = new DefaultDirectedGraph[AppDefinition, DefaultEdge](classOf[DefaultEdge])
+    val graph = Graph.empty[AppDefinition, DiEdge]
     for (app <- transitiveApps)
-      graph.addVertex(app)
+      graph.add(app)
     for ((app, dependent) <- applicationDependencies)
-      graph.addEdge(app, dependent)
-    new UnmodifiableDirectedGraph(graph)
+      graph.addEdge(dependent, app)(DiEdge)
+    graph
   }
 
-  def appsWithNoDependencies: Set[AppDefinition] = {
-    val g = dependencyGraph
-    g.vertexSet.filter { v => g.outDegreeOf(v) == 0 }.toSet
+  def appsWithNoDependencies: Int = {
+    dependencyGraph.degreeCount(dependencyGraph.OutDegree).getOrElse(0, 0)
   }
 
   def hasNonCyclicDependencies: Boolean = {
-    !new CycleDetector[AppDefinition, DefaultEdge](dependencyGraph).detectCycles()
+    dependencyGraph.isAcyclic
   }
 
   /** @return true if and only if this group directly or indirectly contains app definitions. */
