@@ -112,7 +112,7 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
           log.info(s"Task $taskId now healthy for app ${app.id.toString}")
           healthy += taskId
           if (app.readinessChecks.isEmpty) ready += taskId
-          taskStatusChanged(taskId)
+          taskStatusChanged(taskId) // TODO ju 3899
       }
       val handleTaskRunning = if (app.readinessChecks.nonEmpty) initiateReadinessOnRun else Actor.emptyBehavior
       handleTaskRunning orElse handleTaskHealthy
