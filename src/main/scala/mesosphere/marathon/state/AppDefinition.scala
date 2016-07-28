@@ -5,6 +5,7 @@ import java.util.regex.Pattern
 import com.wix.accord._
 import com.wix.accord.combinators.GeneralPurposeCombinators
 import com.wix.accord.dsl._
+import mesosphere.marathon.AllConf
 import mesosphere.marathon.Protos.Constraint
 import mesosphere.marathon.Protos.HealthCheckDefinition.Protocol
 // scalastyle:off
@@ -594,6 +595,7 @@ object AppDefinition extends GeneralPurposeCombinators {
     appDef must complyWithSingleInstanceLabelRules
     appDef must complyWithReadinessCheckRules
     appDef must complyWithUpgradeStrategyRules
+    appDef must complyWithGpuRules
     appDef.constraints.each must complyWithConstraintRules
     appDef.ipAddress must optional(complyWithIpAddressRules(appDef))
   } and ExternalVolumes.validApp and EnvVarValue.validApp
@@ -681,6 +683,24 @@ object AppDefinition extends GeneralPurposeCombinators {
   private val complyWithUpgradeStrategyRules: Validator[AppDefinition] = validator[AppDefinition] { appDef =>
     (appDef.isSingleInstance is false) or (appDef.upgradeStrategy is UpgradeStrategy.validForSingleInstanceApps)
     (appDef.isResident is false) or (appDef.upgradeStrategy is UpgradeStrategy.validForResidentTasks)
+  }
+
+  private val complyWithGpuRules: Validator[AppDefinition] = new Validator[AppDefinition] {
+    override def apply(app: AppDefinition): Result = {
+      if (AllConf.isFeatureSet(Features.GPU_RESOURCES)) {
+        if (app.gpus >= 0 && app.container.isDefined && app.container.get.docker.isDefined) {
+          Failure(Set(RuleViolation(app, "GPU resources only work with the Mesos containerizer", None)))
+        } else {
+          Success
+        }
+      } else {
+        if (app.gpus > 0) {
+          Failure(Set(RuleViolation(app, "GPU resource feature is not enabled", None)))
+        } else {
+          Success
+        }
+      }
+    }
   }
 
   private val complyWithConstraintRules: Validator[Constraint] = new Validator[Constraint] {
