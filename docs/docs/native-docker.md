@@ -10,8 +10,8 @@ Marathon using the native Docker support added in Apache Mesos version 0.20.0
 
 ## Configuration
 
-Note that DCOS clusters are already configured to run Docker containers, so 
-DCOS users do not need to follow the steps below.
+Note that DC/OS clusters are already configured to run Docker containers, so 
+DC/OS users do not need to follow the configuration steps below.
 
 #### Prerequisites
 
@@ -36,14 +36,13 @@ DCOS users do not need to follow the steps below.
     $ echo 'docker,mesos' > /etc/mesos-slave/containerizers
     ```
 
-2. Increase the executor timeout to account for the potential delay in pulling a docker image to the slave.
-
+2. Increase the executor timeout to account for the potential delay pulling a docker image to the slave.
 
     ```bash
     $ echo '5mins' > /etc/mesos-slave/executor_registration_timeout
     ```
 
-3. Restart `mesos-slave` process to load the new configuration
+3. Restart the `mesos-slave` process to load the new configuration
 
 #### Configure Marathon
 
@@ -280,12 +279,11 @@ the future, as Mesos may not always interact with Docker via the CLI.
 }
 ```
 
-#### Docker container support without Docker Engine
+#### Docker Container Support without Docker Engine
 
-Starting with version 1.3.0, Marathon supports docker container images without having the Docker Containerizer
-depend on a Docker Engine. Instead the Mesos containerizer with native AppC support added in Apache Mesos version 1.0
-(released July 2016) directly uses native OS features to configure and start Docker containers and to provide isolation.
-This setup is selected by specifying a JSON combination that used to provoke an error message:
+Starting with version 1.3.0, Marathon supports Docker container images without having the Docker containerizer
+depend on a Docker engine. Instead, the Mesos containerizer with native AppC support (added in Apache Mesos version 1.0, released July 2016) uses native OS features directly to configure and start Docker containers and provide isolation.
+Selected this setup by specifying the follow JSON combination, which previously provoked an error message:
 container type "MESOS" and a "docker" object.
 
 ```json
@@ -304,11 +302,10 @@ container type "MESOS" and a "docker" object.
 }
 ```
 The Mesos containerizer does not support the same parameter options as the Docker containerizer yet.
-The only properties recognized by both containerizers are "image" and "forcePullImage",
+The only properties recognized by both containerizers are "image" and "forcePullImage,"
 with the same semantics. All other Docker container properties result in an error with the Mesos containerizer.
 
-However, the latter introduces its own new property, "credential", with a "principal" and an optional "secret" field
-to authenticate when downloading the Docker image.
+However, the latest version of the Mesos containerizer introduces its own new property, "credential", with a "principal" and an optional "secret" field to authenticate when downloading the Docker image.
 
 ```json
 {
