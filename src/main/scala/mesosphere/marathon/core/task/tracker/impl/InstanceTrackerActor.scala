@@ -117,7 +117,7 @@ private class InstanceTrackerActor(
       }
 
       val updatedCounts = {
-        val oldTask = appTasks.task(taskId)
+        val oldTask = appTasks.instance(taskId)
         // we do ignore health counts
         val oldTaskCount = TaskCounts(oldTask, healthStatuses = Map.empty)
         val newTaskCount = TaskCounts(newTask, healthStatuses = Map.empty)
@@ -136,7 +136,7 @@ private class InstanceTrackerActor(
         sender() ! appTasks
 
       case InstanceTrackerActor.Get(taskId) =>
-        sender() ! appTasks.task(taskId)
+        sender() ! appTasks.instance(taskId)
 
       case ForwardTaskOp(deadline, taskId, taskStateOp) =>
         val op = InstanceOpProcessor.Operation(deadline, sender(), taskId, taskStateOp)

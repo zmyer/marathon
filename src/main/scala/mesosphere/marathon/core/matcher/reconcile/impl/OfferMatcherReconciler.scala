@@ -58,14 +58,14 @@ private[reconcile] class OfferMatcherReconciler(taskTracker: InstanceTracker, gr
       else {
         def createTaskOps(tasksByApp: InstancesBySpec, rootGroup: Group): MatchedTaskOps = {
           def spurious(taskId: Instance.Id): Boolean =
-            tasksByApp.task(taskId).isEmpty || rootGroup.app(taskId.runSpecId).isEmpty
+            tasksByApp.instance(taskId).isEmpty || rootGroup.app(taskId.runSpecId).isEmpty
 
           val taskOps = resourcesByInstanceId.iterator.collect {
             case (instanceId, spuriousResources) if spurious(instanceId) =>
               val unreserveAndDestroy =
                 InstanceOp.UnreserveAndDestroyVolumes(
                   stateOp = InstanceStateOp.ForceExpunge(instanceId),
-                  oldInstance = tasksByApp.task(instanceId),
+                  oldInstance = tasksByApp.instance(instanceId),
                   resources = spuriousResources.to[Seq]
                 )
               log.warn(

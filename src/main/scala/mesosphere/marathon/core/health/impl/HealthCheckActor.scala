@@ -163,7 +163,7 @@ private[health] class HealthCheckActor(
         case Healthy(_, _, _) =>
           health.update(result)
         case Unhealthy(_, _, _, _) =>
-          taskTracker.instancesBySpecSync.task(taskId) match {
+          taskTracker.instancesBySpecSync.instance(taskId) match {
             case Some(task) =>
               if (ignoreFailures(task, health)) {
                 // Don't update health

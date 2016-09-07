@@ -484,18 +484,19 @@ class SchedulerActions(
     */
   def reconcileTasks(driver: SchedulerDriver): Future[Status] = {
     appRepository.ids().runWith(Sink.set).flatMap { appIds =>
-      taskTracker.instancessBySpec().map { tasksByApp =>
+      taskTracker.instancessBySpec().map { instances =>
+        // TODO PODs was this change here correct or should we match to instance#state?
         val knownTaskStatuses = appIds.flatMap { appId =>
-          tasksByApp.specInstances(appId).flatMap(_.mesosStatus)
+          instances.specInstances(appId).flatMap(_.tasks.flatMap(_.mesosStatus))
         }
 
-        (tasksByApp.allSpecIdsWithInstances -- appIds).foreach { unknownAppId =>
+        (instances.allSpecIdsWithInstances -- appIds).foreach { unknownAppId =>
           log.warn(
             s"App $unknownAppId exists in TaskTracker, but not App store. " +
               "The app was likely terminated. Will now expunge."
           )
-          tasksByApp.specInstances(unknownAppId).foreach { orphanTask =>
-            log.info(s"Killing ${orphanTask.taskId}")
+          instances.specInstances(unknownAppId).foreach { orphanTask =>
+            log.info(s"Killing ${orphanTask.instanceId}")
             killService.killTask(orphanTask, TaskKillReason.Orphaned)
           }
         }

@@ -53,7 +53,7 @@ object InstanceTracker {
       instancesMap.get(pathId).map(_.instances).getOrElse(Iterable.empty)
     }
 
-    def task(instanceId: Instance.Id): Option[Instance] = for {
+    def instance(instanceId: Instance.Id): Option[Instance] = for {
       app <- instancesMap.get(instanceId.runSpecId)
       task <- app.instancekMap.get(instanceId)
     } yield task
