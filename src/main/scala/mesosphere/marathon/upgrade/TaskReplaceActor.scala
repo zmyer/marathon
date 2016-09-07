@@ -32,7 +32,7 @@ class TaskReplaceActor(
 
   val tasksToKill = instanceTracker.specInstancesLaunchedSync(app.id)
   var newTasksStarted: Int = 0
-  var oldTaskIds = tasksToKill.map(_.id).to[SortedSet]
+  var oldTaskIds = tasksToKill.map(_.instanceId).to[SortedSet]
   val toKill = tasksToKill.to[mutable.Queue]
   var maxCapacity = (app.instances * (1 + app.upgradeStrategy.maximumOverCapacity)).toInt
   var outstandingKills = Set.empty[Instance.Id]
@@ -110,7 +110,7 @@ class TaskReplaceActor(
           log.info(s"Killing old $nextOldTask")
       }
 
-      outstandingKills += nextOldTask.id
+      outstandingKills += nextOldTask.instanceId
       killService.killTask(nextOldTask, TaskKillReason.Upgrading)
     }
   }

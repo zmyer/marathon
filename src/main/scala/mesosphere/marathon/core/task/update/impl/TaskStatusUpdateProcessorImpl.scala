@@ -9,7 +9,7 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.termination.{ TaskKillReason, TaskKillService }
 import mesosphere.marathon.core.task.tracker.{ TaskStateOpProcessor, InstanceTracker }
 import mesosphere.marathon.core.task.update.TaskStatusUpdateProcessor
-import mesosphere.marathon.core.task.{ Task, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, InstanceStateOp }
 import mesosphere.marathon.metrics.Metrics.Timer
 import mesosphere.marathon.metrics.{ MetricPrefixes, Metrics }
 import org.apache.mesos.{ Protos => MesosProtos }
@@ -47,7 +47,7 @@ class TaskStatusUpdateProcessorImpl @Inject() (
 
     taskTracker.instance(taskId).flatMap {
       case Some(task: Task) =>
-        val taskStateOp = TaskStateOp.MesosUpdate(task, status, now)
+        val taskStateOp = InstanceStateOp.MesosUpdate(task, status, now)
         stateOpProcessor.process(taskStateOp).flatMap(_ => acknowledge(status))
 
       // TODO POD support

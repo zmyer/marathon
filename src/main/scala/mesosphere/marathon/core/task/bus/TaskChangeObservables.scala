@@ -2,14 +2,14 @@ package mesosphere.marathon.core.task.bus
 
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
-import mesosphere.marathon.core.task.{ TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.state.PathId
 import rx.lang.scala.Observable
 
 object TaskChangeObservables {
-  case class TaskChanged(stateOp: TaskStateOp, stateChange: TaskStateChange) {
-    def taskId: Instance.Id = stateOp.taskId
-    def runSpecId: PathId = stateOp.taskId.runSpecId
+  case class TaskChanged(stateOp: InstanceStateOp, stateChange: TaskStateChange) {
+    def instanceId: Instance.Id = stateOp.instanceId
+    def runSpecId: PathId = stateOp.instanceId.runSpecId
   }
 }
 

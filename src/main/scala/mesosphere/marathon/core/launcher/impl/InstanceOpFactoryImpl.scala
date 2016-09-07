@@ -4,7 +4,7 @@ import mesosphere.marathon.MarathonConf
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
 import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory }
-import mesosphere.marathon.core.task.{ Task, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, InstanceStateOp }
 import mesosphere.marathon.core.plugin.PluginManager
 import mesosphere.marathon.plugin.task.RunSpecTaskProcessor
 import mesosphere.marathon.plugin.{ RunSpec => PluginAppDefinition }
@@ -147,7 +147,7 @@ class InstanceOpFactoryImpl(
     // create a TaskBuilder that used the id of the existing task as id for the created TaskInfo
     new TaskBuilder(spec, (_) => task.id, config, Some(appTaskProc)).build(offer, resourceMatch, volumeMatch) map {
       case (taskInfo, ports) =>
-        val taskStateOp = TaskStateOp.LaunchOnReservation(
+        val taskStateOp = InstanceStateOp.LaunchOnReservation(
           task.id,
           runSpecVersion = spec.version,
           status = Task.Status(
@@ -189,7 +189,7 @@ class InstanceOpFactoryImpl(
         taskStatus = InstanceStatus.Reserved
       )
     )
-    val taskStateOp = TaskStateOp.Reserve(task)
+    val taskStateOp = InstanceStateOp.Reserve(task)
     taskOperationFactory.reserveAndCreateVolumes(frameworkId, taskStateOp, resourceMatch.resources, localVolumes)
   }
 

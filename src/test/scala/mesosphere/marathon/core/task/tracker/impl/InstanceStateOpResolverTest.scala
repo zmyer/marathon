@@ -5,7 +5,7 @@ import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusUpdateTestHelper }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.tracker.impl.InstanceOpProcessorImpl.TaskStateOpResolver
-import mesosphere.marathon.core.task.{ Task, TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.core.task.state.MarathonTaskStatusMapping
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.test.Mockito
@@ -21,7 +21,7 @@ import scala.concurrent.Future
   *
   * More tests are in [[mesosphere.marathon.tasks.InstanceTrackerImplTest]]
   */
-class TaskStateOpResolverTest
+class InstanceStateOpResolverTest
     extends FunSuite with Mockito with GivenWhenThen with ScalaFutures with Matchers {
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -31,7 +31,7 @@ class TaskStateOpResolverTest
     f.taskTracker.instance(f.notExistingTaskId) returns Future.successful(None)
 
     When("A ForceExpunge is scheduled with that taskId")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.ForceExpunge(f.notExistingTaskId)).futureValue
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.ForceExpunge(f.notExistingTaskId)).futureValue
 
     Then("taskTracker.task is called")
     verify(f.taskTracker).instance(f.notExistingTaskId)
@@ -49,8 +49,8 @@ class TaskStateOpResolverTest
     f.taskTracker.instance(f.notExistingTaskId) returns Future.successful(None)
 
     When("A LaunchOnReservation is scheduled with that taskId")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.LaunchOnReservation(
-      taskId = f.notExistingTaskId,
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.LaunchOnReservation(
+      instanceId = f.notExistingTaskId,
       runSpecVersion = Timestamp(0),
       status = Task.Status(Timestamp(0), taskStatus = InstanceStatus.Running),
       hostPorts = Seq.empty)).futureValue
@@ -72,7 +72,7 @@ class TaskStateOpResolverTest
     f.taskTracker.instance(f.existingTask.id) returns Future.successful(None)
 
     When("A MesosUpdate is scheduled with that taskId")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.MesosUpdate(
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.MesosUpdate(
       task = f.existingTask,
       mesosStatus = MesosTaskStatusTestHelper.running,
       now = Timestamp(0))).futureValue
@@ -125,7 +125,7 @@ class TaskStateOpResolverTest
       f.taskTracker.instance(f.existingTask.id) returns Future.successful(Some(f.existingTask))
 
       When("A TASK_LOST update is received with a reason indicating it won't come back")
-      val stateOp: TaskStateOp.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingTask).wrapped.stateOp.asInstanceOf[TaskStateOp.MesosUpdate]
+      val stateOp: InstanceStateOp.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingTask).wrapped.stateOp.asInstanceOf[InstanceStateOp.MesosUpdate]
       val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
       Then("taskTracker.task is called")
@@ -157,7 +157,7 @@ class TaskStateOpResolverTest
 
     When("A subsequent TASK_LOST update is received")
     val reason = mesos.Protos.TaskStatus.Reason.REASON_SLAVE_DISCONNECTED
-    val stateOp: TaskStateOp.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingLostTask).wrapped.stateOp.asInstanceOf[TaskStateOp.MesosUpdate]
+    val stateOp: InstanceStateOp.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingLostTask).wrapped.stateOp.asInstanceOf[InstanceStateOp.MesosUpdate]
     val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
     Then("taskTracker.task is called")
@@ -175,7 +175,7 @@ class TaskStateOpResolverTest
     f.taskTracker.instance(f.notExistingTaskId) returns Future.successful(None)
 
     When("A MesosUpdate is scheduled with that taskId")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.ReservationTimeout(f.notExistingTaskId)).futureValue
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.ReservationTimeout(f.notExistingTaskId)).futureValue
 
     Then("taskTracker.task is called")
     verify(f.taskTracker).instance(f.notExistingTaskId)
@@ -193,7 +193,7 @@ class TaskStateOpResolverTest
     f.taskTracker.instance(f.existingTask.id) returns Future.successful(Some(f.existingTask))
 
     When("A LaunchEphemeral is scheduled with that taskId")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.LaunchEphemeral(f.existingTask)).futureValue
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.LaunchEphemeral(f.existingTask)).futureValue
 
     Then("taskTracker.task is called")
     verify(f.taskTracker).instance(f.existingTask.id)
@@ -211,7 +211,7 @@ class TaskStateOpResolverTest
     f.taskTracker.instance(f.existingReservedTask.id) returns Future.successful(Some(f.existingReservedTask))
 
     When("A Reserve is scheduled with that taskId")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.Reserve(f.existingReservedTask)).futureValue
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.Reserve(f.existingReservedTask)).futureValue
 
     Then("taskTracker.task is called")
     verify(f.taskTracker).instance(f.existingReservedTask.id)
@@ -228,7 +228,7 @@ class TaskStateOpResolverTest
     Given("a Revert stateOp")
 
     When("the stateOp is resolved")
-    val stateChange = f.stateOpResolver.resolve(TaskStateOp.Revert(f.existingReservedTask)).futureValue
+    val stateChange = f.stateOpResolver.resolve(InstanceStateOp.Revert(f.existingReservedTask)).futureValue
 
     And("the result is an Update")
     stateChange shouldEqual TaskStateChange.Update(f.existingReservedTask, None)

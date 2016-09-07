@@ -15,7 +15,7 @@ private[termination] class TaskKillServiceDelegate(actorRef: ActorRef) extends T
   override def killTasks(tasks: Iterable[Instance], reason: TaskKillReason): Future[Done] = {
     log.info(
       s"Killing ${tasks.size} tasks for reason: $reason (ids: {} ...)",
-      tasks.take(3).map(_.id).mkString(","))
+      tasks.take(3).map(_.instanceId).mkString(","))
 
     val promise = Promise[Done]
     actorRef ! KillTasks(tasks, promise)

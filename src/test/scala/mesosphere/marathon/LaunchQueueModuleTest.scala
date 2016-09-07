@@ -10,7 +10,7 @@ import mesosphere.marathon.core.matcher.DummyOfferMatcherManager
 import mesosphere.marathon.core.task.bus.TaskBusModule
 import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
 import mesosphere.marathon.core.task.tracker.InstanceTracker
-import mesosphere.marathon.core.task.{ TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.integration.setup.WaitTestSupport
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.{ MarathonShutdownHookSupport, Mockito }
@@ -253,7 +253,7 @@ class LaunchQueueModuleTest
     val marathonTask = MarathonTestHelper.runningTask(taskId.idString)
     val launch = new InstanceOpFactoryHelper(Some("principal"), Some("role")).launchEphemeral(mesosTask, marathonTask)
     val taskChanged = TaskChanged(
-      stateOp = TaskStateOp.LaunchEphemeral(marathonTask),
+      stateOp = InstanceStateOp.LaunchEphemeral(marathonTask),
       stateChange = TaskStateChange.Update(newState = marathonTask, oldState = None)
     )
 

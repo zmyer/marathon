@@ -4,7 +4,7 @@ import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
 import mesosphere.marathon.core.launcher.impl.InstanceOpFactoryImpl
 import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory }
-import mesosphere.marathon.core.task.{ Task, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, InstanceStateOp }
 import mesosphere.marathon.core.task.Task.LocalVolumeId
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.state.{ AppDefinition, PathId }
@@ -48,7 +48,7 @@ class InstanceOpFactoryImplTest extends MarathonSpec with GivenWhenThen with Moc
       hostPorts = Seq.empty
     )
     assert(inferredTaskOp.isDefined, "task op is not empty")
-    assert(inferredTaskOp.get.stateOp == TaskStateOp.LaunchEphemeral(expectedTask))
+    assert(inferredTaskOp.get.stateOp == InstanceStateOp.LaunchEphemeral(expectedTask))
   }
 
   test("Normal app -> None (insufficient offer)") {

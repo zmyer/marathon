@@ -4,8 +4,8 @@ import akka.actor.ActorRef
 import akka.util.Timeout
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.instance.Instance
-import mesosphere.marathon.core.task.TaskStateOp.ReservationTimeout
-import mesosphere.marathon.core.task.{ TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.InstanceStateOp.ReservationTimeout
+import mesosphere.marathon.core.task.{ TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.core.task.tracker.impl.InstanceTrackerActor.ForwardTaskOp
 import mesosphere.marathon.core.task.tracker.{
   TaskReservationTimeoutHandler,
@@ -31,21 +31,21 @@ private[tracker] class TaskCreationHandlerAndUpdaterDelegate(
 
   private[impl] implicit val timeout: Timeout = conf.internalTaskUpdateRequestTimeout().milliseconds
 
-  override def process(stateOp: TaskStateOp): Future[TaskStateChange] = {
-    taskUpdate(stateOp.taskId, stateOp)
+  override def process(stateOp: InstanceStateOp): Future[TaskStateChange] = {
+    taskUpdate(stateOp.instanceId, stateOp)
   }
 
-  override def created(taskStateOp: TaskStateOp): Future[Unit] = {
+  override def created(taskStateOp: InstanceStateOp): Future[Unit] = {
     process(taskStateOp).map(_ => ())
   }
-  override def terminated(stateOp: TaskStateOp.ForceExpunge): Future[_] = {
+  override def terminated(stateOp: InstanceStateOp.ForceExpunge): Future[_] = {
     process(stateOp)
   }
   override def timeout(stateOp: ReservationTimeout): Future[_] = {
     process(stateOp)
   }
 
-  private[this] def taskUpdate(taskId: Instance.Id, taskStateOp: TaskStateOp): Future[TaskStateChange] = {
+  private[this] def taskUpdate(taskId: Instance.Id, taskStateOp: InstanceStateOp): Future[TaskStateChange] = {
     import akka.pattern.ask
     val deadline = clock.now + timeout.duration
     val op: ForwardTaskOp = InstanceTrackerActor.ForwardTaskOp(deadline, taskId, taskStateOp)

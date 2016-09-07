@@ -222,9 +222,9 @@ class MarathonHealthCheckManager(
 
         taskTracker.specInstances(appId).map { appTasks =>
           appTasks.iterator.map { task =>
-            groupedHealth.get(task.id) match {
-              case Some(xs) => task.id -> xs
-              case None => task.id -> Nil
+            groupedHealth.get(task.instanceId) match {
+              case Some(xs) => task.instanceId -> xs
+              case None => task.instanceId -> Nil
             }
           }.toMap
         }

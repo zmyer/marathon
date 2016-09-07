@@ -3,7 +3,7 @@ package mesosphere.marathon.core.task.jobs.impl
 import akka.actor._
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.task.termination.{ TaskKillReason, TaskKillService }
-import mesosphere.marathon.core.task.{ Task, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, InstanceStateOp }
 import mesosphere.marathon.core.task.tracker.{ TaskReservationTimeoutHandler, InstanceTracker }
 import mesosphere.marathon.state.Timestamp
 import mesosphere.marathon.MarathonConf
@@ -42,7 +42,7 @@ private[jobs] object OverdueTasksActor {
       val now = clock.now()
       log.debug("checking for overdue tasks")
       taskTracker.instancessBySpec().flatMap { tasksByApp =>
-        val tasks = tasksByApp.allTasks
+        val tasks = tasksByApp.allInstances
 
         killOverdueTasks(now, tasks)
 
@@ -90,7 +90,7 @@ private[jobs] object OverdueTasksActor {
     private[this] def timeoutOverdueReservations(now: Timestamp, tasks: Iterable[Task]): Future[Unit] = {
       val taskTimeoutResults = overdueReservations(now, tasks).map { task =>
         log.warn("Scheduling ReservationTimeout for {}", task.id)
-        reservationTimeoutHandler.timeout(TaskStateOp.ReservationTimeout(task.id))
+        reservationTimeoutHandler.timeout(InstanceStateOp.ReservationTimeout(task.id))
       }
       Future.sequence(taskTimeoutResults).map(_ => ())
     }

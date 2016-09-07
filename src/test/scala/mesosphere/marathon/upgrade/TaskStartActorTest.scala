@@ -7,7 +7,7 @@ import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.leadership.AlwaysElectedLeadershipModule
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
 import mesosphere.marathon.storage.repository.legacy.store.InMemoryStore
-import mesosphere.marathon.core.task.TaskStateOp
+import mesosphere.marathon.core.task.InstanceStateOp
 import mesosphere.marathon.core.task.tracker.{ TaskCreationHandler, InstanceTracker }
 import mesosphere.marathon.core.event.{ DeploymentStatus, HealthStatusChanged, MesosStatusUpdateEvent }
 import mesosphere.marathon.core.health.HealthCheck
@@ -92,7 +92,7 @@ class TaskStartActorTest
     when(f.launchQueue.get(app.id)).thenReturn(None)
     val task =
       MarathonTestHelper.startingTaskForApp(app.id, appVersion = Timestamp(1024))
-    f.taskCreationHandler.created(TaskStateOp.LaunchEphemeral(task)).futureValue
+    f.taskCreationHandler.created(InstanceStateOp.LaunchEphemeral(task)).futureValue
 
     val ref = f.startActor(app, app.instances, promise)
     watch(ref)
@@ -211,7 +211,7 @@ class TaskStartActorTest
 
     val outdatedTask = MarathonTestHelper.stagedTaskForApp(app.id, appVersion = Timestamp(1024))
     val taskId = outdatedTask.id
-    f.taskCreationHandler.created(TaskStateOp.LaunchEphemeral(outdatedTask)).futureValue
+    f.taskCreationHandler.created(InstanceStateOp.LaunchEphemeral(outdatedTask)).futureValue
 
     val ref = f.startActor(app, app.instances, promise)
     watch(ref)

@@ -7,8 +7,8 @@ import org.apache.mesos
 
 import scala.collection.immutable.Seq
 
-sealed trait TaskStateOp {
-  def taskId: Instance.Id
+sealed trait InstanceStateOp {
+  def instanceId: Instance.Id
   /**
     * The possible task state if processing the state op succeeds. If processing the
     * state op fails, this state will never be persisted, so be cautious when using it.
@@ -16,34 +16,34 @@ sealed trait TaskStateOp {
   def possibleNewState: Option[Instance] = None
 }
 
-object TaskStateOp {
+object InstanceStateOp {
   /** Launch (aka create) an ephemeral task*/
   // FIXME (3221): The type should be LaunchedEphemeral but that needs a lot of test adjustments
-  case class LaunchEphemeral(task: Task) extends TaskStateOp {
-    override def taskId: Instance.Id = task.id
-    override def possibleNewState: Option[Instance] = Some(task)
+  case class LaunchEphemeral(instance: Instance) extends InstanceStateOp {
+    override def instanceId: Instance.Id = instance.instanceId
+    override def possibleNewState: Option[Instance] = Some(instance)
   }
 
   /** Revert a task to the given state. Used in case TaskOps are rejected. */
-  case class Revert(task: Task) extends TaskStateOp {
-    override def taskId: Instance.Id = task.id
-    override def possibleNewState: Option[Instance] = Some(task)
+  case class Revert(instance: Instance) extends InstanceStateOp {
+    override def instanceId: Instance.Id = instance.instanceId
+    override def possibleNewState: Option[Instance] = Some(instance)
   }
 
-  case class Reserve(task: Task.Reserved) extends TaskStateOp {
-    override def taskId: Instance.Id = task.id
+  case class Reserve(task: Task.Reserved) extends InstanceStateOp {
+    override def instanceId: Instance.Id = Instance.Id(task.taskId)
     override def possibleNewState: Option[Instance] = Some(task)
   }
 
   case class LaunchOnReservation(
-    taskId: Instance.Id,
+    instanceId: Instance.Id,
     runSpecVersion: Timestamp,
     status: Task.Status,
-    hostPorts: Seq[Int]) extends TaskStateOp
+    hostPorts: Seq[Int]) extends InstanceStateOp
 
   case class MesosUpdate(task: Task, status: InstanceStatus,
-      mesosStatus: mesos.Protos.TaskStatus, now: Timestamp) extends TaskStateOp {
-    override def taskId: Instance.Id = task.id
+      mesosStatus: mesos.Protos.TaskStatus, now: Timestamp) extends InstanceStateOp {
+    override def instanceId: Instance.Id = Instance.Id(task.taskId) // TODO ju
   }
 
   object MesosUpdate {
@@ -52,10 +52,10 @@ object TaskStateOp {
     }
   }
 
-  case class ReservationTimeout(taskId: Instance.Id) extends TaskStateOp
+  case class ReservationTimeout(instanceId: Instance.Id) extends InstanceStateOp
 
   /** Expunge a task whose TaskOp was rejected */
-  case class ForceExpunge(taskId: Instance.Id) extends TaskStateOp
+  case class ForceExpunge(instanceId: Instance.Id) extends InstanceStateOp
 }
 
 sealed trait TaskStateChange
@@ -63,7 +63,7 @@ sealed trait TaskStateChange
 object TaskStateChange {
   case class Update(newState: Task, oldState: Option[Task]) extends TaskStateChange
   case class Expunge(task: Task) extends TaskStateChange
-  case class NoChange(taskId: Instance.Id) extends TaskStateChange
+  case class NoChange(taskId: Task.Id) extends TaskStateChange
   case class Failure(cause: Throwable) extends TaskStateChange
   object Failure {
     def apply(message: String): Failure = Failure(TaskStateChangeException(message))

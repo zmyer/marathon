@@ -19,7 +19,7 @@ import mesosphere.marathon.storage.repository.legacy.store.{ InMemoryStore, Mara
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, InstanceTrackerModule }
 import mesosphere.marathon.core.task.update.TaskUpdateStep
-import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task, TaskStateOp }
+import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task, InstanceStateOp }
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.Container.Docker
 import mesosphere.marathon.state.Container.Docker.PortMapping
@@ -392,9 +392,9 @@ object MarathonTestHelper {
     Task.Launched(now, status = Task.Status(stagedAt = now, taskStatus = InstanceStatus.Running), hostPorts = Seq.empty)
   }
 
-  def taskLaunchedOp(taskId: Instance.Id): TaskStateOp.LaunchOnReservation = {
+  def taskLaunchedOp(taskId: Instance.Id): InstanceStateOp.LaunchOnReservation = {
     val now = Timestamp.now()
-    TaskStateOp.LaunchOnReservation(taskId = taskId, runSpecVersion = now, status = Task.Status(stagedAt = now, taskStatus = InstanceStatus.Running), hostPorts = Seq.empty)
+    InstanceStateOp.LaunchOnReservation(instanceId = taskId, runSpecVersion = now, status = Task.Status(stagedAt = now, taskStatus = InstanceStatus.Running), hostPorts = Seq.empty)
   }
 
   def startingTaskForApp(appId: PathId, appVersion: Timestamp = Timestamp(1), stagedAt: Long = 2): Task.LaunchedEphemeral =

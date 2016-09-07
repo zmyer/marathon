@@ -108,7 +108,7 @@ final case class DeploymentPlan(
       case StopApplication(app) => s"Stop(${appString(app)})"
       case ScaleApplication(app, scale, toKill) =>
         val killTasksString =
-          toKill.filter(_.nonEmpty).map(", killTasks=" + _.map(_.id.idString).mkString(",")).getOrElse("")
+          toKill.filter(_.nonEmpty).map(", killTasks=" + _.map(_.instanceId.idString).mkString(",")).getOrElse("")
         s"Scale(${appString(app)}, instances=$scale$killTasksString)"
       case RestartApplication(app) => s"Restart(${appString(app)})"
       case ResolveArtifacts(app, urls) => s"Resolve(${appString(app)}, $urls})"

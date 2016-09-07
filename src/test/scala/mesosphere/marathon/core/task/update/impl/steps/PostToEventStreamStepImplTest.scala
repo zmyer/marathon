@@ -8,7 +8,7 @@ import mesosphere.marathon.MarathonTestHelper
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper
-import mesosphere.marathon.core.task.{ MarathonTaskStatus, TaskStateOp }
+import mesosphere.marathon.core.task.{ MarathonTaskStatus, InstanceStateOp }
 import mesosphere.marathon.core.event.{ MarathonEvent, MesosStatusUpdateEvent }
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.state.{ PathId, Timestamp }
@@ -72,7 +72,7 @@ class PostToEventStreamStepImplTest extends FunSuite
 
     When("we receive a running update")
     val status = runningTaskStatus
-    val stateOp = TaskStateOp.MesosUpdate(existingTask, status, updateTimestamp)
+    val stateOp = InstanceStateOp.MesosUpdate(existingTask, status, updateTimestamp)
     val stateChange = existingTask.update(stateOp)
     val taskChanged = TaskChanged(stateOp, stateChange)
     val (logs, events) = f.captureLogAndEvents {
@@ -98,7 +98,7 @@ class PostToEventStreamStepImplTest extends FunSuite
 
     When("we receive a terminal status update")
     val status = runningTaskStatus.toBuilder.setState(terminalTaskState).clearContainerStatus().build()
-    val stateOp = TaskStateOp.MesosUpdate(existingTask, status, updateTimestamp)
+    val stateOp = InstanceStateOp.MesosUpdate(existingTask, status, updateTimestamp)
     val stateChange = existingTask.update(stateOp)
     val taskUpdate = TaskChanged(stateOp, stateChange)
     val (logs, events) = f.captureLogAndEvents {

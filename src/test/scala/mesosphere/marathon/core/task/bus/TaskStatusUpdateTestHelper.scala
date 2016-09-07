@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import mesosphere.marathon.MarathonTestHelper
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
 import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
-import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task, TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task, TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import org.apache.mesos.Protos.TaskStatus.Reason
 import org.apache.mesos.Protos.{ TaskState, TaskStatus }
@@ -14,12 +14,12 @@ import org.slf4j.LoggerFactory
 
 class TaskStatusUpdateTestHelper(val wrapped: TaskChanged) {
   def simpleName = wrapped.stateOp match {
-    case TaskStateOp.MesosUpdate(_, marathonTaskStatus, mesosStatus, _) =>
+    case InstanceStateOp.MesosUpdate(_, marathonTaskStatus, mesosStatus, _) =>
       mesosStatus.getState.toString
     case _ => wrapped.stateOp.getClass.getSimpleName
   }
   def status = wrapped.stateOp match {
-    case TaskStateOp.MesosUpdate(_, marathonTaskStatus, mesosStatus, _) => mesosStatus
+    case InstanceStateOp.MesosUpdate(_, marathonTaskStatus, mesosStatus, _) => mesosStatus
     case _ => throw new scala.RuntimeException("the wrapped stateOp os no MesosUpdate!")
   }
   def reason: String = if (status.hasReason) status.getReason.toString else "no reason"
@@ -40,13 +40,13 @@ object TaskStatusUpdateTestHelper {
   lazy val defaultTimestamp = Timestamp.apply(new DateTime(2015, 2, 3, 12, 30, 0, 0))
 
   def taskLaunchFor(task: Task, timestamp: Timestamp = defaultTimestamp) = {
-    val taskStateOp = TaskStateOp.LaunchEphemeral(task)
+    val taskStateOp = InstanceStateOp.LaunchEphemeral(task)
     val taskStateChange = task.update(taskStateOp)
     TaskStatusUpdateTestHelper(TaskChanged(taskStateOp, taskStateChange))
   }
 
   def taskUpdateFor(task: Task, taskStatus: InstanceStatus, mesosStatus: TaskStatus, timestamp: Timestamp = defaultTimestamp) = {
-    val taskStateOp = TaskStateOp.MesosUpdate(task, taskStatus, mesosStatus, timestamp)
+    val taskStateOp = InstanceStateOp.MesosUpdate(task, taskStatus, mesosStatus, timestamp)
     val taskStateChange = task.update(taskStateOp)
     TaskStatusUpdateTestHelper(TaskChanged(taskStateOp, taskStateChange))
   }
@@ -54,7 +54,7 @@ object TaskStatusUpdateTestHelper {
   def taskExpungeFor(task: Task, taskStatus: InstanceStatus, mesosStatus: TaskStatus, timestamp: Timestamp = defaultTimestamp) = {
     TaskStatusUpdateTestHelper(
       TaskChanged(
-        TaskStateOp.MesosUpdate(task, taskStatus, mesosStatus, timestamp),
+        InstanceStateOp.MesosUpdate(task, taskStatus, mesosStatus, timestamp),
         TaskStateChange.Expunge(task)))
   }
 

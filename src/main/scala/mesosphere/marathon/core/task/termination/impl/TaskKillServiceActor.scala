@@ -6,7 +6,7 @@ import mesosphere.marathon.MarathonSchedulerDriverHolder
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.task.termination.TaskKillConfig
 import mesosphere.marathon.state.Timestamp
-import mesosphere.marathon.core.task.TaskStateOp
+import mesosphere.marathon.core.task.InstanceStateOp
 import mesosphere.marathon.core.task.tracker.{ TaskStateOpProcessor, InstanceTracker }
 import mesosphere.marathon.core.event.MesosStatusUpdateEvent
 import mesosphere.marathon.core.instance.Instance
@@ -89,9 +89,9 @@ private[impl] class TaskKillServiceActor(
 
   def killTasks(tasks: Iterable[Instance], promise: Promise[Done]): Unit = {
     log.debug("Adding {} tasks to queue; setting up child actor to track progress", tasks.size)
-    setupProgressActor(tasks.map(_.id), promise)
+    setupProgressActor(tasks.map(_.instanceId), promise)
     tasks.foreach { task =>
-      tasksToKill.update(task.id, Some(task))
+      tasksToKill.update(task.instanceId, Some(task))
     }
     processKills()
   }
@@ -122,7 +122,7 @@ private[impl] class TaskKillServiceActor(
     if (taskIsLost) {
       log.warning("Expunging lost {} from state because it should be killed", taskId)
       // we will eventually be notified of a taskStatusUpdate after the task has been expunged
-      stateOpProcessor.process(TaskStateOp.ForceExpunge(taskId))
+      stateOpProcessor.process(InstanceStateOp.ForceExpunge(taskId))
     } else {
       val knownOrNot = if (maybeTask.isDefined) "known" else "unknown"
       log.warning("Killing {} {}", knownOrNot, taskId)
@@ -147,7 +147,7 @@ private[impl] class TaskKillServiceActor(
     inFlight.foreach {
       case (taskId, taskToKill) if taskToKill.attempts >= config.killRetryMax =>
         log.warning("Expunging {} from state: max retries reached", taskId)
-        stateOpProcessor.process(TaskStateOp.ForceExpunge(taskId))
+        stateOpProcessor.process(InstanceStateOp.ForceExpunge(taskId))
 
       case (taskId, taskToKill) if (taskToKill.issued + config.killRetryTimeout) < now =>
         log.warning("No kill ack received for {}, retrying", taskId)

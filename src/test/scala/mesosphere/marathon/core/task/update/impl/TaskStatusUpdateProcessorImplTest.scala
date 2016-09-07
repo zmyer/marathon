@@ -7,7 +7,7 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.termination.{ TaskKillReason, TaskKillService }
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper
 import mesosphere.marathon.core.task.tracker.{ TaskStateOpProcessor, InstanceTracker }
-import mesosphere.marathon.core.task.{ Task, TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.Mockito
@@ -35,7 +35,7 @@ class TaskStatusUpdateProcessorImplTest
       fOpt = Some(new Fixture)
       val status = origUpdate.status
       val update = origUpdate
-      val taskId = update.wrapped.stateOp.taskId
+      val taskId = update.wrapped.stateOp.instanceId
 
       Given("an unknown task")
       f.taskTracker.instance(taskId) returns Future.successful(None)
@@ -62,7 +62,7 @@ class TaskStatusUpdateProcessorImplTest
     val origUpdate = TaskStatusUpdateTestHelper.running()
     val status = origUpdate.status
     val update = origUpdate
-    val taskId = update.wrapped.stateOp.taskId
+    val taskId = update.wrapped.stateOp.instanceId
 
     Given("an unknown task")
     f.taskTracker.instance(taskId) returns Future.successful(None)
@@ -94,7 +94,7 @@ class TaskStatusUpdateProcessorImplTest
     val update = origUpdate
 
     Given("an unknown task")
-    f.taskTracker.instance(origUpdate.wrapped.taskId) returns Future.successful(Some(task))
+    f.taskTracker.instance(origUpdate.wrapped.instanceId) returns Future.successful(Some(task))
     f.taskTracker.instance(any) returns {
       println("WTF")
       Future.successful(None)
@@ -122,7 +122,7 @@ class TaskStatusUpdateProcessorImplTest
     val task = MarathonTestHelper.runningTask(taskId.idString)
     val origUpdate = TaskStatusUpdateTestHelper.killing(task)
     val status = origUpdate.status
-    val expectedTaskStateOp = TaskStateOp.MesosUpdate(task, status, f.clock.now())
+    val expectedTaskStateOp = InstanceStateOp.MesosUpdate(task, status, f.clock.now())
 
     Given("a task")
     f.taskTracker.instance(taskId) returns Future.successful(Some(task))

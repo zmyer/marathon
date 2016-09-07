@@ -6,7 +6,7 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.launcher.{ InstanceOp, OfferProcessor, OfferProcessorConfig, TaskLauncher }
 import mesosphere.marathon.core.matcher.base.OfferMatcher
 import mesosphere.marathon.core.matcher.base.OfferMatcher.{ MatchedTaskOps, TaskOpWithSource }
-import mesosphere.marathon.core.task.{ Task, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, InstanceStateOp }
 import mesosphere.marathon.core.task.tracker.TaskCreationHandler
 import mesosphere.marathon.metrics.{ MetricPrefixes, Metrics }
 import mesosphere.marathon.state.Timestamp
@@ -104,11 +104,11 @@ private[launcher] class OfferProcessorImpl(
       terminatedFuture.flatMap { _ =>
         nextOp.oldInstance match {
           case Some(existingTask: Task) =>
-            taskCreationHandler.created(TaskStateOp.Revert(existingTask)).map(_ => ())
+            taskCreationHandler.created(InstanceStateOp.Revert(existingTask)).map(_ => ())
           case Some(existingTask: Instance) =>
             Future.successful(()) // TODO POD remove asInstanceOf[Task]
           case None =>
-            taskCreationHandler.terminated(TaskStateOp.ForceExpunge(nextOp.instanceId)).map(_ => ())
+            taskCreationHandler.terminated(InstanceStateOp.ForceExpunge(nextOp.instanceId)).map(_ => ())
         }
       }
     }.recover {

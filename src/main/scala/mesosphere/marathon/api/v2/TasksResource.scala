@@ -76,7 +76,7 @@ class TasksResource @Inject() (
       EnrichedTask(
         appId,
         task,
-        health.getOrElse(task.id, Nil),
+        health.getOrElse(task.instanceId, Nil),
         appToPorts.getOrElse(appId, Nil)
       )
     }
@@ -132,7 +132,7 @@ class TasksResource @Inject() (
       })).flatten
       // TODO POD remove asInstanceOf[Task]
       ok(jsonObjString("tasks" -> killed.map(task =>
-        EnrichedTask(task.id.runSpecId, task.asInstanceOf[Task], Seq.empty))))
+        EnrichedTask(task.instanceId.runSpecId, task.asInstanceOf[Task], Seq.empty))))
     }
 
     val tasksByAppId = tasksToAppId

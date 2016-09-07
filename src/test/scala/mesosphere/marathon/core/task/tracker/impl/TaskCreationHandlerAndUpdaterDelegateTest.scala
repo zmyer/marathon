@@ -3,7 +3,7 @@ package mesosphere.marathon.core.task.tracker.impl
 import akka.actor.Status
 import akka.testkit.TestProbe
 import mesosphere.marathon.core.base.ConstantClock
-import mesosphere.marathon.core.task.{ TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.{ MarathonActorSupport, Mockito }
 import mesosphere.marathon.{ MarathonSpec, MarathonTestHelper }
@@ -18,7 +18,7 @@ class TaskCreationHandlerAndUpdaterDelegateTest
     val f = new Fixture
     val appId: PathId = PathId("/test")
     val task = MarathonTestHelper.mininimalTask(appId)
-    val stateOp = TaskStateOp.LaunchEphemeral(task)
+    val stateOp = InstanceStateOp.LaunchEphemeral(task)
     val expectedStateChange = TaskStateChange.Update(task, None)
 
     When("created is called")
@@ -39,7 +39,7 @@ class TaskCreationHandlerAndUpdaterDelegateTest
     val f = new Fixture
     val appId: PathId = PathId("/test")
     val task = MarathonTestHelper.mininimalTask(appId)
-    val stateOp = TaskStateOp.LaunchEphemeral(task)
+    val stateOp = InstanceStateOp.LaunchEphemeral(task)
 
     When("created is called")
     val create = f.delegate.created(stateOp)
@@ -64,7 +64,7 @@ class TaskCreationHandlerAndUpdaterDelegateTest
     val f = new Fixture
     val appId: PathId = PathId("/test")
     val task = MarathonTestHelper.mininimalTask(appId)
-    val stateOp = TaskStateOp.ForceExpunge(task.id)
+    val stateOp = InstanceStateOp.ForceExpunge(task.id)
     val expectedStateChange = TaskStateChange.Expunge(task)
 
     When("terminated is called")
@@ -85,7 +85,7 @@ class TaskCreationHandlerAndUpdaterDelegateTest
     val f = new Fixture
     val appId: PathId = PathId("/test")
     val task = MarathonTestHelper.mininimalTask(appId)
-    val stateOp = TaskStateOp.ForceExpunge(task.id)
+    val stateOp = InstanceStateOp.ForceExpunge(task.id)
 
     When("terminated is called")
     val terminated = f.delegate.terminated(stateOp)
@@ -115,7 +115,7 @@ class TaskCreationHandlerAndUpdaterDelegateTest
     val now = f.clock.now()
 
     val update = TaskStatus.newBuilder().setTaskId(TaskID.newBuilder().setValue(taskIdString)).buildPartial()
-    val stateOp = TaskStateOp.MesosUpdate(task, update, now)
+    val stateOp = InstanceStateOp.MesosUpdate(task, update, now)
 
     When("created is called")
     val statusUpdate = f.delegate.process(stateOp)
@@ -140,7 +140,7 @@ class TaskCreationHandlerAndUpdaterDelegateTest
     val now = f.clock.now()
 
     val update = TaskStatus.newBuilder().setTaskId(taskId.mesosTaskId).buildPartial()
-    val stateOp = TaskStateOp.MesosUpdate(task, update, now)
+    val stateOp = InstanceStateOp.MesosUpdate(task, update, now)
 
     When("statusUpdate is called")
     val statusUpdate = f.delegate.process(stateOp)

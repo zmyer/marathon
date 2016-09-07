@@ -28,7 +28,7 @@ private[appinfo] object TaskForStatistics {
         case task: Task =>
           task.launched.map { launched =>
             val maybeTaskState = launched.status.mesosStatus.map(_.getState)
-            val healths = statuses.getOrElse(task.id, Seq.empty)
+            val healths = statuses.getOrElse(task.instanceId, Seq.empty)
             val maybeTaskLifeTime = launched.status.startedAt.map { startedAt =>
               (nowTs - startedAt.toDateTime.getMillis) / 1000.0
             }

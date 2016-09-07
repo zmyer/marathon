@@ -20,7 +20,7 @@ class TaskKillServiceMock(system: ActorSystem) extends TaskKillService {
 
   override def killTasks(tasks: Iterable[Instance], reason: TaskKillReason): Future[Done] = {
     tasks.foreach { task =>
-      killTaskById(task.id, reason)
+      killTaskById(task.instanceId, reason)
     }
     Future.successful(Done)
   }
@@ -33,7 +33,7 @@ class TaskKillServiceMock(system: ActorSystem) extends TaskKillService {
     Future.successful(Done)
   }
 
-  override def killTask(task: Instance, reason: TaskKillReason): Future[Done] = killTaskById(task.id, reason)
+  override def killTask(task: Instance, reason: TaskKillReason): Future[Done] = killTaskById(task.instanceId, reason)
 
   override def killUnknownTask(taskId: Instance.Id, reason: TaskKillReason): Future[Done] = killTaskById(taskId, reason)
 }

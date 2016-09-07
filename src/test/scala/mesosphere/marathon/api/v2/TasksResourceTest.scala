@@ -32,7 +32,7 @@ class TasksResourceTest extends MarathonSpec with GivenWhenThen with Matchers wi
 
     config.zkTimeoutDuration returns 5.seconds
 
-    val tasksByApp = InstanceTracker.InstancesBySpec.forTasks(task)
+    val tasksByApp = InstanceTracker.InstancesBySpec.forInstances(task)
     taskTracker.instancesBySpecSync returns tasksByApp
 
     val rootGroup = Group("/".toRootPath, apps = Map(app.id -> app))
@@ -60,7 +60,7 @@ class TasksResourceTest extends MarathonSpec with GivenWhenThen with Matchers wi
     val task2 = MarathonTestHelper.runningTask(taskId2)
 
     config.zkTimeoutDuration returns 5.seconds
-    taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.forTasks(task1, task2)
+    taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.forInstances(task1, task2)
     taskKiller.kill(any, any, any)(any) returns Future.successful(Iterable.empty[Task])
     groupManager.app(app1) returns Future.successful(Some(AppDefinition(app1)))
     groupManager.app(app2) returns Future.successful(Some(AppDefinition(app2)))
@@ -96,7 +96,7 @@ class TasksResourceTest extends MarathonSpec with GivenWhenThen with Matchers wi
     val task2 = MarathonTestHelper.stagedTask(taskId2)
 
     config.zkTimeoutDuration returns 5.seconds
-    taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.forTasks(task1, task2)
+    taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.forInstances(task1, task2)
     taskKiller.killAndScale(any, any)(any) returns Future.successful(deploymentPlan)
     groupManager.app(app1) returns Future.successful(Some(AppDefinition(app1)))
     groupManager.app(app2) returns Future.successful(Some(AppDefinition(app2)))
@@ -145,7 +145,7 @@ class TasksResourceTest extends MarathonSpec with GivenWhenThen with Matchers wi
     val task1 = MarathonTestHelper.runningTask(taskId1)
 
     config.zkTimeoutDuration returns 5.seconds
-    taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.forTasks(task1)
+    taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.forInstances(task1)
     taskTracker.specInstances(app1) returns Future.successful(Seq(task1))
     groupManager.app(app1) returns Future.successful(Some(AppDefinition(app1)))
 

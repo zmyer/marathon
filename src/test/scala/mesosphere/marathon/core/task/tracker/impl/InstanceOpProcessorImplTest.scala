@@ -15,7 +15,7 @@ import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusEmitter }
 import mesosphere.marathon.core.task.tracker.TaskUpdater
 import mesosphere.marathon.core.task.update.impl.steps.{ NotifyHealthCheckManagerStepImpl, NotifyLaunchQueueStepImpl, NotifyRateLimiterStepImpl, PostToEventStreamStepImpl, ScaleAppUpdateStepImpl, TaskStatusEmitterPublishStepImpl }
-import mesosphere.marathon.core.task.{ Task, TaskStateChange, TaskStateChangeException, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, TaskStateChange, TaskStateChangeException, InstanceStateOp }
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.storage.repository.{ AppRepository, ReadOnlyAppRepository, TaskRepository }
@@ -229,7 +229,7 @@ class InstanceOpProcessorImplTest
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, f.opSender.ref, taskId, TaskStateOp.ForceExpunge(taskId))
+      InstanceOpProcessor.Operation(deadline, f.opSender.ref, taskId, InstanceStateOp.ForceExpunge(taskId))
     )
     f.taskTrackerProbe.expectMsg(InstanceTrackerActor.StateChanged(taskChanged, ack))
     f.taskTrackerProbe.reply(())
@@ -264,7 +264,7 @@ class InstanceOpProcessorImplTest
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, f.opSender.ref, taskId, TaskStateOp.ForceExpunge(taskId))
+      InstanceOpProcessor.Operation(deadline, f.opSender.ref, taskId, InstanceStateOp.ForceExpunge(taskId))
     )
     f.taskTrackerProbe.expectMsg(InstanceTrackerActor.StateChanged(taskChanged, ack))
     f.taskTrackerProbe.reply(())
@@ -306,7 +306,7 @@ class InstanceOpProcessorImplTest
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, TaskStateOp.ForceExpunge(task.id))
+      InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, InstanceStateOp.ForceExpunge(task.id))
     )
     f.taskTrackerProbe.expectMsg(InstanceTrackerActor.StateChanged(expectedTaskChanged, ack))
     f.taskTrackerProbe.reply(())
@@ -398,12 +398,12 @@ class InstanceOpProcessorImplTest
     lazy val clock = ConstantClock()
     lazy val now = clock.now()
 
-    def stateOpLaunch(task: Task) = TaskStateOp.LaunchEphemeral(task)
-    def stateOpUpdate(task: Task, mesosStatus: mesos.Protos.TaskStatus, now: Timestamp = now) = TaskStateOp.MesosUpdate(task, mesosStatus, now)
-    def stateOpExpunge(task: Task) = TaskStateOp.ForceExpunge(task.id)
-    def stateOpLaunchOnReservation(task: Task, status: Task.Status) = TaskStateOp.LaunchOnReservation(task.id, now, status, Seq.empty)
-    def stateOpReservationTimeout(task: Task) = TaskStateOp.ReservationTimeout(task.id)
-    def stateOpReserve(task: Task) = TaskStateOp.Reserve(task.asInstanceOf[Task.Reserved])
+    def stateOpLaunch(task: Task) = InstanceStateOp.LaunchEphemeral(task)
+    def stateOpUpdate(task: Task, mesosStatus: mesos.Protos.TaskStatus, now: Timestamp = now) = InstanceStateOp.MesosUpdate(task, mesosStatus, now)
+    def stateOpExpunge(task: Task) = InstanceStateOp.ForceExpunge(task.id)
+    def stateOpLaunchOnReservation(task: Task, status: Task.Status) = InstanceStateOp.LaunchOnReservation(task.id, now, status, Seq.empty)
+    def stateOpReservationTimeout(task: Task) = InstanceStateOp.ReservationTimeout(task.id)
+    def stateOpReserve(task: Task) = InstanceStateOp.Reserve(task.asInstanceOf[Task.Reserved])
 
     lazy val healthCheckManager: HealthCheckManager = mock[HealthCheckManager]
     lazy val healthCheckManagerProvider: Provider[HealthCheckManager] = new Provider[HealthCheckManager] {
@@ -454,7 +454,7 @@ class InstanceOpProcessorImplTest
       noMoreInteractions(stateOpResolver)
     }
 
-    def toLaunched(task: Task, taskStateOp: TaskStateOp.LaunchOnReservation): Task =
+    def toLaunched(task: Task, taskStateOp: InstanceStateOp.LaunchOnReservation): Task =
       task.update(taskStateOp) match {
         case TaskStateChange.Update(updatedTask, _) => updatedTask
         case _ => throw new scala.RuntimeException("taskStateOp did not result in a launched task")

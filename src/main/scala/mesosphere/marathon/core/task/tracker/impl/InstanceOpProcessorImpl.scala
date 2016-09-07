@@ -7,7 +7,7 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
 import mesosphere.marathon.core.task.tracker.impl.InstanceOpProcessorImpl.TaskStateOpResolver
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, InstanceTrackerConfig }
-import mesosphere.marathon.core.task.{ Task, TaskStateChange, TaskStateOp }
+import mesosphere.marathon.core.task.{ Task, TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.storage.repository.TaskRepository
 import org.slf4j.LoggerFactory
 
@@ -17,7 +17,7 @@ import scala.util.control.NonFatal
 private[tracker] object InstanceOpProcessorImpl {
 
   /**
-    * Maps a [[TaskStateOp]] to the appropriate [[TaskStateChange]].
+    * Maps a [[InstanceStateOp]] to the appropriate [[TaskStateChange]].
     *
     * @param directTaskTracker a TaskTracker instance that goes directly to the correct taskTracker
     *                          without going through the WhenLeaderActor indirection.
@@ -31,15 +31,15 @@ private[tracker] object InstanceOpProcessorImpl {
       * * a TaskStateChange.Failure if the task does not exist OR ELSE
       * * delegates the TaskStateOp to the existing task that will then determine the state change
       */
-    def resolve(op: TaskStateOp)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
+    def resolve(op: InstanceStateOp)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
       op match {
-        case op: TaskStateOp.LaunchEphemeral => updateIfNotExists(op.taskId, op.task)
-        case op: TaskStateOp.LaunchOnReservation => updateExistingTask(op)
-        case op: TaskStateOp.MesosUpdate => updateExistingTask(op)
-        case op: TaskStateOp.ReservationTimeout => updateExistingTask(op)
-        case op: TaskStateOp.Reserve => updateIfNotExists(op.taskId, op.task)
-        case op: TaskStateOp.ForceExpunge => expungeTask(op.taskId)
-        case op: TaskStateOp.Revert =>
+        case op: InstanceStateOp.LaunchEphemeral => updateIfNotExists(op.instanceId, op.task)
+        case op: InstanceStateOp.LaunchOnReservation => updateExistingTask(op)
+        case op: InstanceStateOp.MesosUpdate => updateExistingTask(op)
+        case op: InstanceStateOp.ReservationTimeout => updateExistingTask(op)
+        case op: InstanceStateOp.Reserve => updateIfNotExists(op.instanceId, op.task)
+        case op: InstanceStateOp.ForceExpunge => expungeTask(op.instanceId)
+        case op: InstanceStateOp.Revert =>
           Future.successful(TaskStateChange.Update(newState = op.task, oldState = None))
       }
     }
@@ -55,8 +55,8 @@ private[tracker] object InstanceOpProcessorImpl {
       }
     }
 
-    private[this] def updateExistingTask(op: TaskStateOp)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
-      directTaskTracker.instance(op.taskId).map {
+    private[this] def updateExistingTask(op: InstanceStateOp)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
+      directTaskTracker.instance(op.instanceId).map {
         case Some(existingTask: Task) =>
           existingTask.update(op)
 
@@ -64,7 +64,7 @@ private[tracker] object InstanceOpProcessorImpl {
         case Some(existingTask) => TaskStateChange.Failure("TODO")
 
         case None =>
-          val taskId = op.taskId
+          val taskId = op.instanceId
           TaskStateChange.Failure(new IllegalStateException(s"$taskId of app [${taskId.runSpecId}] does not exist"))
       }
     }

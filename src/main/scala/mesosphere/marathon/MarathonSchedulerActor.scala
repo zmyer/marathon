@@ -393,7 +393,7 @@ object MarathonSchedulerActor {
   }
 
   case class KillTasks(appId: PathId, tasks: Iterable[Instance]) extends Command {
-    def answer: Event = TasksKilled(appId, tasks.map(_.id))
+    def answer: Event = TasksKilled(appId, tasks.map(_.instanceId))
   }
 
   case object RetrieveRunningDeployments
@@ -453,7 +453,7 @@ class SchedulerActions(
       tasks.foreach {
         case task: Task =>
           if (task.launchedMesosId.isDefined) {
-            log.info("Killing {}", task.id)
+            log.info("Killing {}", task.instanceId)
             killService.killTask(task, TaskKillReason.DeletingApp)
           }
       }
@@ -495,7 +495,7 @@ class SchedulerActions(
               "The app was likely terminated. Will now expunge."
           )
           tasksByApp.specInstances(unknownAppId).foreach { orphanTask =>
-            log.info(s"Killing ${orphanTask.id}")
+            log.info(s"Killing ${orphanTask.taskId}")
             killService.killTask(orphanTask, TaskKillReason.Orphaned)
           }
         }
@@ -568,7 +568,7 @@ class SchedulerActions(
         .sortWith(sortByStateAndTime)
         .take(launchedCount - targetCount)
 
-      log.info("Killing tasks {}", toKill.map(_.id))
+      log.info("Killing tasks {}", toKill.map(_.instanceId))
       killService.killTasks(toKill, TaskKillReason.ScalingApp)
     } else {
       log.info(s"Already running ${app.instances} instances of ${app.id}. Not scaling.")

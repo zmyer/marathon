@@ -62,7 +62,7 @@ private[health] class HealthCheckActor(
       app.version,
       healthCheck
     )
-    val activeTaskIds = taskTracker.specInstancesLaunchedSync(app.id).map(_.id).toSet
+    val activeTaskIds = taskTracker.specInstancesLaunchedSync(app.id).map(_.instanceId).toSet
     // The Map built with filterKeys wraps the original map and contains a reference to activeTaskIds.
     // Therefore we materialize it into a new map.
     instanceHealth = instanceHealth.filterKeys(activeTaskIds).iterator.toMap
@@ -89,7 +89,7 @@ private[health] class HealthCheckActor(
       case task: Task =>
         task.launched.foreach { launched =>
           if (launched.runSpecVersion == app.version && task.isRunning) {
-            log.debug("Dispatching health check job for {}", task.id)
+            log.debug("Dispatching health check job for {}", task.instanceId)
             val worker: ActorRef = context.actorOf(workerProps)
             worker ! HealthCheckJob(app, task, launched, healthCheck)
           }

@@ -6,7 +6,7 @@ import mesosphere.marathon.core.launcher.InstanceOp
 import mesosphere.marathon.core.task.Task.LocalVolumeId
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.tracker.InstanceTracker.InstancesBySpec
-import mesosphere.marathon.core.task.TaskStateOp
+import mesosphere.marathon.core.task.InstanceStateOp
 import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.GroupRepository
 import mesosphere.marathon.test.Mockito
@@ -49,7 +49,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     val expectedOps =
       Iterable(
         InstanceOp.UnreserveAndDestroyVolumes(
-          TaskStateOp.ForceExpunge(taskId),
+          InstanceStateOp.ForceExpunge(taskId),
           oldInstance = None,
           resources = offer.getResourcesList.asScala.to[Seq]
         )
@@ -80,7 +80,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     Then("all resources are destroyed and unreserved")
     val expectedOps = Iterable(
       InstanceOp.UnreserveAndDestroyVolumes(
-        TaskStateOp.ForceExpunge(taskId),
+        InstanceStateOp.ForceExpunge(taskId),
         oldInstance = None,
         resources = offer.getResourcesList.asScala.to[Seq]
       )
@@ -103,7 +103,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     f.groupRepository.root() returns Future.successful(Group.empty)
     And("a matching bogus task")
     val bogusTask = MarathonTestHelper.mininimalTask(taskId.idString)
-    f.taskTracker.instancessBySpec()(any) returns Future.successful(InstancesBySpec.forTasks(bogusTask))
+    f.taskTracker.instancessBySpec()(any) returns Future.successful(InstancesBySpec.forInstances(bogusTask))
 
     When("reconciling")
     val matchedTaskOps = f.reconciler.matchOffer(Timestamp.now() + 1.day, offer).futureValue
@@ -111,7 +111,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     Then("all resources are destroyed and unreserved")
     val expectedOps = Iterable(
       InstanceOp.UnreserveAndDestroyVolumes(
-        TaskStateOp.ForceExpunge(taskId),
+        InstanceStateOp.ForceExpunge(taskId),
         oldInstance = Some(bogusTask),
         resources = offer.getResourcesList.asScala.to[Seq]
       )
@@ -135,7 +135,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     f.groupRepository.root() returns Future.successful(Group.empty.copy(apps = Map(app.id -> app)))
     And("a matching bogus task")
     f.taskTracker.instancessBySpec()(any) returns Future.successful(
-      InstancesBySpec.forTasks(MarathonTestHelper.mininimalTask(taskId.idString))
+      InstancesBySpec.forInstances(MarathonTestHelper.mininimalTask(taskId.idString))
     )
 
     When("reconciling")
