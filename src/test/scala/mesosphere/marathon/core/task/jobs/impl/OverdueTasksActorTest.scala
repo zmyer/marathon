@@ -163,7 +163,7 @@ class OverdueTasksActorTest extends MarathonSpec with GivenWhenThen with maratho
     val recentReserved = reservedWithTimeout(appId, deadline = clock.now() + 1.second)
     val app = InstanceTracker.SpecInstances.forInstances(appId, Iterable(recentReserved, overdueReserved))
     taskTracker.instancessBySpec()(any[ExecutionContext]) returns Future.successful(InstancesBySpec.of(app))
-    taskReservationTimeoutHandler.timeout(InstanceStateOp.ReservationTimeout(overdueReserved.id)).asInstanceOf[Future[Unit]] returns
+    taskReservationTimeoutHandler.timeout(InstanceStateOp.ReservationTimeout(overdueReserved.taskId)).asInstanceOf[Future[Unit]] returns
       Future.successful(())
 
     When("the check is initiated")
@@ -173,7 +173,7 @@ class OverdueTasksActorTest extends MarathonSpec with GivenWhenThen with maratho
 
     Then("the reservation gets processed")
     verify(taskTracker).instancessBySpec()(any[ExecutionContext])
-    verify(taskReservationTimeoutHandler).timeout(InstanceStateOp.ReservationTimeout(overdueReserved.id))
+    verify(taskReservationTimeoutHandler).timeout(InstanceStateOp.ReservationTimeout(overdueReserved.taskId))
 
   }
 

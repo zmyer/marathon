@@ -1,11 +1,11 @@
 package mesosphere.marathon.core.task.tracker.impl
 
-import mesosphere.marathon.MarathonTestHelper
-import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
+import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper }
+import mesosphere.marathon.core.instance.InstanceStatus
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusUpdateTestHelper }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.tracker.impl.InstanceOpProcessorImpl.TaskStateOpResolver
-import mesosphere.marathon.core.task.{ Task, TaskStateChange, InstanceStateOp }
+import mesosphere.marathon.core.task.{ InstanceStateOp, Task, TaskStateChange }
 import mesosphere.marathon.core.task.state.MarathonTaskStatusMapping
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.test.Mockito
@@ -22,7 +22,7 @@ import scala.concurrent.Future
   * More tests are in [[mesosphere.marathon.tasks.InstanceTrackerImplTest]]
   */
 class InstanceStateOpResolverTest
-    extends FunSuite with Mockito with GivenWhenThen with ScalaFutures with Matchers {
+    extends FunSuite with Mockito with GivenWhenThen with ScalaFutures with Matchers with InstanceConversions {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   test("ForceExpunge results in NoChange if task does not exist") {
@@ -69,7 +69,7 @@ class InstanceStateOpResolverTest
   test("MesosUpdate fails if task does not exist") {
     val f = new Fixture
     Given("a non existing taskId")
-    f.taskTracker.instance(f.existingTask.id) returns Future.successful(None)
+    f.taskTracker.instance(f.existingTask.taskId) returns Future.successful(None)
 
     When("A MesosUpdate is scheduled with that taskId")
     val stateChange = f.stateOpResolver.resolve(InstanceStateOp.MesosUpdate(
@@ -78,7 +78,7 @@ class InstanceStateOpResolverTest
       now = Timestamp(0))).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingTask.id)
+    verify(f.taskTracker).instance(f.existingTask.taskId)
 
     And("the result is a Failure")
     stateChange shouldBe a[TaskStateChange.Failure]
@@ -94,14 +94,14 @@ class InstanceStateOpResolverTest
       val f = new Fixture
 
       Given("an existing task")
-      f.taskTracker.instance(f.existingTask.id) returns Future.successful(Some(f.existingTask))
+      f.taskTracker.instance(f.existingTask.taskId) returns Future.successful(Some(f.existingTask))
 
       When("A TASK_LOST update is received with a reason indicating it might come back")
       val stateOp = TaskStatusUpdateTestHelper.lost(reason, f.existingTask).wrapped.stateOp
       val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
       Then("taskTracker.task is called")
-      verify(f.taskTracker).instance(f.existingTask.id)
+      verify(f.taskTracker).instance(f.existingTask.taskId)
 
       And("the result is an Update")
       stateChange shouldBe a[TaskStateChange.Update]
@@ -122,14 +122,14 @@ class InstanceStateOpResolverTest
       val f = new Fixture
 
       Given("an existing task")
-      f.taskTracker.instance(f.existingTask.id) returns Future.successful(Some(f.existingTask))
+      f.taskTracker.instance(f.existingTask.taskId) returns Future.successful(Some(f.existingTask))
 
       When("A TASK_LOST update is received with a reason indicating it won't come back")
       val stateOp: InstanceStateOp.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingTask).wrapped.stateOp.asInstanceOf[InstanceStateOp.MesosUpdate]
       val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
       Then("taskTracker.task is called")
-      verify(f.taskTracker).instance(f.existingTask.id)
+      verify(f.taskTracker).instance(f.existingTask.taskId)
 
       And("the result is an Expunge")
       stateChange shouldBe a[TaskStateChange.Expunge]
@@ -153,7 +153,7 @@ class InstanceStateOpResolverTest
     val f = new Fixture
 
     Given("an existing lost task")
-    f.taskTracker.instance(f.existingLostTask.id) returns Future.successful(Some(f.existingLostTask))
+    f.taskTracker.instance(f.existingLostTask.taskId) returns Future.successful(Some(f.existingLostTask))
 
     When("A subsequent TASK_LOST update is received")
     val reason = mesos.Protos.TaskStatus.Reason.REASON_SLAVE_DISCONNECTED
@@ -161,7 +161,7 @@ class InstanceStateOpResolverTest
     val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingLostTask.id)
+    verify(f.taskTracker).instance(f.existingLostTask.taskId)
 
     And("the result is an noop")
     stateChange shouldBe a[TaskStateChange.NoChange]
@@ -190,13 +190,13 @@ class InstanceStateOpResolverTest
   test("Launch fails if task already exists") {
     val f = new Fixture
     Given("an existing task")
-    f.taskTracker.instance(f.existingTask.id) returns Future.successful(Some(f.existingTask))
+    f.taskTracker.instance(f.existingTask.taskId) returns Future.successful(Some(f.existingTask))
 
     When("A LaunchEphemeral is scheduled with that taskId")
     val stateChange = f.stateOpResolver.resolve(InstanceStateOp.LaunchEphemeral(f.existingTask)).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingTask.id)
+    verify(f.taskTracker).instance(f.existingTask.taskId)
 
     And("the result is a Failure")
     stateChange shouldBe a[TaskStateChange.Failure]
@@ -208,13 +208,13 @@ class InstanceStateOpResolverTest
   test("Reserve fails if task already exists") {
     val f = new Fixture
     Given("an existing task")
-    f.taskTracker.instance(f.existingReservedTask.id) returns Future.successful(Some(f.existingReservedTask))
+    f.taskTracker.instance(f.existingReservedTask.taskId) returns Future.successful(Some(f.existingReservedTask))
 
     When("A Reserve is scheduled with that taskId")
     val stateChange = f.stateOpResolver.resolve(InstanceStateOp.Reserve(f.existingReservedTask)).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingReservedTask.id)
+    verify(f.taskTracker).instance(f.existingReservedTask.taskId)
 
     And("the result is a Failure")
     stateChange shouldBe a[TaskStateChange.Failure]
@@ -242,9 +242,9 @@ class InstanceStateOpResolverTest
     val stateOpResolver = new TaskStateOpResolver(taskTracker)
 
     val appId = PathId("/app")
-    val existingTask = MarathonTestHelper.mininimalTask(Instance.Id.forRunSpec(appId).idString, Timestamp.now(), None, InstanceStatus.Running)
+    val existingTask = MarathonTestHelper.mininimalTask(Task.Id.forRunSpec(appId).idString, Timestamp.now(), None, InstanceStatus.Running)
     val existingReservedTask = MarathonTestHelper.residentReservedTask(appId)
-    val notExistingTaskId = Instance.Id.forRunSpec(appId)
+    val notExistingTaskId = Task.Id.forRunSpec(appId)
     val existingLostTask = MarathonTestHelper.mininimalLostTask(appId)
 
     def verifyNoMoreInteractions(): Unit = {

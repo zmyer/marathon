@@ -52,13 +52,13 @@ class InstanceOpProcessorImplTest
     val taskChanged = TaskChanged(stateOp, expectedChange)
     val ack = InstanceTrackerActor.Ack(f.opSender.ref, expectedChange)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(expectedChange)
-    f.taskRepository.get(task.id) returns Future.successful(Some(task))
+    f.taskRepository.get(task.taskId) returns Future.successful(Some(task))
     f.taskRepository.store(task) returns Future.successful(Done)
     f.taskUpdater.statusUpdate(appId, mesosStatus).asInstanceOf[Future[Unit]] returns Future.successful(())
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, stateOp)
+      InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.taskId, stateOp)
     )
 
     And("the taskTracker replies immediately")
@@ -91,13 +91,13 @@ class InstanceOpProcessorImplTest
     val ack = InstanceTrackerActor.Ack(f.opSender.ref, expectedChange)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(expectedChange)
     f.taskRepository.store(task) returns Future.failed(new RuntimeException("fail"))
-    f.taskRepository.get(task.id) returns Future.successful(Some(task))
+    f.taskRepository.get(task.taskId) returns Future.successful(Some(task))
 
     When("the processor processes an update")
     var result: Try[Unit] = Failure(new RuntimeException("test executing failed"))
     val logs = CaptureLogEvents.forBlock {
       val resultF = f.processor.process(
-        InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, stateOp)
+        InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.taskId, stateOp)
       )
       f.taskTrackerProbe.expectMsg(InstanceTrackerActor.StateChanged(taskChanged, ack))
       f.taskTrackerProbe.reply(())
@@ -114,7 +114,7 @@ class InstanceOpProcessorImplTest
     logs.filter(l => l.getLevel == Level.WARN && l.getMessage.contains(s"[${taskProto.getId}]")) should have size 1
 
     And("loads the task")
-    verify(f.taskRepository).get(task.id)
+    verify(f.taskRepository).get(task.taskId)
 
     And("it replies with unit immediately because the task is as expected")
     result should be(Success(()))
@@ -137,14 +137,14 @@ class InstanceOpProcessorImplTest
     val ack = InstanceTrackerActor.Ack(f.opSender.ref, expectedTaskChanged.stateChange)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(resolvedStateChange)
     f.taskRepository.store(task) returns Future.failed(storeException)
-    f.taskRepository.get(task.id) returns Future.successful(None)
+    f.taskRepository.get(task.taskId) returns Future.successful(None)
 
     When("the processor processes an update")
 
     var result: Try[Unit] = Failure(new RuntimeException("test executing failed"))
     val logs = CaptureLogEvents.forBlock {
       val resultF = f.processor.process(
-        InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, stateOp)
+        InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.taskId, stateOp)
       )
       f.taskTrackerProbe.expectMsg(InstanceTrackerActor.StateChanged(expectedTaskChanged, ack))
       f.taskTrackerProbe.reply(())
@@ -161,7 +161,7 @@ class InstanceOpProcessorImplTest
     logs.filter(l => l.getLevel == Level.WARN && l.getMessage.contains(s"[${taskProto.getId}]")) should have size 1
 
     And("loads the task")
-    verify(f.taskRepository).get(task.id)
+    verify(f.taskRepository).get(task.taskId)
 
     And("it replies with unit immediately because the task is as expected")
     result should be(Success(()))
@@ -182,13 +182,13 @@ class InstanceOpProcessorImplTest
     val expectedChange = TaskStateChange.Update(task, Some(task))
     f.stateOpResolver.resolve(stateOp) returns Future.successful(expectedChange)
     f.taskRepository.store(task) returns Future.failed(storeFailed)
-    f.taskRepository.get(task.id) returns Future.failed(new RuntimeException("task failed"))
+    f.taskRepository.get(task.taskId) returns Future.failed(new RuntimeException("task failed"))
 
     When("the processor processes an update")
     var result: Try[Unit] = Failure(new RuntimeException("test executing failed"))
     val logs = CaptureLogEvents.forBlock {
       result = Try(f.processor.process(
-        InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, stateOp)
+        InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.taskId, stateOp)
       ).futureValue) // we need to complete the future here to get all the logs
     }
 
@@ -199,7 +199,7 @@ class InstanceOpProcessorImplTest
     verify(f.taskRepository).store(task)
 
     And("loads the task")
-    verify(f.taskRepository).get(task.id)
+    verify(f.taskRepository).get(task.taskId)
 
     And("it replies with the original error")
     result.isFailure shouldBe true
@@ -218,14 +218,14 @@ class InstanceOpProcessorImplTest
 
     Given("a taskRepository")
     val task = MarathonTestHelper.mininimalTask(appId)
-    val taskId = task.id
+    val taskId = task.taskId
     val taskIdString = taskId.idString
     val stateOp = f.stateOpExpunge(task)
     val expectedChange = TaskStateChange.Expunge(task)
     val taskChanged = TaskChanged(stateOp, expectedChange)
     val ack = InstanceTrackerActor.Ack(f.opSender.ref, expectedChange)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(expectedChange)
-    f.taskRepository.delete(task.id) returns Future.successful(Done)
+    f.taskRepository.delete(task.taskId) returns Future.successful(Done)
 
     When("the processor processes an update")
     val result = f.processor.process(
@@ -241,7 +241,7 @@ class InstanceOpProcessorImplTest
     verify(f.stateOpResolver).resolve(stateOp)
 
     And("it calls expunge")
-    verify(f.taskRepository).delete(task.id)
+    verify(f.taskRepository).delete(task.taskId)
 
     And("no more interactions")
     f.verifyNoMoreInteractions()
@@ -253,7 +253,7 @@ class InstanceOpProcessorImplTest
 
     Given("a taskRepository")
     val task = MarathonTestHelper.mininimalTask(appId)
-    val taskId = task.id
+    val taskId = task.taskId
     val stateOp = f.stateOpExpunge(task)
     val expectedChange = TaskStateChange.Expunge(task)
     val taskChanged = TaskChanged(stateOp, expectedChange)
@@ -301,12 +301,12 @@ class InstanceOpProcessorImplTest
     val expectedTaskChanged = TaskChanged(stateOp, TaskStateChange.Failure(expungeException))
     val ack = InstanceTrackerActor.Ack(f.opSender.ref, expectedTaskChanged.stateChange)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(resolvedStateChange)
-    f.taskRepository.delete(task.id) returns Future.failed(expungeException)
-    f.taskRepository.get(task.id) returns Future.successful(Some(task))
+    f.taskRepository.delete(task.taskId) returns Future.failed(expungeException)
+    f.taskRepository.get(task.taskId) returns Future.successful(Some(task))
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.id, InstanceStateOp.ForceExpunge(task.id))
+      InstanceOpProcessor.Operation(deadline, f.opSender.ref, task.taskId, InstanceStateOp.ForceExpunge(task.taskId))
     )
     f.taskTrackerProbe.expectMsg(InstanceTrackerActor.StateChanged(expectedTaskChanged, ack))
     f.taskTrackerProbe.reply(())
@@ -318,10 +318,10 @@ class InstanceOpProcessorImplTest
     verify(f.stateOpResolver).resolve(stateOp)
 
     And("it calls expunge")
-    verify(f.taskRepository).delete(task.id)
+    verify(f.taskRepository).delete(task.taskId)
 
     And("it reloads the task")
-    verify(f.taskRepository).get(task.id)
+    verify(f.taskRepository).get(task.taskId)
 
     And("no more interactions")
     f.verifyNoMoreInteractions()
@@ -335,13 +335,13 @@ class InstanceOpProcessorImplTest
     val task = MarathonTestHelper.mininimalTask(appId)
     val taskProto = TaskSerializer.toProto(task)
     val stateOp = f.stateOpUpdate(task, MesosTaskStatusTestHelper.running)
-    val expectedChange = TaskStateChange.NoChange(task.id)
+    val expectedChange = TaskStateChange.NoChange(task.taskId)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(expectedChange)
-    f.taskRepository.get(task.id) returns Future.successful(Some(task))
+    f.taskRepository.get(task.taskId) returns Future.successful(Some(task))
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, testActor, task.id, stateOp)
+      InstanceOpProcessor.Operation(deadline, testActor, task.taskId, stateOp)
     )
 
     Then("it replies with unit immediately")
@@ -368,11 +368,11 @@ class InstanceOpProcessorImplTest
     val exception = TaskStateChangeException("ReservationTimeout on LaunchedEphemeral is unexpected")
     val expectedChange = TaskStateChange.Failure(exception)
     f.stateOpResolver.resolve(stateOp) returns Future.successful(expectedChange)
-    f.taskRepository.get(task.id) returns Future.successful(Some(task))
+    f.taskRepository.get(task.taskId) returns Future.successful(Some(task))
 
     When("the processor processes an update")
     val result = f.processor.process(
-      InstanceOpProcessor.Operation(deadline, testActor, task.id, stateOp)
+      InstanceOpProcessor.Operation(deadline, testActor, task.taskId, stateOp)
     )
 
     Then("it replies with unit immediately")
@@ -400,9 +400,9 @@ class InstanceOpProcessorImplTest
 
     def stateOpLaunch(task: Task) = InstanceStateOp.LaunchEphemeral(task)
     def stateOpUpdate(task: Task, mesosStatus: mesos.Protos.TaskStatus, now: Timestamp = now) = InstanceStateOp.MesosUpdate(task, mesosStatus, now)
-    def stateOpExpunge(task: Task) = InstanceStateOp.ForceExpunge(task.id)
-    def stateOpLaunchOnReservation(task: Task, status: Task.Status) = InstanceStateOp.LaunchOnReservation(task.id, now, status, Seq.empty)
-    def stateOpReservationTimeout(task: Task) = InstanceStateOp.ReservationTimeout(task.id)
+    def stateOpExpunge(task: Task) = InstanceStateOp.ForceExpunge(task.taskId)
+    def stateOpLaunchOnReservation(task: Task, status: Task.Status) = InstanceStateOp.LaunchOnReservation(task.taskId, now, status, Seq.empty)
+    def stateOpReservationTimeout(task: Task) = InstanceStateOp.ReservationTimeout(task.taskId)
     def stateOpReserve(task: Task) = InstanceStateOp.Reserve(task.asInstanceOf[Task.Reserved])
 
     lazy val healthCheckManager: HealthCheckManager = mock[HealthCheckManager]

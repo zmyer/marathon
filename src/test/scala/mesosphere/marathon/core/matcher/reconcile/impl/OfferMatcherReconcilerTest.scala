@@ -1,12 +1,11 @@
 package mesosphere.marathon.core.matcher.reconcile.impl
 
-import mesosphere.marathon.MarathonTestHelper
-import mesosphere.marathon.core.instance.Instance
+import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper }
 import mesosphere.marathon.core.launcher.InstanceOp
 import mesosphere.marathon.core.task.Task.LocalVolumeId
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.tracker.InstanceTracker.InstancesBySpec
-import mesosphere.marathon.core.task.InstanceStateOp
+import mesosphere.marathon.core.task.{ InstanceStateOp, Task }
 import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.GroupRepository
 import mesosphere.marathon.test.Mockito
@@ -16,7 +15,7 @@ import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockito with Matchers with ScalaFutures {
+class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockito with Matchers with ScalaFutures with InstanceConversions {
   import scala.collection.JavaConverters._
 
   test("offer without reservations leads to no task ops") {
@@ -33,7 +32,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     val f = new Fixture
     Given("an offer with volume")
     val appId = PathId("/test")
-    val taskId = Instance.Id.forRunSpec(appId)
+    val taskId = Task.Id.forRunSpec(appId)
     val localVolumeIdLaunched = LocalVolumeId(appId, "persistent-volume-launched", "uuidLaunched")
     val offer = MarathonTestHelper.offerWithVolumes(taskId.idString, localVolumeIdLaunched)
 
@@ -64,7 +63,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     val f = new Fixture
     Given("an offer with volume")
     val appId = PathId("/test")
-    val taskId = Instance.Id.forRunSpec(appId)
+    val taskId = Task.Id.forRunSpec(appId)
     val localVolumeIdLaunched = LocalVolumeId(appId, "persistent-volume-launched", "uuidLaunched")
     val offer = MarathonTestHelper.offerWithVolumes(taskId.idString, localVolumeIdLaunched)
 
@@ -95,7 +94,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     val f = new Fixture
     Given("an offer with volume")
     val appId = PathId("/test")
-    val taskId = Instance.Id.forRunSpec(appId)
+    val taskId = Task.Id.forRunSpec(appId)
     val localVolumeIdLaunched = LocalVolumeId(appId, "persistent-volume-launched", "uuidLaunched")
     val offer = MarathonTestHelper.offerWithVolumes(taskId.idString, localVolumeIdLaunched)
 
@@ -126,7 +125,7 @@ class OfferMatcherReconcilerTest extends FunSuite with GivenWhenThen with Mockit
     val f = new Fixture
     Given("an offer with volume")
     val appId = PathId("/test")
-    val taskId = Instance.Id.forRunSpec(appId)
+    val taskId = Task.Id.forRunSpec(appId)
     val localVolumeIdLaunched = LocalVolumeId(appId, "persistent-volume-launched", "uuidLaunched")
     val offer = MarathonTestHelper.offerWithVolumes(taskId.idString, localVolumeIdLaunched)
 

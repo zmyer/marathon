@@ -74,7 +74,7 @@ class ExpungeOverdueLostTasksActorTest extends MarathonSpec with GivenWhenThen w
     testProbe.receiveOne(3.seconds)
 
     And("one kill call is issued")
-    verify(stateOpProcessor, once).process(InstanceStateOp.ForceExpunge(unreachable.id))
+    verify(stateOpProcessor, once).process(InstanceStateOp.ForceExpunge(unreachable.taskId))
     noMoreInteractions(stateOpProcessor)
   }
 
@@ -91,7 +91,7 @@ class ExpungeOverdueLostTasksActorTest extends MarathonSpec with GivenWhenThen w
     testProbe.receiveOne(3.seconds)
 
     And("one kill call is issued")
-    verify(stateOpProcessor, once).process(InstanceStateOp.ForceExpunge(unreachable1.id))
+    verify(stateOpProcessor, once).process(InstanceStateOp.ForceExpunge(unreachable1.taskId))
     noMoreInteractions(stateOpProcessor)
   }
 }

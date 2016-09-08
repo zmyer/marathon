@@ -1,7 +1,6 @@
 package mesosphere.mesos
 
 import com.google.protobuf.TextFormat
-import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.state.AppDefinition.VersionInfo.OnlyVersion
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.state.Container.Docker
@@ -1113,7 +1112,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
 
     val builder = new TaskBuilder(
       app,
-      s => Instance.Id(s.toString), MarathonTestHelper.defaultConfig())
+      s => Task.Id(s.toString), MarathonTestHelper.defaultConfig())
 
     val task = builder.buildIfMatches(offer, s)
 
@@ -1137,7 +1136,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
 
     val builder = new TaskBuilder(
       app,
-      s => Instance.Id(s.toString), MarathonTestHelper.defaultConfig())
+      s => Task.Id(s.toString), MarathonTestHelper.defaultConfig())
 
     def shouldBuildTask(message: String, offer: Offer) {
       val Some((taskInfo, ports)) = builder.buildIfMatches(offer, runningTasks)
@@ -1189,7 +1188,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
 
     val builder = new TaskBuilder(
       app,
-      s => Instance.Id(s.toString), MarathonTestHelper.defaultConfig())
+      s => Task.Id(s.toString), MarathonTestHelper.defaultConfig())
 
     def shouldBuildTask(message: String, offer: Offer) {
       val Some((taskInfo, ports)) = builder.buildIfMatches(offer, runningTasks)
@@ -1280,7 +1279,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
       id = PathId("/app"),
       versionInfo = version
     )
-    val env = TaskBuilder.taskContextEnv(runSpec = runSpec, taskId = Some(Instance.Id("taskId")))
+    val env = TaskBuilder.taskContextEnv(runSpec = runSpec, taskId = Some(Task.Id("taskId")))
 
     assert(
       env == Map(
@@ -1314,7 +1313,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
         "LABEL2" -> "VALUE2"
       )
     )
-    val env = TaskBuilder.taskContextEnv(runSpec = runSpec, Some(Instance.Id(taskId)))
+    val env = TaskBuilder.taskContextEnv(runSpec = runSpec, Some(Task.Id(taskId)))
 
     assert(
       env == Map(
@@ -1349,7 +1348,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
       )
     )
 
-    val env = TaskBuilder.taskContextEnv(runSpec = runSpec, Some(Instance.Id("taskId")))
+    val env = TaskBuilder.taskContextEnv(runSpec = runSpec, Some(Task.Id("taskId")))
       .filterKeys(_.startsWith("MARATHON_APP_LABEL"))
 
     assert(
@@ -1372,7 +1371,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
             image = "myregistry/myimage:version"
           ))
         ),
-        taskId = Some(Instance.Id("task-123")),
+        taskId = Some(Task.Id("task-123")),
         host = Some("host.mega.corp"),
         hostPorts = Helpers.hostPorts(1000, 1001),
         envPrefix = None
@@ -1404,7 +1403,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
             "PORT_8081" -> "port8081"
           ))
         ),
-        taskId = Some(Instance.Id("task-123")),
+        taskId = Some(Task.Id("task-123")),
         host = Some("host.mega.corp"),
         hostPorts = Helpers.hostPorts(1000, 1001),
         envPrefix = None
@@ -1426,7 +1425,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
         runSpec = AppDefinition(
           portDefinitions = PortDefinitions(8080, 8081)
         ),
-        taskId = Some(Instance.Id("task-123")),
+        taskId = Some(Task.Id("task-123")),
         host = Some("host.mega.corp"),
         hostPorts = Helpers.hostPorts(1000, 1001),
         envPrefix = None
@@ -1444,7 +1443,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
         AppDefinition(
           portDefinitions = PortDefinitions(8080, 8081)
         ),
-        Some(Instance.Id("task-123")),
+        Some(Task.Id("task-123")),
         Some("host.mega.corp"),
         Helpers.hostPorts(1000, 1001),
         Some("CUSTOM_PREFIX_")
@@ -1474,7 +1473,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
         AppDefinition(
           portDefinitions = PortDefinitions(8080, 8081)
         ),
-        Some(Instance.Id("task-123")),
+        Some(Task.Id("task-123")),
         Some("host.mega.corp"),
         Helpers.hostPorts(1000, 1001),
         Some("P_")
@@ -1502,7 +1501,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
             ))
           ))
         ),
-        taskId = Some(Instance.Id("task-123")),
+        taskId = Some(Task.Id("task-123")),
         host = Some("host.mega.corp"),
         hostPorts = Helpers.hostPorts(1000, 1001),
         envPrefix = None
@@ -1529,7 +1528,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
             ))
           ))
         ),
-        taskId = Some(Instance.Id("task-123")),
+        taskId = Some(Task.Id("task-123")),
         host = Some("host.mega.corp"),
         hostPorts = Helpers.hostPorts(1000, 1001),
         envPrefix = None
@@ -1552,7 +1551,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
           FetchUri(uri = "http://www.example2.com", extract = true, cache = true, executable = true)
         )
       ),
-      taskId = Some(Instance.Id("task-123")),
+      taskId = Some(Task.Id("task-123")),
       host = Some("host.mega.corp"),
       hostPorts = Helpers.hostPorts(1000, 1001),
       envPrefix = None
@@ -1694,7 +1693,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
     )
 
     val offer = MarathonTestHelper.makeBasicOffer(1.0, 128.0, 31000, 32000).build
-    val builder = new TaskBuilder(app, s => Instance.Id(s.toString), MarathonTestHelper.defaultConfig())
+    val builder = new TaskBuilder(app, s => Task.Id(s.toString), MarathonTestHelper.defaultConfig())
     val runningTasks = Set.empty[Task]
     val task = builder.buildIfMatches(offer, runningTasks)
 
@@ -1717,7 +1716,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
     envVarsPrefix: Option[String] = None) = {
     val builder = new TaskBuilder(
       app,
-      s => Instance.Id(s.toString),
+      s => Task.Id(s.toString),
       MarathonTestHelper.defaultConfig(
         mesosRole = mesosRole,
         acceptedResourceRoles = acceptedResourceRoles,

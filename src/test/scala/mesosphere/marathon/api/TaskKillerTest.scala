@@ -2,8 +2,9 @@ package mesosphere.marathon.api
 
 import mesosphere.marathon._
 import mesosphere.marathon.core.group.GroupManager
-import mesosphere.marathon.core.task.{ TaskStateChange, InstanceStateOp, Task }
-import mesosphere.marathon.core.task.tracker.{ TaskStateOpProcessor, InstanceTracker }
+import mesosphere.marathon.core.instance.Instance
+import mesosphere.marathon.core.task.{ InstanceStateOp, Task, TaskStateChange }
+import mesosphere.marathon.core.task.tracker.{ InstanceTracker, TaskStateOpProcessor }
 import mesosphere.marathon.state.{ AppDefinition, Group, PathId, Timestamp }
 import mesosphere.marathon.upgrade.DeploymentPlan
 import org.mockito.ArgumentCaptor
@@ -21,7 +22,8 @@ class TaskKillerTest extends MarathonSpec
     with Matchers
     with BeforeAndAfterAll
     with MockitoSugar
-    with ScalaFutures {
+    with ScalaFutures
+    with InstanceConversions {
 
   val auth: TestAuthFixture = new TestAuthFixture
   implicit val identity = auth.identity
@@ -68,7 +70,7 @@ class TaskKillerTest extends MarathonSpec
 
     val groupUpdateCaptor = ArgumentCaptor.forClass(classOf[(Group) => Group])
     val forceCaptor = ArgumentCaptor.forClass(classOf[Boolean])
-    val toKillCaptor = ArgumentCaptor.forClass(classOf[Map[PathId, Iterable[Task]]])
+    val toKillCaptor = ArgumentCaptor.forClass(classOf[Map[PathId, Iterable[Instance]]])
     val expectedDeploymentPlan = DeploymentPlan.empty
     when(f.groupManager.update(
       any[PathId],
@@ -87,7 +89,7 @@ class TaskKillerTest extends MarathonSpec
   test("KillRequested without scaling") {
     val f = new Fixture
     val appId = PathId(List("my", "app"))
-    val tasksToKill = Set(MarathonTestHelper.runningTaskForApp(appId))
+    val tasksToKill: Iterable[Instance] = Set(MarathonTestHelper.runningTaskForApp(appId))
     when(f.groupManager.app(appId)).thenReturn(Future.successful(Some(AppDefinition(appId))))
     when(f.tracker.specInstances(appId)).thenReturn(Future.successful(tasksToKill))
 
@@ -115,7 +117,7 @@ class TaskKillerTest extends MarathonSpec
       groupUpdateCaptor.capture(),
       any[Timestamp],
       forceCaptor.capture(),
-      any[Map[PathId, Iterable[Task]]]
+      any[Map[PathId, Iterable[Instance]]]
     )).thenReturn(Future.failed(AppLockedException()))
 
     val result = f.taskKiller.killAndScale(appId, (tasks) => tasksToKill, force = false)
@@ -128,10 +130,10 @@ class TaskKillerTest extends MarathonSpec
     val appId = PathId(List("my", "app"))
     val runningTask = MarathonTestHelper.runningTaskForApp(appId)
     val reservedTask = MarathonTestHelper.residentReservedTask(appId)
-    val tasksToKill = Set(runningTask, reservedTask)
+    val tasksToKill: Iterable[Instance] = Set(runningTask, reservedTask)
     val launchedTasks = Set(runningTask)
-    val stateOp1 = InstanceStateOp.ForceExpunge(runningTask.id)
-    val stateOp2 = InstanceStateOp.ForceExpunge(reservedTask.id)
+    val stateOp1 = InstanceStateOp.ForceExpunge(runningTask.taskId)
+    val stateOp2 = InstanceStateOp.ForceExpunge(reservedTask.taskId)
 
     when(f.groupManager.app(appId)).thenReturn(Future.successful(Some(AppDefinition(appId))))
     when(f.tracker.specInstances(appId)).thenReturn(Future.successful(tasksToKill))
@@ -147,8 +149,8 @@ class TaskKillerTest extends MarathonSpec
     // only task1 is killed
     verify(f.service, times(1)).killTasks(appId, launchedTasks)
     // both tasks are expunged from the repo
-    verify(f.stateOpProcessor).process(InstanceStateOp.ForceExpunge(runningTask.id))
-    verify(f.stateOpProcessor).process(InstanceStateOp.ForceExpunge(reservedTask.id))
+    verify(f.stateOpProcessor).process(InstanceStateOp.ForceExpunge(runningTask.taskId))
+    verify(f.stateOpProcessor).process(InstanceStateOp.ForceExpunge(reservedTask.taskId))
   }
 
   class Fixture {

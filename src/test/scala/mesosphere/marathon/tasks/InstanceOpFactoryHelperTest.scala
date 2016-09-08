@@ -30,7 +30,7 @@ class InstanceOpFactoryHelperTest extends MarathonSpec with GivenWhenThen with M
 
     Given("a task and a taskInfo")
     val task = MarathonTestHelper.mininimalTask("123")
-    val taskInfo = MarathonTestHelper.makeOneCPUTask(task.id.idString).build()
+    val taskInfo = MarathonTestHelper.makeOneCPUTask(task.taskId.idString).build()
 
     When("We create a launch operation")
     val launch = f.helper.launchEphemeral(taskInfo, task)
