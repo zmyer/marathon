@@ -2,7 +2,7 @@ package mesosphere.marathon.core.launcher
 
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.Task.LocalVolume
-import mesosphere.marathon.core.task.{ Task, InstanceStateOp }
+import mesosphere.marathon.core.task.InstanceStateOp
 import mesosphere.marathon.tasks.ResourceUtil
 import org.apache.mesos.{ Protos => MesosProtos }
 
@@ -43,7 +43,7 @@ object InstanceOp {
       offerOperations: Iterable[MesosProtos.Offer.Operation]) extends InstanceOp {
 
     // if the TaskOp is reverted, there should be no old state
-    override def oldInstance: Option[Task] = None
+    override def oldInstance: Option[Instance] = None
 
     override def applyToOffer(offer: MesosProtos.Offer): MesosProtos.Offer =
       ResourceUtil.consumeResourcesFromOffer(offer, resources)

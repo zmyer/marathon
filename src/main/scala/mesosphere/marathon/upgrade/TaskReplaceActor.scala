@@ -9,6 +9,7 @@ import mesosphere.marathon.core.task.termination.{ TaskKillReason, TaskKillServi
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.event.{ DeploymentStatus, HealthStatusChanged, MesosStatusUpdateEvent }
 import mesosphere.marathon.core.instance.Instance
+import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.upgrade.TaskReplaceActor._
 import org.apache.mesos.Protos.TaskID
@@ -68,23 +69,23 @@ class TaskReplaceActor(
 
   def replaceBehavior: Receive = {
     // New task failed to start, restart it
-    case MesosStatusUpdateEvent(slaveId, taskId, FailedToStart(_), _, `appId`, _, _, _, `versionString`, _, _) if !oldTaskIds(taskId) => // scalastyle:ignore line.size.limit
+    case MesosStatusUpdateEvent(slaveId, taskId, FailedToStart(_), _, `appId`, _, _, _, `versionString`, _, _) if !oldTaskIds(Instance.Id(taskId)) => // scalastyle:ignore line.size.limit
       log.error(s"New task $taskId failed on slave $slaveId during app $appId restart")
       taskTerminated(taskId)
       launchQueue.add(app)
 
     // Old task successfully killed
-    case MesosStatusUpdateEvent(slaveId, taskId, KillComplete(_), _, `appId`, _, _, _, _, _, _) if oldTaskIds(taskId) => // scalastyle:ignore line.size.limit
-      oldTaskIds -= taskId
-      outstandingKills -= taskId
+    case MesosStatusUpdateEvent(slaveId, taskId, KillComplete(_), _, `appId`, _, _, _, _, _, _) if oldTaskIds(Instance.Id(taskId)) => // scalastyle:ignore line.size.limit
+      oldTaskIds -= Instance.Id(taskId)
+      outstandingKills -= Instance.Id(taskId)
       reconcileNewTasks()
       checkFinished()
 
     case x: Any => log.debug(s"Received $x")
   }
 
-  override def taskStatusChanged(taskId: Instance.Id): Unit = {
-    killNextOldTask(Some(taskId))
+  override def taskStatusChanged(taskId: Task.Id): Unit = {
+    killNextOldTask(Some(Instance.Id(taskId)))
     checkFinished()
   }
 

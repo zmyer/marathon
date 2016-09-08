@@ -1,6 +1,7 @@
 package mesosphere.marathon.upgrade
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
+import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.readiness.{ ReadinessCheckExecutor, ReadinessCheckResult }
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.tracker.InstanceTracker
@@ -121,22 +122,19 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
     def initiateReadinessCheck(taskId: Task.Id): Unit = {
       log.debug(s"Initiate readiness check for task: $taskId")
       val me = self
-      instanceTracker.instance(Instance.Id(taskId)).map {
-        instance =>
-          instance.tasks.find(t => t.taskId == taskId).map {
-            case Some(task: Task) => for {
-              launched <- task.launched
-            } me ! ScheduleReadinessCheckFor(task, launched)
-            case None => ??? // TODO PODs
-          }
+      instanceTracker.instance(Instance.Id(taskId)).map { instanceOption =>
+        for {
+          instance <- instanceOption
+          launched <- instance.tasks.head.launched // TODO PODs calc correct task
+        } me ! ScheduleReadinessCheckFor(instance.tasks.head, launched) // TODO PODs calc correct task
       }
     }
 
     def readinessCheckBehavior: Receive = {
       case ScheduleReadinessCheckFor(task, launched) =>
-        log.debug(s"Schedule readiness check for task: ${task.id}")
+        log.debug(s"Schedule readiness check for task: ${task.taskId}")
         ReadinessCheckExecutor.ReadinessCheckSpec.readinessCheckSpecsForTask(app, task, launched).foreach { spec =>
-          val subscriptionName = ReadinessCheckSubscriptionKey(task.id, spec.checkName)
+          val subscriptionName = ReadinessCheckSubscriptionKey(task.taskId, spec.checkName)
           val subscription = readinessCheckExecutor.execute(spec).subscribe(self ! _)
           subscriptions += subscriptionName -> subscription
         }
@@ -162,6 +160,6 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
 }
 
 object ReadinessBehavior {
-  case class ReadinessCheckSubscriptionKey(taskId: Instance.Id, readinessCheck: String)
+  case class ReadinessCheckSubscriptionKey(taskId: Task.Id, readinessCheck: String)
   case class ScheduleReadinessCheckFor(task: Task, launched: Task.Launched)
 }
