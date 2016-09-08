@@ -77,7 +77,7 @@ class TasksResource @Inject() (
       EnrichedTask(
         appId,
         task,
-        health.getOrElse(instance.instanceId, Nil),
+        health.getOrElse(task.taskId, Nil),
         appToPorts.getOrElse(appId, Nil)
       )
     }

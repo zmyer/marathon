@@ -48,7 +48,7 @@ class AppTasksResource @Inject() (
       id <- appIds
       health = result(healthCheckManager.statuses(id))
       instance <- taskMap.specInstances(id)
-    } yield instance.tasks.map(task => EnrichedTask(id, task, health.getOrElse(instance.instanceId, Nil)))).flatten
+    } yield instance.tasks.map(task => EnrichedTask(id, task, health.getOrElse(task.taskId, Nil)))).flatten
 
     id match {
       case GroupTasks(gid) =>
