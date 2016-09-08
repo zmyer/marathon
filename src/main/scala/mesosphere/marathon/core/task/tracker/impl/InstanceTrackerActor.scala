@@ -110,17 +110,17 @@ private class InstanceTrackerActor(
 
   private[this] def withTasks(appTasks: InstanceTracker.InstancesBySpec, counts: TaskCounts): Receive = {
 
-    def becomeWithUpdatedApp(appId: PathId)(taskId: Instance.Id, newTask: Option[Task]): Unit = {
-      val updatedAppTasks = newTask match {
-        case None => appTasks.updateApp(appId)(_.withoutInstance(taskId))
-        case Some(task) => appTasks.updateApp(appId)(_.withInstance(task))
+    def becomeWithUpdatedApp(appId: PathId)(instanceId: Instance.Id, newInstance: Option[Instance]): Unit = {
+      val updatedAppTasks = newInstance match {
+        case None => appTasks.updateApp(appId)(_.withoutInstance(instanceId))
+        case Some(instance) => appTasks.updateApp(appId)(_.withInstance(instance))
       }
 
       val updatedCounts = {
-        val oldTask = appTasks.instance(taskId)
+        val oldTask = appTasks.instance(instanceId)
         // we do ignore health counts
         val oldTaskCount = TaskCounts(oldTask, healthStatuses = Map.empty)
-        val newTaskCount = TaskCounts(newTask, healthStatuses = Map.empty)
+        val newTaskCount = TaskCounts(newInstance, healthStatuses = Map.empty)
         counts + newTaskCount - oldTaskCount
       }
 
@@ -145,10 +145,10 @@ private class InstanceTrackerActor(
       case msg @ InstanceTrackerActor.StateChanged(change, ack) =>
         change.stateChange match {
           case TaskStateChange.Update(task, _) =>
-            becomeWithUpdatedApp(task.runSpecId)(task.id, newTask = Some(task))
+            becomeWithUpdatedApp(task.runSpecId)(Instance.Id(task.taskId), newInstance = Some(Instance(task)))
 
           case TaskStateChange.Expunge(task) =>
-            becomeWithUpdatedApp(task.runSpecId)(task.id, newTask = None)
+            becomeWithUpdatedApp(task.runSpecId)(Instance.Id(task.taskId), newInstance = None)
 
           case _: TaskStateChange.NoChange |
             _: TaskStateChange.Failure =>

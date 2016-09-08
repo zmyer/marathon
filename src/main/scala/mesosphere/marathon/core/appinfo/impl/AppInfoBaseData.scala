@@ -99,7 +99,7 @@ class AppInfoBaseData(
   private[this] class AppData(app: AppDefinition) {
     lazy val now: Timestamp = clock.now()
 
-    lazy val tasksFuture: Future[Iterable[Task]] = tasksByAppFuture.map(_.specInstances(app.id))
+    lazy val tasksFuture: Future[Iterable[Instance]] = tasksByAppFuture.map(_.specInstances(app.id))
 
     lazy val healthCountsFuture: Future[Map[Instance.Id, Seq[Health]]] = {
       log.debug(s"retrieving health counts for app [${app.id}]")
