@@ -160,7 +160,7 @@ class MarathonHealthCheckManager(
   override def update(taskStatus: TaskStatus, version: Timestamp): Unit =
     appHealthChecks.readLock { ahcs =>
       // construct a health result from the incoming task status
-      val taskId = Instance.Id(taskStatus.getTaskId.getValue)
+      val taskId = Task.Id(taskStatus.getTaskId.getValue)
       val maybeResult: Option[HealthResult] =
         if (taskStatus.hasHealthy) {
           val healthy = taskStatus.getHealthy
@@ -209,7 +209,7 @@ class MarathonHealthCheckManager(
     }
   }
 
-  override def statuses(appId: PathId): Future[Map[Instance.Id, Seq[Health]]] =
+  override def statuses(appId: PathId): Future[Map[Task.Id, Seq[Health]]] =
     appHealthChecks.readLock { ahcs =>
       implicit val timeout: Timeout = Timeout(2, SECONDS)
       val futureHealths = for {
@@ -217,14 +217,17 @@ class MarathonHealthCheckManager(
       } yield (actor ? GetAppHealth).mapTo[AppHealth]
 
       Future.sequence(futureHealths) flatMap { healths =>
-        val groupedHealth: Map[Instance.Id, Vector[Health]] = healths.flatMap(_.health).groupBy(_.taskId)
+        val groupedHealth: Map[Task.Id, Vector[Health]] = healths.flatMap(_.health).groupBy(_.taskId)
 
-        taskTracker.specInstances(appId).map { appTasks =>
-          appTasks.iterator.map { task =>
-            groupedHealth.get(task.instanceId) match {
-              case Some(xs) => task.instanceId -> xs
-              case None => task.instanceId -> Nil
-            }
+        taskTracker.specInstances(appId).map { specInstances =>
+          specInstances.flatMap {
+            instance =>
+              instance.tasks.map { task =>
+                groupedHealth.get(task.taskId) match {
+                  case Some(xs) => task.taskId -> xs
+                  case None => task.taskId -> Nil
+                }
+              }
           }.toMap
         }
       }

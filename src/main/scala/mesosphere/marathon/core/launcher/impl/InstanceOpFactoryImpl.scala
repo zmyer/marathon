@@ -47,7 +47,7 @@ class InstanceOpFactoryImpl(
   private[this] def inferNormalTaskOp(request: InstanceOpFactory.Request): Option[InstanceOp] = {
     val InstanceOpFactory.Request(runSpec, offer, tasks, _) = request
 
-    new TaskBuilder(runSpec, Instance.Id.forRunSpec, config, Some(appTaskProc)).
+    new TaskBuilder(runSpec, Task.Id.forRunSpec, config, Some(appTaskProc)).
       // TODO POD remove asInstanceOf[Task]
       buildIfMatches(offer, tasks.values.map(_.asInstanceOf[Task])).map {
         case (taskInfo, ports) =>

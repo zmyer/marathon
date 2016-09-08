@@ -1,5 +1,6 @@
 package mesosphere.marathon.core.launcher.impl
 
+import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.launcher.InstanceOp
 import mesosphere.marathon.core.matcher.base.util.OfferOperationFactory
 import mesosphere.marathon.core.task.{ InstanceStateOp, Task }
@@ -17,11 +18,11 @@ class InstanceOpFactoryHelper(
     taskInfo: Mesos.TaskInfo,
     newTask: Task.LaunchedEphemeral): InstanceOp.Launch = {
 
-    assume(newTask.id.mesosTaskId == taskInfo.getTaskId, "marathon task id and mesos task id must be equal")
+    assume(newTask.taskId.mesosTaskId == taskInfo.getTaskId, "marathon task id and mesos task id must be equal")
 
     def createOperations = Seq(offerOperationFactory.launch(taskInfo))
 
-    val stateOp = InstanceStateOp.LaunchEphemeral(newTask)
+    val stateOp = InstanceStateOp.LaunchEphemeral(Instance(newTask))
     InstanceOp.Launch(taskInfo, stateOp, oldInstance = None, createOperations)
   }
 
@@ -32,7 +33,7 @@ class InstanceOpFactoryHelper(
 
     def createOperations = Seq(offerOperationFactory.launch(taskInfo))
 
-    InstanceOp.Launch(taskInfo, newTask, Some(oldTask), createOperations)
+    InstanceOp.Launch(taskInfo, newTask, Some(Instance(oldTask)), createOperations)
   }
 
   def reserveAndCreateVolumes(
