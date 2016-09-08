@@ -7,7 +7,7 @@ import com.twitter.util.NonFatal
 import mesosphere.marathon.core.appinfo.TaskCounts
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.bus.TaskChangeObservables.TaskChanged
-import mesosphere.marathon.core.task.{ Task, TaskStateChange, InstanceStateOp }
+import mesosphere.marathon.core.task.{ TaskStateChange, InstanceStateOp }
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, InstanceTrackerUpdateStepProcessor }
 import mesosphere.marathon.core.task.tracker.impl.InstanceTrackerActor.ForwardTaskOp
 import mesosphere.marathon.metrics.Metrics
@@ -121,8 +121,8 @@ private class InstanceTrackerActor(
       val updatedCounts = {
         val oldTask = appTasks.instance(instanceId)
         // we do ignore health counts
-        val oldTaskCount = TaskCounts(oldTask, healthStatuses = Map.empty)
-        val newTaskCount = TaskCounts(newInstance, healthStatuses = Map.empty)
+        val oldTaskCount = TaskCounts(oldTask.map(_.tasks).getOrElse(Seq()), healthStatuses = Map.empty)
+        val newTaskCount = TaskCounts(newInstance.map(_.tasks).getOrElse(Seq()), healthStatuses = Map.empty)
         counts + newTaskCount - oldTaskCount
       }
 
