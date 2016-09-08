@@ -5,7 +5,6 @@ import mesosphere.marathon.core.readiness.{ ReadinessCheckExecutor, ReadinessChe
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.event.{ DeploymentStatus, HealthStatusChanged, MesosStatusUpdateEvent }
-import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.state.{ AppDefinition, PathId, Timestamp }
 import mesosphere.marathon.upgrade.DeploymentManager.ReadinessCheckUpdate
 import mesosphere.marathon.upgrade.ReadinessBehavior.{ ReadinessCheckSubscriptionKey, ScheduleReadinessCheckFor }
@@ -36,14 +35,14 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
   val versionString: String = version.toString
 
   //state managed by this behavior
-  private[this] var healthy = Set.empty[Instance.Id]
-  private[this] var ready = Set.empty[Instance.Id]
+  private[this] var healthy = Set.empty[Task.Id]
+  private[this] var ready = Set.empty[Task.Id]
   private[this] var subscriptions = Map.empty[ReadinessCheckSubscriptionKey, Subscription]
 
   /**
     * Hook method which is called, whenever a task becomes healthy or ready.
     */
-  def taskStatusChanged(taskId: Instance.Id): Unit
+  def taskStatusChanged(taskId: Task.Id): Unit
 
   /**
     * Indicates, if a given target count has been reached.
@@ -56,7 +55,7 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
     *
     * @param taskId the id of the task that has been terminated.
     */
-  def taskTerminated(taskId: Instance.Id): Unit = {
+  def taskTerminated(taskId: Task.Id): Unit = {
     healthy -= taskId
     ready -= taskId
     subscriptions.keys.filter(_.taskId == taskId).foreach { key =>
@@ -65,8 +64,8 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
     }
   }
 
-  def healthyTasks: Set[Instance.Id] = healthy
-  def readyTasks: Set[Instance.Id] = ready
+  def healthyTasks: Set[Task.Id] = healthy
+  def readyTasks: Set[Task.Id] = ready
   def subscriptionKeys: Set[ReadinessCheckSubscriptionKey] = subscriptions.keySet
 
   override def postStop(): Unit = {
@@ -86,17 +85,17 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
   val readinessBehavior: Receive = {
 
     def taskRunBehavior: Receive = {
-      def markAsHealthyAndReady(taskId: Instance.Id): Unit = {
+      def markAsHealthyAndReady(taskId: Task.Id): Unit = {
         log.debug(s"Started task is ready: $taskId")
         healthy += taskId
         ready += taskId
         taskStatusChanged(taskId)
       }
-      def markAsHealthyAndInitiateReadinessCheck(taskId: Instance.Id): Unit = {
+      def markAsHealthyAndInitiateReadinessCheck(taskId: Task.Id): Unit = {
         healthy += taskId
         initiateReadinessCheck(taskId)
       }
-      def taskIsRunning(taskFn: Instance.Id => Unit): Receive = {
+      def taskIsRunning(taskFn: Task.Id => Unit): Receive = {
         case MesosStatusUpdateEvent(slaveId, taskId, "TASK_RUNNING", _, `appId`, _, _, _, `versionString`, _, _) =>
           taskFn(taskId)
       }
@@ -119,15 +118,17 @@ trait ReadinessBehavior { this: Actor with ActorLogging =>
       handleTaskRunning orElse handleTaskHealthy
     }
 
-    def initiateReadinessCheck(taskId: Instance.Id): Unit = {
+    def initiateReadinessCheck(taskId: Task.Id): Unit = {
       log.debug(s"Initiate readiness check for task: $taskId")
       val me = self
-      instanceTracker.instance(taskId).map {
-        case Some(task: Task) =>
-          for {
-            launched <- task.launched
-          } me ! ScheduleReadinessCheckFor(task, launched)
-        case _ => // TODO POD support
+      instanceTracker.instance(Instance.Id(taskId)).map {
+        instance =>
+          instance.tasks.find(t => t.taskId == taskId).map {
+            case Some(task: Task) => for {
+              launched <- task.launched
+            } me ! ScheduleReadinessCheckFor(task, launched)
+            case None => ??? // TODO PODs
+          }
       }
     }
 

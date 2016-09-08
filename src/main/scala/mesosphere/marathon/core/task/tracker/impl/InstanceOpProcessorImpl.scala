@@ -99,7 +99,7 @@ private[tracker] class InstanceOpProcessorImpl(
       case change: TaskStateChange.Expunge =>
         // Used for task termination or as a result from a UpdateStatus action.
         // The expunge is propagated to the taskTracker which in turn informs the sender about the success (see Ack).
-        tasks.delete(op.instanceId).map { _ => InstanceTrackerActor.Ack(op.sender, change) }
+        tasks.delete(change.task.taskId).map { _ => InstanceTrackerActor.Ack(op.sender, change) }
           .recoverWith(tryToRecover(op)(expectedState = None, oldState = Some(change.task)))
           .flatMap { case ack: InstanceTrackerActor.Ack => notifyTaskTrackerActor(op, ack) }
 
@@ -161,7 +161,7 @@ private[tracker] class InstanceOpProcessorImpl(
 
       log.warn(s"${op.instanceId} of app [${op.instanceId.runSpecId}]: try to recover from failed ${op.stateOp}", cause)
 
-      tasks.get(op.instanceId).map {
+      tasks.get(Task.Id(op.instanceId.idString)).map { // TODO PODs load all tasks for instanceId
         case Some(task) =>
           val stateChange = TaskStateChange.Update(task, oldState)
           ack(Some(TaskSerializer.toProto(task)), stateChange)

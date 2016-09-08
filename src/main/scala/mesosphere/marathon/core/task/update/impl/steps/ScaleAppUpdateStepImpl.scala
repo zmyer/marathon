@@ -47,15 +47,15 @@ class ScaleAppUpdateStepImpl @Inject() (
     }
 
     terminalOrExpungedTask.foreach { task =>
-      val appId = task.id.runSpecId
-      val taskId = task.id
+      val appId = task.taskId.runSpecId
+      val taskId = task.taskId
       // logging is accordingly old mesos.Protos.TaskState representation
       val state = ("TASK_" + task.status.taskStatus).toUpperCase
       val reason = task.mesosStatus.fold("")(status =>
         if (status.hasReason) status.getReason.toString else "")
       log.info(s"initiating a scale check for app [$appId] due to [$taskId] $state $reason")
       log.info("schedulerActor: {}", schedulerActor)
-      schedulerActor ! ScaleApp(task.id.runSpecId)
+      schedulerActor ! ScaleApp(task.taskId.runSpecId)
     }
 
     Future.successful(())
