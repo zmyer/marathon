@@ -33,35 +33,34 @@ private[tracker] object InstanceOpProcessorImpl {
       */
     def resolve(op: InstanceStateOp)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
       op match {
-        case op: InstanceStateOp.LaunchEphemeral => updateIfNotExists(op.instanceId, op.task)
+        case op: InstanceStateOp.LaunchEphemeral => updateIfNotExists(op.instanceId, op.instance)
         case op: InstanceStateOp.LaunchOnReservation => updateExistingTask(op)
         case op: InstanceStateOp.MesosUpdate => updateExistingTask(op)
         case op: InstanceStateOp.ReservationTimeout => updateExistingTask(op)
-        case op: InstanceStateOp.Reserve => updateIfNotExists(op.instanceId, op.task)
+        case op: InstanceStateOp.Reserve => updateIfNotExists(op.instanceId, Instance(op.task))
         case op: InstanceStateOp.ForceExpunge => expungeTask(op.instanceId)
         case op: InstanceStateOp.Revert =>
-          Future.successful(TaskStateChange.Update(newState = op.task, oldState = None))
+          Future.successful(TaskStateChange.Update(newState = op.instance.tasks.head, oldState = None)) // TODO PODs
       }
     }
 
-    private[this] def updateIfNotExists(taskId: Instance.Id, updatedTask: Task)(
+    private[this] def updateIfNotExists(instanceId: Instance.Id, updatedTask: Instance)(
       implicit
       ec: ExecutionContext): Future[TaskStateChange] = {
-      directTaskTracker.instance(taskId).map {
+      directTaskTracker.instance(instanceId).map {
         case Some(existingTask) =>
-          TaskStateChange.Failure(new IllegalStateException(s"$taskId of app [${taskId.runSpecId}] already exists"))
+          TaskStateChange.Failure( //
+            new IllegalStateException(s"$instanceId of app [${instanceId.runSpecId}] already exists"))
 
-        case None => TaskStateChange.Update(newState = updatedTask, oldState = None)
+        case None => TaskStateChange.Update(newState = updatedTask.tasks.head, oldState = None) // TODO PODs
       }
     }
 
-    private[this] def updateExistingTask(op: InstanceStateOp)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
+    private[this] def updateExistingTask(op: InstanceStateOp) //
+    (implicit ec: ExecutionContext): Future[TaskStateChange] = {
       directTaskTracker.instance(op.instanceId).map {
-        case Some(existingTask: Task) =>
-          existingTask.update(op)
-
-        // TODO POD support
-        case Some(existingTask) => TaskStateChange.Failure("TODO")
+        case Some(existingInstance: Instance) =>
+          existingInstance.tasks.head.update(op) // TODO PODs : calc correct task to update
 
         case None =>
           val taskId = op.instanceId
@@ -69,17 +68,14 @@ private[tracker] object InstanceOpProcessorImpl {
       }
     }
 
-    private[this] def expungeTask(taskId: Instance.Id)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
-      directTaskTracker.instance(taskId).map {
-        case Some(existingTask: Task) =>
-          TaskStateChange.Expunge(existingTask)
-
-        // TODO POD support
-        case Some(existingTask) => TaskStateChange.Failure("TODO")
+    private[this] def expungeTask(instanceId: Instance.Id)(implicit ec: ExecutionContext): Future[TaskStateChange] = {
+      directTaskTracker.instance(instanceId).map {
+        case Some(existingInstance: Instance) =>
+          TaskStateChange.Expunge(existingInstance.tasks.head) // TODO PODs
 
         case None =>
-          log.info("Ignoring ForceExpunge for [{}], task does not exist", taskId)
-          TaskStateChange.NoChange(taskId)
+          log.info("Ignoring ForceExpunge for [{}], task does not exist", instanceId)
+          TaskStateChange.NoChange(Task.Id(instanceId.idString)) // TODO PODs
       }
     }
   }
@@ -172,7 +168,7 @@ private[tracker] class InstanceOpProcessorImpl(
         case None =>
           val stateChange = oldState match {
             case Some(oldTask) => TaskStateChange.Expunge(oldTask)
-            case None => TaskStateChange.NoChange(op.instanceId)
+            case None => TaskStateChange.NoChange(Task.Id(op.instanceId.idString)) // TODO PODs
           }
           ack(None, stateChange)
       }.recover {

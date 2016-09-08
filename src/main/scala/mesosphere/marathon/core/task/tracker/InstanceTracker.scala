@@ -1,7 +1,6 @@
 package mesosphere.marathon.core.task.tracker
 
 import mesosphere.marathon.core.instance.Instance
-import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.state.PathId
 import org.slf4j.LoggerFactory
 
