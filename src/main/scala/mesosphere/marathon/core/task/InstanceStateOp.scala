@@ -32,7 +32,7 @@ object InstanceStateOp {
 
   case class Reserve(task: Task.Reserved) extends InstanceStateOp {
     override def instanceId: Instance.Id = Instance.Id(task.taskId)
-    override def possibleNewState: Option[Instance] = Some(task)
+    override def possibleNewState: Option[Instance] = Some(Instance(task))
   }
 
   case class LaunchOnReservation(
@@ -43,7 +43,7 @@ object InstanceStateOp {
 
   case class MesosUpdate(task: Task, status: InstanceStatus,
       mesosStatus: mesos.Protos.TaskStatus, now: Timestamp) extends InstanceStateOp {
-    override def instanceId: Instance.Id = Instance.Id(task.taskId) // TODO ju
+    override def instanceId: Instance.Id = Instance.Id(task.taskId) // TODO PODs
   }
 
   object MesosUpdate {

@@ -1,7 +1,6 @@
 package mesosphere.marathon.core.task
 
 import com.fasterxml.uuid.{ EthernetAddress, Generators }
-import mesosphere.marathon.core.instance.Instance.InstanceState
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
 import mesosphere.marathon.state.{ PathId, PersistentVolume, RunSpec, Timestamp }
 import org.apache.mesos.Protos.TaskState
@@ -152,8 +151,8 @@ object Task {
       case InstanceStateOp.ForceExpunge(_) =>
         TaskStateChange.Expunge(this)
 
-      case InstanceStateOp.LaunchEphemeral(task) =>
-        TaskStateChange.Update(newState = task, oldState = None)
+      case InstanceStateOp.LaunchEphemeral(instance) =>
+        TaskStateChange.Update(newState = instance.tasks.find(_.taskId == taskId).getOrElse(this), oldState = None)
 
       case _: InstanceStateOp.Revert =>
         TaskStateChange.Failure("Revert should not be handed over to a task instance")

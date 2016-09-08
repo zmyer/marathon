@@ -176,7 +176,7 @@ case class AppTerminatedEvent(
 
 case class MesosStatusUpdateEvent(
   slaveId: String,
-  taskId: Instance.Id,
+  taskId: Task.Id,
   taskStatus: String,
   message: String,
   appId: PathId,
