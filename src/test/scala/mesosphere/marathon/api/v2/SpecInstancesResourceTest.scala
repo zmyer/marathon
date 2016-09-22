@@ -13,6 +13,7 @@ import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.{ Group, PathId, _ }
 import mesosphere.marathon.test.Mockito
 import mesosphere.marathon._
+import mesosphere.marathon.builder.InstanceBuilder
 import org.mockito.Matchers.{ eq => equalTo }
 import org.mockito.Mockito._
 import org.scalatest.{ GivenWhenThen, Matchers }

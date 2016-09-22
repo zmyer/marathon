@@ -3,11 +3,12 @@ package mesosphere.marathon.core.task.tracker.impl
 import akka.Done
 import akka.actor.Status
 import akka.testkit.TestProbe
+import mesosphere.marathon.builder.InstanceBuilder
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.{ MarathonActorSupport, Mockito }
-import mesosphere.marathon.{ InstanceBuilder, MarathonSpec, MarathonTestHelper }
+import mesosphere.marathon.{ MarathonSpec, MarathonTestHelper }
 import org.apache.mesos.Protos.{ TaskID, TaskStatus }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ GivenWhenThen, Matchers }
