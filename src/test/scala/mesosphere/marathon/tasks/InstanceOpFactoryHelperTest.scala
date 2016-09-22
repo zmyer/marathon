@@ -5,7 +5,7 @@ import mesosphere.marathon.core.launcher.impl.InstanceOpFactoryHelper
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.Mockito
-import mesosphere.marathon.{ MarathonSpec, MarathonTestHelper }
+import mesosphere.marathon.{ InstanceBuilder, MarathonSpec, MarathonTestHelper }
 import org.apache.mesos.{ Protos => Mesos }
 import org.scalatest.{ GivenWhenThen, Matchers }
 
@@ -31,11 +31,13 @@ class InstanceOpFactoryHelperTest extends MarathonSpec with GivenWhenThen with M
     val f = new Fixture
 
     Given("a task and a taskInfo")
-    val task = MarathonTestHelper.minimalTask(f.runSpecId)
+    val builder = InstanceBuilder.newBuilderWithLaunchedTask(f.runSpecId)
+    val instance = builder.getInstance()
+    val task = builder.pickFirstTask()
     val taskInfo = MarathonTestHelper.makeOneCPUTask(task.taskId).build()
 
     When("We create a launch operation")
-    val launch = f.helper.launchEphemeral(taskInfo, task)
+    val launch = f.helper.launchEphemeral(taskInfo, task.asInstanceOf[Task.LaunchedEphemeral], instance)
 
     Then("The result is as expected")
     launch.stateOp shouldEqual InstanceUpdateOperation.LaunchEphemeral(task)
