@@ -13,7 +13,7 @@ import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.{ Group, PathId, _ }
 import mesosphere.marathon.test.Mockito
 import mesosphere.marathon._
-import mesosphere.marathon.builder.InstanceBuilder
+import mesosphere.marathon.builder.{ TestInstanceBuilder, TestTaskBuilder }
 import org.mockito.Matchers.{ eq => equalTo }
 import org.mockito.Mockito._
 import org.scalatest.{ GivenWhenThen, Matchers }
@@ -27,7 +27,7 @@ class SpecInstancesResourceTest extends MarathonSpec with Matchers with GivenWhe
   test("deleteMany") {
     val appId = "/my/app"
     val host = "host"
-    val toKill: Iterable[Instance] = Set(MarathonTestHelper.stagedTaskForApp(PathId(appId)))
+    val toKill: Iterable[Instance] = Set(TestTaskBuilder.Creator.stagedTaskForApp(PathId(appId)))
 
     config.zkTimeoutDuration returns 5.seconds
     taskKiller.kill(any, any, any)(any) returns Future.successful(toKill)
@@ -63,8 +63,8 @@ class SpecInstancesResourceTest extends MarathonSpec with Matchers with GivenWhe
   test("deleteOne") {
     import scala.concurrent.ExecutionContext.Implicits.global
     val appId = PathId("/my/app")
-    val task1 = InstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
-    val task2 = InstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
+    val task1 = TestInstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
+    val task2 = TestInstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
     val toKill = Set(task1)
 
     config.zkTimeoutDuration returns 5.seconds
@@ -96,8 +96,8 @@ class SpecInstancesResourceTest extends MarathonSpec with Matchers with GivenWhe
   test("deleteOne with wipe delegates to taskKiller with wipe value") {
     import scala.concurrent.ExecutionContext.Implicits.global
     val appId = PathId("/my/app")
-    val instance1 = InstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
-    val instance2 = InstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
+    val instance1 = TestInstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
+    val instance2 = TestInstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
     val toKill = Set(instance1)
 
     config.zkTimeoutDuration returns 5.seconds
@@ -119,8 +119,8 @@ class SpecInstancesResourceTest extends MarathonSpec with Matchers with GivenWhe
   test("get tasks") {
     val appId = PathId("/my/app")
 
-    val instance1 = InstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
-    val instance2 = InstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
+    val instance1 = TestInstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
+    val instance2 = TestInstanceBuilder.newBuilderWithLaunchedTask(appId).getInstance()
 
     config.zkTimeoutDuration returns 5.seconds
     taskTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.of(InstanceTracker.SpecInstances.forInstances(appId, Iterable(instance1, instance2)))

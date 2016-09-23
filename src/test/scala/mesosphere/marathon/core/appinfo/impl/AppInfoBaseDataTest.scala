@@ -1,5 +1,6 @@
 package mesosphere.marathon.core.appinfo.impl
 
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.appinfo.{ AppInfo, EnrichedTask, TaskCounts, TaskStatsByVersion }
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.health.{ Health, HealthCheckManager }
@@ -11,7 +12,7 @@ import mesosphere.marathon.storage.repository.TaskFailureRepository
 import mesosphere.marathon.test.Mockito
 import mesosphere.marathon.upgrade.DeploymentManager.DeploymentStepInfo
 import mesosphere.marathon.upgrade.{ DeploymentPlan, DeploymentStep }
-import mesosphere.marathon.{ MarathonSchedulerService, MarathonSpec, MarathonTestHelper }
+import mesosphere.marathon.{ MarathonSchedulerService, MarathonSpec }
 import org.scalatest.{ GivenWhenThen, Matchers }
 import play.api.libs.json.Json
 
@@ -65,9 +66,9 @@ class AppInfoBaseDataTest extends MarathonSpec with GivenWhenThen with Mockito w
   test("requesting tasks retrieves tasks from taskTracker and health infos") {
     val f = new Fixture
     Given("three tasks in the task tracker")
-    val running1 = MarathonTestHelper.runningTaskForApp(f.runSpecId)
-    val running2 = MarathonTestHelper.runningTaskForApp(f.runSpecId)
-    val running3 = MarathonTestHelper.runningTaskForApp(f.runSpecId)
+    val running1 = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId)
+    val running2 = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId)
+    val running3 = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId)
 
     import scala.concurrent.ExecutionContext.Implicits.global
     f.taskTracker.instancesBySpec()(global) returns
@@ -114,9 +115,9 @@ class AppInfoBaseDataTest extends MarathonSpec with GivenWhenThen with Mockito w
   test("requesting task counts only retrieves tasks from taskTracker and health stats") {
     val f = new Fixture
     Given("one staged and two running tasks in the taskTracker")
-    val staged = MarathonTestHelper.stagedTaskForApp(f.runSpecId)
-    val running = MarathonTestHelper.runningTaskForApp(f.runSpecId)
-    val running2 = MarathonTestHelper.runningTaskForApp(f.runSpecId)
+    val staged = TestTaskBuilder.Creator.stagedTaskForApp(f.runSpecId)
+    val running = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId)
+    val running2 = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId)
 
     import scala.concurrent.ExecutionContext.Implicits.global
     f.taskTracker.instancesBySpec()(global) returns
@@ -263,9 +264,9 @@ class AppInfoBaseDataTest extends MarathonSpec with GivenWhenThen with Mockito w
   test("requesting taskStats") {
     val f = new Fixture
     Given("one staged and two running tasks in the taskTracker")
-    val staged = MarathonTestHelper.stagedTaskForApp(f.runSpecId, stagedAt = (f.clock.now() - 10.seconds).toDateTime.getMillis)
-    val running = MarathonTestHelper.runningTaskForApp(f.runSpecId, stagedAt = (f.clock.now() - 11.seconds).toDateTime.getMillis)
-    val running2 = MarathonTestHelper.runningTaskForApp(f.runSpecId, stagedAt = (f.clock.now() - 11.seconds).toDateTime.getMillis)
+    val staged = TestTaskBuilder.Creator.stagedTaskForApp(f.runSpecId, stagedAt = (f.clock.now() - 10.seconds).toDateTime.getMillis)
+    val running = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId, stagedAt = (f.clock.now() - 11.seconds).toDateTime.getMillis)
+    val running2 = TestTaskBuilder.Creator.runningTaskForApp(f.runSpecId, stagedAt = (f.clock.now() - 11.seconds).toDateTime.getMillis)
 
     import scala.concurrent.ExecutionContext.Implicits.global
     val tasks: Set[Task] = Set(staged, running, running2)

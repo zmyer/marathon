@@ -23,6 +23,7 @@ import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper, SchedulerA
 import org.apache.mesos.SchedulerDriver
 import org.mockito.Mockito.{ spy, when }
 import marathon.test.Mockito
+import mesosphere.marathon.builder.TestTaskBuilder
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfter, FunSuiteLike, Matchers }
 
@@ -92,7 +93,7 @@ class TaskStartActorTest
 
     when(f.launchQueue.get(app.id)).thenReturn(None)
     val task =
-      MarathonTestHelper.startingTaskForApp(app.id, appVersion = Timestamp(1024))
+      TestTaskBuilder.Creator.startingTaskForApp(app.id, appVersion = Timestamp(1024))
     f.taskCreationHandler.created(InstanceUpdateOperation.LaunchEphemeral(task)).futureValue
 
     val ref = f.startActor(app, app.instances, promise)
@@ -210,7 +211,7 @@ class TaskStartActorTest
     val app = AppDefinition("/myApp".toPath, instances = 5)
     when(f.launchQueue.get(app.id)).thenReturn(None)
 
-    val outdatedTask = MarathonTestHelper.stagedTaskForApp(app.id, appVersion = Timestamp(1024))
+    val outdatedTask = TestTaskBuilder.Creator.stagedTaskForApp(app.id, appVersion = Timestamp(1024))
     val taskId = outdatedTask.taskId
     val instanceId = taskId.instanceId
     f.taskCreationHandler.created(InstanceUpdateOperation.LaunchEphemeral(outdatedTask)).futureValue

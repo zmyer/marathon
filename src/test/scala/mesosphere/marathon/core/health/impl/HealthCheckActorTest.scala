@@ -3,6 +3,7 @@ package mesosphere.marathon.core.health.impl
 import akka.actor.{ ActorSystem, Props }
 import akka.testkit._
 import mesosphere.marathon._
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.health.{ Health, HealthCheck, MarathonHttpHealthCheck }
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
@@ -106,9 +107,9 @@ class HealthCheckActorTest
     val taskId = "test_task.9876543"
     val scheduler: MarathonScheduler = mock[MarathonScheduler]
 
-    val task = MarathonTestHelper.runningTaskForApp(appId, appVersion = appVersion)
-    val lostTask = MarathonTestHelper.minimalLostTask(appId)
-    val unreachableTask = MarathonTestHelper.minimalUnreachableTask(appId)
+    val task = TestTaskBuilder.Creator.runningTaskForApp(appId, appVersion = appVersion)
+    val lostTask = TestTaskBuilder.Creator.minimalLostTask(appId)
+    val unreachableTask = TestTaskBuilder.Creator.minimalUnreachableTask(appId)
 
     def actor(healthCheck: HealthCheck) = TestActorRef[HealthCheckActor](
       Props(

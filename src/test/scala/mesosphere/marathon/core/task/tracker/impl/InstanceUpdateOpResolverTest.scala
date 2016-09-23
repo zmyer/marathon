@@ -1,6 +1,7 @@
 package mesosphere.marathon.core.task.tracker.impl
 
-import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper }
+import mesosphere.marathon.builder.TestTaskBuilder
+import mesosphere.marathon.InstanceConversions
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusUpdateTestHelper }
@@ -297,12 +298,12 @@ class InstanceUpdateOpResolverTest
     val stateOpResolver = new InstanceUpdateOpResolver(taskTracker)
 
     val appId = PathId("/app")
-    val existingTask = MarathonTestHelper.minimalTask(Task.Id.forRunSpec(appId), Timestamp.now(), None, InstanceStatus.Running)
+    val existingTask = TestTaskBuilder.Creator.minimalTask(Task.Id.forRunSpec(appId), Timestamp.now(), None, InstanceStatus.Running)
     val existingInstance: Instance = existingTask
 
-    val existingReservedTask = MarathonTestHelper.residentReservedTask(appId)
+    val existingReservedTask = TestTaskBuilder.Creator.residentReservedTask(appId)
     val notExistingTaskId = Task.Id.forRunSpec(appId)
-    val existingLostTask = MarathonTestHelper.minimalLostTask(appId)
+    val existingLostTask = TestTaskBuilder.Creator.minimalLostTask(appId)
 
     def verifyNoMoreInteractions(): Unit = {
       noMoreInteractions(taskTracker)

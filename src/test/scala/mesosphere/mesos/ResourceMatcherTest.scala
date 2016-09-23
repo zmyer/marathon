@@ -5,6 +5,7 @@ import mesosphere.marathon.Protos.Constraint
 import mesosphere.marathon.Protos.Constraint.Operator
 import mesosphere.marathon.core.instance.{ Instance, InstanceSupport }
 import mesosphere.marathon.Protos.Constraint
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.launcher.impl.TaskLabels
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.raml.Resources
@@ -659,7 +660,7 @@ class ResourceMatcherTest extends MarathonSpec with Matchers with Inside with In
       case (name, value) =>
         TextAttribute(name, value): Attribute
     }(collection.breakOut)
-    MarathonTestHelper.stagedTaskForApp(appId, appVersion = version)
+    TestTaskBuilder.Creator.stagedTaskForApp(appId, appVersion = version)
       .withAgentInfo(_.copy(attributes = attributes))
   }
 

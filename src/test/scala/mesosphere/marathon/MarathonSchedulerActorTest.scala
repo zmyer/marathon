@@ -9,7 +9,7 @@ import akka.stream.scaladsl.Source
 import akka.testkit._
 import akka.util.Timeout
 import mesosphere.marathon.MarathonSchedulerActor._
-import mesosphere.marathon.builder.InstanceBuilder
+import mesosphere.marathon.builder.{ TestInstanceBuilder, TestTaskBuilder }
 import mesosphere.marathon.core.election.{ ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.health.HealthCheckManager
@@ -63,7 +63,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val app = AppDefinition(id = "/test-app".toPath, instances = 1)
-    val task = MarathonTestHelper.runningTaskForApp(app.id)
+    val task = TestTaskBuilder.Creator.runningTaskForApp(app.id)
 
     appRepo.ids() returns Source.single(app.id)
     instanceTracker.instancesBySpec()(any[ExecutionContext]) returns Future.successful(InstanceTracker.InstancesBySpec.of(InstanceTracker.SpecInstances.forInstances("nope".toPath, Iterable(task))))
@@ -88,7 +88,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val app = AppDefinition(id = "/test-app".toPath, instances = 1)
-    val tasks = Iterable(MarathonTestHelper.runningTaskForApp(app.id))
+    val tasks = Iterable(TestTaskBuilder.Creator.runningTaskForApp(app.id))
 
     queue.get(app.id) returns Some(LaunchQueueTestHelper.zeroCounts)
     appRepo.ids() returns Source.single(app.id)
@@ -138,7 +138,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val app = AppDefinition(id = "/test-app".toPath, instances = 1)
-    val instanceA: Instance = MarathonTestHelper.stagedTaskForApp(app.id)
+    val instanceA: Instance = TestTaskBuilder.Creator.stagedTaskForApp(app.id)
     // TODO(PODS): add proper way to create correct InstanceChanged event
     val instanceChangedEvent = InstanceChanged(
       instanceA.instanceId,
@@ -179,7 +179,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val app = AppDefinition(id = "/test-app".toPath, instances = 1)
-    val instanceA = InstanceBuilder.newBuilderWithLaunchedTask(app.id).getInstance()
+    val instanceA = TestInstanceBuilder.newBuilderWithLaunchedTask(app.id).getInstance()
 
     queue.get(app.id) returns Some(LaunchQueueTestHelper.zeroCounts)
     appRepo.ids() returns Source.single(app.id)
@@ -254,7 +254,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
       versionInfo = VersionInfo.forNewConfig(Timestamp(0))
     )
     val probe = TestProbe()
-    val taskA = MarathonTestHelper.runningTaskForApp(app.id)
+    val taskA = TestTaskBuilder.Creator.runningTaskForApp(app.id)
     val origGroup = Group(PathId("/foo/bar"), Map(app.id -> app))
     val targetGroup = Group(PathId("/foo/bar"))
 

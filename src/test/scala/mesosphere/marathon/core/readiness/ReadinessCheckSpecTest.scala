@@ -1,6 +1,7 @@
 package mesosphere.marathon.core.readiness
 
 import mesosphere.marathon.MarathonTestHelper
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.state.{ AppDefinition, PathId, PortDefinition }
 import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 
@@ -142,6 +143,6 @@ class ReadinessCheckSpecTest extends FunSuite with Matchers with GivenWhenThen {
       )
     )
 
-    val taskWithPorts = MarathonTestHelper.runningTaskForApp(appId).withHostPorts(Seq(80, 81))
+    val taskWithPorts = TestTaskBuilder.Creator.runningTaskForApp(appId).withHostPorts(Seq(80, 81))
   }
 }

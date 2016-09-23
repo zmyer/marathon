@@ -2,7 +2,8 @@ package mesosphere.marathon.core.task.termination.impl
 
 import akka.Done
 import akka.actor.{ ActorRef, ActorSystem }
-import mesosphere.marathon.{ InstanceConversions, MarathonSchedulerDriverHolder, MarathonTestHelper }
+import mesosphere.marathon.builder.TestTaskBuilder
+import mesosphere.marathon.{ InstanceConversions, MarathonSchedulerDriverHolder }
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.event.{ InstanceChanged, UnknownInstanceTerminated }
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
@@ -314,8 +315,8 @@ class KillServiceActorTest extends FunSuiteLike
     }
 
     def mockTask(taskId: Task.Id, stagedAt: Timestamp, mesosState: mesos.Protos.TaskState): Task.LaunchedEphemeral = {
-      val mesosStatus = MarathonTestHelper.statusForState(taskId.idString, mesosState)
-      MarathonTestHelper.minimalTask(taskId, stagedAt, Some(mesosStatus))
+      val mesosStatus = TestTaskBuilder.Creator.statusForState(taskId.idString, mesosState)
+      TestTaskBuilder.Creator.minimalTask(taskId, stagedAt, Some(mesosStatus))
     }
 
     def now(): Timestamp = Timestamp(0)

@@ -1,10 +1,11 @@
 package mesosphere.marathon.core.appinfo
 
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.test.Mockito
-import mesosphere.marathon.{ MarathonSpec, MarathonTestHelper }
+import mesosphere.marathon.MarathonSpec
 import org.scalatest.{ GivenWhenThen, Matchers }
 
 class TaskLifeTimeTest extends MarathonSpec with Mockito with GivenWhenThen with Matchers {
@@ -15,11 +16,11 @@ class TaskLifeTimeTest extends MarathonSpec with Mockito with GivenWhenThen with
   }
 
   private[this] def stagedTask(): Task = {
-    MarathonTestHelper.stagedTask(newTaskId())
+    TestTaskBuilder.Creator.stagedTask(newTaskId())
   }
 
   private[this] def runningTaskWithLifeTime(lifeTimeSeconds: Double): Task = {
-    MarathonTestHelper.runningTask(newTaskId(), startedAt = (now.toDateTime.getMillis - lifeTimeSeconds * 1000.0).round)
+    TestTaskBuilder.Creator.runningTask(newTaskId(), startedAt = (now.toDateTime.getMillis - lifeTimeSeconds * 1000.0).round)
   }
 
   test("life time for no tasks") {

@@ -2,6 +2,7 @@ package mesosphere.marathon.tasks
 
 import com.codahale.metrics.MetricRegistry
 import mesosphere.FutureTestSupport._
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
@@ -146,7 +147,7 @@ class InstanceTrackerImplTest extends MarathonSpec with MarathonActorSupport
   }
 
   test("TaskLifecycle") {
-    val sampleTask = MarathonTestHelper.startingTaskForApp(TEST_APP_NAME)
+    val sampleTask = TestTaskBuilder.Creator.startingTaskForApp(TEST_APP_NAME)
 
     // CREATE TASK
     stateOpProcessor.process(InstanceUpdateOperation.LaunchEphemeral(sampleTask)).futureValue
@@ -298,7 +299,7 @@ class InstanceTrackerImplTest extends MarathonSpec with MarathonActorSupport
   }
 
   test("Should not store if state and health did not change") {
-    val sampleTask = MarathonTestHelper.healthyTask(TEST_APP_NAME)
+    val sampleTask = TestTaskBuilder.Creator.healthyTask(TEST_APP_NAME)
     val status = sampleTask.launched.get.status.mesosStatus.get
       .toBuilder
       .setTimestamp(123)
@@ -318,7 +319,7 @@ class InstanceTrackerImplTest extends MarathonSpec with MarathonActorSupport
   }
 
   test("Should store if state changed") {
-    val sampleTask = MarathonTestHelper.stagedTaskForApp(TEST_APP_NAME)
+    val sampleTask = TestTaskBuilder.Creator.stagedTaskForApp(TEST_APP_NAME)
     val status = sampleTask.launched.get.status.mesosStatus.get.toBuilder
       .setState(Protos.TaskState.TASK_RUNNING)
       .build()
@@ -342,7 +343,7 @@ class InstanceTrackerImplTest extends MarathonSpec with MarathonActorSupport
   }
 
   test("Should store if health changed") {
-    val sampleTask = MarathonTestHelper.runningTaskForApp(TEST_APP_NAME)
+    val sampleTask = TestTaskBuilder.Creator.runningTaskForApp(TEST_APP_NAME)
     val status = sampleTask.launched.get.status.mesosStatus.get.toBuilder
       .setHealthy(true)
       .build()
@@ -448,7 +449,7 @@ class InstanceTrackerImplTest extends MarathonSpec with MarathonActorSupport
 
   def makeSampleTask(appId: PathId) = {
     import MarathonTestHelper.Implicits._
-    MarathonTestHelper
+    TestTaskBuilder.Creator
       .stagedTaskForApp(appId)
       .withAgentInfo(_.copy(host = "host", attributes = Seq(TextAttribute("attr1", "bar"))))
       .withHostPorts(Seq(999))

@@ -4,6 +4,7 @@ import java.net.{ InetAddress, ServerSocket }
 
 import akka.actor.Props
 import akka.testkit.{ ImplicitSender, TestActorRef }
+import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.health.{ HealthResult, Healthy, MarathonTcpHealthCheck }
 import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.state.PathId
@@ -36,7 +37,7 @@ class HealthCheckWorkerActorTest
     }
 
     val task =
-      MarathonTestHelper.runningTaskForApp(appId)
+      TestTaskBuilder.Creator.runningTaskForApp(appId)
         .withAgentInfo(_.copy(host = InetAddress.getLocalHost.getCanonicalHostName))
         .withHostPorts(Seq(socketPort))
 
@@ -62,7 +63,7 @@ class HealthCheckWorkerActorTest
 
     val appId = PathId("/test_id")
     val task =
-      MarathonTestHelper.runningTaskForApp(appId)
+      TestTaskBuilder.Creator.runningTaskForApp(appId)
         .withAgentInfo(_.copy(host = InetAddress.getLocalHost.getCanonicalHostName))
         .withHostPorts(Seq(socketPort))
 
