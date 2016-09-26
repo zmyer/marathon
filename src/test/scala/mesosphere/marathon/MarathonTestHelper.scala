@@ -370,7 +370,7 @@ object MarathonTestHelper extends InstanceConversions {
     createTaskTrackerModule(leadershipModule, store, metrics).instanceTracker
   }
 
-  def persistentVolumeResources(taskId: Task.Id, localVolumeIds: Task.LocalVolumeId*) = localVolumeIds.map { id =>
+  def persistentVolumeResources(instanceId: Instance.Id, localVolumeIds: Task.LocalVolumeId*) = localVolumeIds.map { id =>
     Mesos.Resource.newBuilder()
       .setName("disk")
       .setType(Mesos.Value.Type.SCALAR)
@@ -380,7 +380,7 @@ object MarathonTestHelper extends InstanceConversions {
         Mesos.Resource.ReservationInfo
           .newBuilder()
           .setPrincipal("principal")
-          .setLabels(TaskLabels.labelsForTask(frameworkId, taskId).mesosLabels)
+          .setLabels(TaskLabels.labelsForTask(frameworkId, instanceId).mesosLabels)
       )
       .setDisk(Mesos.Resource.DiskInfo.newBuilder()
         .setPersistence(Mesos.Resource.DiskInfo.Persistence.newBuilder().setId(id.idString))
@@ -390,12 +390,12 @@ object MarathonTestHelper extends InstanceConversions {
       .build()
   }
 
-  def offerWithVolumes(taskId: String, localVolumeIds: Task.LocalVolumeId*) = {
+  def offerWithVolumes(instanceId: Instance.Id, localVolumeIds: Task.LocalVolumeId*) = {
     import scala.collection.JavaConverters._
     MarathonTestHelper.makeBasicOffer(
-      reservation = Some(TaskLabels.labelsForTask(frameworkId, Task.Id(taskId))),
+      reservation = Some(TaskLabels.labelsForTask(frameworkId, instanceId)),
       role = "test"
-    ).addAllResources(persistentVolumeResources(Task.Id(taskId), localVolumeIds: _*).asJava).build()
+    ).addAllResources(persistentVolumeResources(instanceId, localVolumeIds: _*).asJava).build()
   }
 
   def offerWithVolumesOnly(taskId: Task.Id, localVolumeIds: Task.LocalVolumeId*) = {
