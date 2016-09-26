@@ -3,9 +3,8 @@ package mesosphere.marathon.core.task.jobs.impl
 import akka.actor._
 import akka.testkit.TestProbe
 import mesosphere.marathon
-import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.base.ConstantClock
-import mesosphere.marathon.core.instance.Instance
+import mesosphere.marathon.core.instance.{ Instance, TestTaskBuilder }
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker.InstancesBySpec

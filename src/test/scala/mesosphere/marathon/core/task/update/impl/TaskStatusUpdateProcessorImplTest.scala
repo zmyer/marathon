@@ -2,8 +2,8 @@ package mesosphere.marathon.core.task.update.impl
 
 import akka.actor.ActorSystem
 import com.codahale.metrics.MetricRegistry
-import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.base.ConstantClock
+import mesosphere.marathon.core.instance.TestTaskBuilder
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper

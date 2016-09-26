@@ -3,14 +3,13 @@ package mesosphere.marathon.core.task.update.impl.steps
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import ch.qos.logback.classic.spi.ILoggingEvent
-import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.instance.Instance.InstanceState
 import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper }
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper
 import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task }
 import mesosphere.marathon.core.event.{ InstanceChanged, InstanceHealthChanged, MarathonEvent, MesosStatusUpdateEvent }
-import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
+import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestTaskBuilder }
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation, InstanceUpdated }
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.test.{ CaptureEvents, CaptureLogEvents }

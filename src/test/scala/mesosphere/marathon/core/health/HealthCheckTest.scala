@@ -3,7 +3,7 @@ package mesosphere.marathon.core.health
 import com.wix.accord.validate
 import mesosphere.marathon.Protos.HealthCheckDefinition.Protocol
 import mesosphere.marathon.api.v2.ValidationHelper
-import mesosphere.marathon.builder.TestTaskBuilder
+import mesosphere.marathon.core.instance.TestTaskBuilder
 import mesosphere.marathon.state._
 import mesosphere.marathon.{ MarathonSpec, MarathonTestHelper, Protos }
 import play.api.libs.json.Json

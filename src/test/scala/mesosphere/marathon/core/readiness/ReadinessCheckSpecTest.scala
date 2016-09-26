@@ -1,7 +1,7 @@
 package mesosphere.marathon.core.readiness
 
 import mesosphere.marathon.MarathonTestHelper
-import mesosphere.marathon.builder.TestTaskBuilder
+import mesosphere.marathon.core.instance.TestTaskBuilder
 import mesosphere.marathon.state.{ AppDefinition, PathId, PortDefinition }
 import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 

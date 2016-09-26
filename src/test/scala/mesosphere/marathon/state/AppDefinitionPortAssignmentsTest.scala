@@ -1,7 +1,7 @@
 package mesosphere.marathon.state
 
 import mesosphere.marathon.MarathonTestHelper
-import mesosphere.marathon.builder.TestTaskBuilder
+import mesosphere.marathon.core.instance.TestTaskBuilder
 import mesosphere.marathon.state.Container.Docker
 import org.apache.mesos.Protos
 import org.scalatest.{ FunSuiteLike, GivenWhenThen, Matchers, OptionValues }

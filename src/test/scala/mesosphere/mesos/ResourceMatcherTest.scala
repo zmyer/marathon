@@ -3,9 +3,8 @@ package mesosphere.mesos
 import mesosphere.marathon.MarathonTestHelper.Implicits._
 import mesosphere.marathon.Protos.Constraint
 import mesosphere.marathon.Protos.Constraint.Operator
-import mesosphere.marathon.core.instance.{ Instance, InstanceSupport }
+import mesosphere.marathon.core.instance.{ Instance, InstanceSupport, TestTaskBuilder }
 import mesosphere.marathon.Protos.Constraint
-import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.launcher.impl.TaskLabels
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.raml.Resources

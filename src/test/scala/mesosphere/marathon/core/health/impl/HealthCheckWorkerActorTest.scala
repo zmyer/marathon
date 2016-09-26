@@ -4,8 +4,8 @@ import java.net.{ InetAddress, ServerSocket }
 
 import akka.actor.Props
 import akka.testkit.{ ImplicitSender, TestActorRef }
-import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.health.{ HealthResult, Healthy, MarathonTcpHealthCheck }
+import mesosphere.marathon.core.instance.TestTaskBuilder
 import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.MarathonActorSupport

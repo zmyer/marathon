@@ -14,7 +14,7 @@ import mesosphere.marathon.core.event.DeploymentStatus
 import mesosphere.marathon.core.task.tracker.{ InstanceCreationHandler, InstanceTracker }
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
-import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
+import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestTaskBuilder }
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.{ AppDefinition, Command, Timestamp }
@@ -23,7 +23,6 @@ import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper, SchedulerA
 import org.apache.mesos.SchedulerDriver
 import org.mockito.Mockito.{ spy, when }
 import marathon.test.Mockito
-import mesosphere.marathon.builder.TestTaskBuilder
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfter, FunSuiteLike, Matchers }
 

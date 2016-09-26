@@ -3,14 +3,13 @@ package mesosphere.marathon.upgrade
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.testkit.{ TestActorRef, TestProbe }
 import akka.util.Timeout
-import mesosphere.marathon.builder.TestTaskBuilder
 import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.{ KillServiceMock, Task }
 import mesosphere.marathon.core.event.InstanceChanged
 import mesosphere.marathon.core.health.HealthCheckManager
-import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
+import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestTaskBuilder }
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.Mockito
