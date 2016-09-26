@@ -1,7 +1,8 @@
 package mesosphere.marathon.core.matcher.base.util
 
+import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.Task
-import mesosphere.marathon.state.{ PathId, PersistentVolume, PersistentVolumeInfo, DiskSource }
+import mesosphere.marathon.state.{ DiskSource, PathId, PersistentVolume, PersistentVolumeInfo }
 import mesosphere.marathon.test.Mockito
 import mesosphere.marathon.{ MarathonSpec, MarathonTestHelper, WrongConfigurationException }
 import org.apache.mesos.{ Protos => Mesos }
@@ -32,7 +33,7 @@ class OfferOperationFactoryTest extends MarathonSpec with GivenWhenThen with Moc
 
     When("We create a reserve operation")
     val error = intercept[WrongConfigurationException] {
-      factory.reserve(f.frameworkId, Task.Id.forRunSpec(PathId("/test")), Seq(Mesos.Resource.getDefaultInstance))
+      factory.reserve(f.frameworkId, Instance.Id.forRunSpec(PathId("/test")), Seq(Mesos.Resource.getDefaultInstance))
     }
 
     Then("A meaningful exception is thrown")
@@ -49,7 +50,7 @@ class OfferOperationFactoryTest extends MarathonSpec with GivenWhenThen with Moc
     val task = MarathonTestHelper.makeOneCPUTask(Task.Id.forRunSpec(f.runSpecId))
 
     When("We create a reserve operation")
-    val operation = factory.reserve(f.frameworkId, Task.Id(task.getTaskId), task.getResourcesList.asScala)
+    val operation = factory.reserve(f.frameworkId, Task.Id(task.getTaskId).instanceId, task.getResourcesList.asScala)
 
     Then("The operation is as expected")
     operation.getType shouldEqual Mesos.Offer.Operation.Type.RESERVE
@@ -76,7 +77,7 @@ class OfferOperationFactoryTest extends MarathonSpec with GivenWhenThen with Moc
     val resource = MarathonTestHelper.scalarResource("disk", 1024)
 
     When("We create a reserve operation")
-    val operation = factory.createVolumes(f.frameworkId, Task.Id(task.getTaskId), volumes.map(v => (DiskSource.root, v)))
+    val operation = factory.createVolumes(f.frameworkId, Task.Id(task.getTaskId).instanceId, volumes.map(v => (DiskSource.root, v)))
 
     Then("The operation is as expected")
     operation.getType shouldEqual Mesos.Offer.Operation.Type.CREATE
