@@ -8,7 +8,7 @@ import mesosphere.marathon.core.instance.TestInstanceBuilder
 import mesosphere.marathon.core.instance.update.InstanceUpdateEffect
 import mesosphere.marathon.InstanceConversions
 import mesosphere.marathon.core.instance.TestTaskBuilder
-import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task }
+import mesosphere.marathon.core.task.MarathonTaskStatus
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, InstanceTrackerUpdateStepProcessor }
 import mesosphere.marathon.metrics.Metrics
@@ -176,8 +176,8 @@ class InstanceTrackerActorTest
 
     When("a new staged task gets added")
     val probe = TestProbe()
-    val newStagedTask = TestTaskBuilder.Creator.stagedTask(Task.Id.forRunSpec(appId))
-    val update = TaskStatusUpdateTestHelper.taskLaunchFor(newStagedTask).effect
+    val instance = TestInstanceBuilder.newBuilder(appId).addTaskStaged().getInstance()
+    val update = TaskStatusUpdateTestHelper.taskLaunchFor(instance).effect
 
     val ack = InstanceTrackerActor.Ack(probe.ref, update)
     probe.send(f.taskTrackerActor, InstanceTrackerActor.StateChanged(ack))

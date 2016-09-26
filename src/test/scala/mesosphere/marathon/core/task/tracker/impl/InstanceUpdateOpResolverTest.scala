@@ -1,7 +1,7 @@
 package mesosphere.marathon.core.task.tracker.impl
 
 import mesosphere.marathon.InstanceConversions
-import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestTaskBuilder }
+import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusUpdateTestHelper }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
@@ -187,15 +187,15 @@ class InstanceUpdateOpResolverTest
     val f = new Fixture
 
     Given("an existing lost task")
-    f.taskTracker.instance(f.existingLostTask.taskId) returns Future.successful(Some(f.existingLostTask))
+    f.taskTracker.instance(f.unreachableInstance.instanceId) returns Future.successful(Some(f.unreachableInstance))
 
     When("A subsequent TASK_LOST update is received")
     val reason = mesos.Protos.TaskStatus.Reason.REASON_SLAVE_DISCONNECTED
-    val stateOp: InstanceUpdateOperation.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingLostTask).operation.asInstanceOf[InstanceUpdateOperation.MesosUpdate]
+    val stateOp: InstanceUpdateOperation.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.unreachableInstance).operation.asInstanceOf[InstanceUpdateOperation.MesosUpdate]
     val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingLostTask.taskId)
+    verify(f.taskTracker).instance(f.unreachableInstance.instanceId)
 
     And("the result is an noop")
     stateChange shouldBe a[InstanceUpdateEffect.Noop]
@@ -207,16 +207,16 @@ class InstanceUpdateOpResolverTest
     val f = new Fixture
 
     Given("an existing lost task")
-    f.taskTracker.instance(f.existingLostTask.taskId.instanceId) returns Future.successful(Some(f.existingLostTask))
+    f.taskTracker.instance(f.unreachableInstance.instanceId) returns Future.successful(Some(f.unreachableInstance))
 
     When("A subsequent TASK_LOST update is received indicating the agent is unknown")
     val reason = mesos.Protos.TaskStatus.Reason.REASON_RECONCILIATION
     val maybeMessage = Some("Reconciliation: Task is unknown to the slave")
-    val stateOp: InstanceUpdateOperation.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.existingLostTask, maybeMessage).operation.asInstanceOf[InstanceUpdateOperation.MesosUpdate]
+    val stateOp: InstanceUpdateOperation.MesosUpdate = TaskStatusUpdateTestHelper.lost(reason, f.unreachableInstance, maybeMessage).operation.asInstanceOf[InstanceUpdateOperation.MesosUpdate]
     val stateChange = f.stateOpResolver.resolve(stateOp).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingLostTask.taskId.instanceId)
+    verify(f.taskTracker).instance(f.unreachableInstance.instanceId)
 
     And("the result is an expunge")
     stateChange shouldBe a[InstanceUpdateEffect.Expunge]
@@ -263,13 +263,13 @@ class InstanceUpdateOpResolverTest
   test("Reserve fails if task already exists") {
     val f = new Fixture
     Given("an existing task")
-    f.taskTracker.instance(f.existingReservedTask.taskId) returns Future.successful(Some(f.existingReservedTask))
+    f.taskTracker.instance(f.existingReservedInstance.instanceId) returns Future.successful(Some(f.existingReservedInstance))
 
     When("A Reserve is scheduled with that taskId")
     val stateChange = f.stateOpResolver.resolve(InstanceUpdateOperation.Reserve(f.existingReservedTask)).futureValue
 
     Then("taskTracker.task is called")
-    verify(f.taskTracker).instance(f.existingReservedTask.taskId)
+    verify(f.taskTracker).instance(f.existingReservedInstance.instanceId)
 
     And("the result is a Failure")
     stateChange shouldBe a[InstanceUpdateEffect.Failure]
@@ -283,10 +283,10 @@ class InstanceUpdateOpResolverTest
     Given("a Revert stateOp")
 
     When("the stateOp is resolved")
-    val stateChange = f.stateOpResolver.resolve(InstanceUpdateOperation.Revert(f.existingReservedTask)).futureValue
+    val stateChange = f.stateOpResolver.resolve(InstanceUpdateOperation.Revert(f.existingReservedInstance)).futureValue
 
     And("the result is an Update")
-    stateChange shouldEqual InstanceUpdateEffect.Update(f.existingReservedTask, None)
+    stateChange shouldEqual InstanceUpdateEffect.Update(f.existingReservedInstance, None)
 
     And("The taskTracker is not queried at all")
     f.verifyNoMoreInteractions()
@@ -297,12 +297,16 @@ class InstanceUpdateOpResolverTest
     val stateOpResolver = new InstanceUpdateOpResolver(taskTracker)
 
     val appId = PathId("/app")
-    val existingTask = TestTaskBuilder.Creator.minimalTask(Task.Id.forRunSpec(appId), Timestamp.now(), None, InstanceStatus.Running)
-    val existingInstance: Instance = existingTask
+    val existingInstanceBuilder = TestInstanceBuilder.newBuilder(appId).addTaskRunning()
+    val existingTask: Task.LaunchedEphemeral = existingInstanceBuilder.pickFirstTask()
+    val existingInstance: Instance = existingInstanceBuilder.getInstance()
 
-    val existingReservedTask = TestTaskBuilder.Creator.residentReservedTask(appId)
+    val reservedBuilder = TestInstanceBuilder.newBuilder(appId).addTaskReserved()
+    val existingReservedInstance = reservedBuilder.getInstance()
+    val existingReservedTask: Task.Reserved = reservedBuilder.pickFirstTask()
     val notExistingTaskId = Task.Id.forRunSpec(appId)
-    val existingLostTask = TestTaskBuilder.Creator.minimalLostTask(appId)
+    val unreachableInstanceBuilder = TestInstanceBuilder.newBuilder(appId).addTaskUnreachable()
+    val unreachableInstance = unreachableInstanceBuilder.getInstance()
 
     def verifyNoMoreInteractions(): Unit = {
       noMoreInteractions(taskTracker)
