@@ -1,8 +1,6 @@
 package mesosphere.marathon.core.task.bus
 
 import java.util.concurrent.TimeUnit
-
-import mesosphere.marathon.InstanceConversions
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.update.{ InstanceChange, InstanceDeleted, InstanceUpdateEffect, InstanceUpdateOperation, InstanceUpdated }
 import mesosphere.marathon.core.task.{ MarathonTaskStatus, Task }
@@ -30,7 +28,7 @@ class TaskStatusUpdateTestHelper(val operation: InstanceUpdateOperation, val eff
   }
 }
 
-object TaskStatusUpdateTestHelper extends InstanceConversions {
+object TaskStatusUpdateTestHelper {
   val log = LoggerFactory.getLogger(getClass)
   def apply(operation: InstanceUpdateOperation, effect: InstanceUpdateEffect): TaskStatusUpdateTestHelper =
     new TaskStatusUpdateTestHelper(operation, effect)

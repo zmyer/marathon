@@ -1,13 +1,13 @@
 package mesosphere.marathon.core.launcher.impl
 
-import mesosphere.marathon.{ InstanceConversions, MarathonTestHelper }
+import mesosphere.marathon.MarathonTestHelper
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.state.PathId
 import mesosphere.util.state.FrameworkId
 import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 import org.apache.mesos.{ Protos => MesosProtos }
 
-class TaskLabelsTest extends FunSuite with GivenWhenThen with Matchers with InstanceConversions {
+class TaskLabelsTest extends FunSuite with GivenWhenThen with Matchers {
   test("no labels => no taskId") {
     val f = new Fixture
 

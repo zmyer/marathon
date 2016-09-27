@@ -1,6 +1,5 @@
 package mesosphere.marathon.core.task.tracker.impl
 
-import mesosphere.marathon.InstanceConversions
 import mesosphere.marathon.core.instance.{ Instance, InstanceStatus, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusUpdateTestHelper }
@@ -23,7 +22,7 @@ import scala.concurrent.Future
   * More tests are in [[mesosphere.marathon.tasks.InstanceTrackerImplTest]]
   */
 class InstanceUpdateOpResolverTest
-    extends FunSuite with Mockito with GivenWhenThen with ScalaFutures with Matchers with InstanceConversions {
+    extends FunSuite with Mockito with GivenWhenThen with ScalaFutures with Matchers {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   test("ForceExpunge results in NoChange if task does not exist") {
