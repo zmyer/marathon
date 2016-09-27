@@ -4,7 +4,7 @@ import akka.actor._
 import akka.testkit.TestProbe
 import mesosphere.marathon
 import mesosphere.marathon.core.base.ConstantClock
-import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder, TestTaskBuilder }
+import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker.InstancesBySpec
@@ -79,7 +79,7 @@ class OverdueTasksActorTest extends MarathonSpec with GivenWhenThen with maratho
   test("some overdue tasks") {
     Given("one overdue task")
     val appId = PathId("/some")
-    val mockInstance = Instance(TestTaskBuilder.Creator.stagedTaskForApp(appId))
+    val mockInstance = TestInstanceBuilder.newBuilder(appId).addTaskStaged(version = Some(Timestamp(1)), stagedAt = Timestamp(2)).getInstance()
     val app = InstanceTracker.SpecInstances.forInstances(appId, Iterable(mockInstance))
     taskTracker.instancesBySpec()(any[ExecutionContext]) returns Future.successful(InstancesBySpec.of(app))
 
