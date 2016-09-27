@@ -153,7 +153,7 @@ class InstanceCreationHandlerAndUpdaterDelegateTest
 
     Then("an update operation is requested")
     f.taskTrackerProbe.expectMsg(
-      InstanceTrackerActor.ForwardTaskOp(f.timeoutFromNow, taskId, stateOp)
+      InstanceTrackerActor.ForwardTaskOp(f.timeoutFromNow, instance.instanceId, stateOp)
     )
 
     When("the response is an error")
