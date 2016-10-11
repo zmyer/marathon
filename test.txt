@@ -1,0 +1,15 @@
+* Setup a new cluster of 10 private nodes (aws was my test)
+* dcos auth login
+
+shakedown --dcos-url=$(dcos config show core.dcos_url) --ssh-key-file=~/.ssh/default.pem --stdout all --stdout-inline over-provision.py
+
+dcos marathon app add universe.json
+
+dcos package repo add --index=0 marathon-test http://universe.marathon.mesos:8085/repo
+
+dcos package install marathon --yes
+
+** make sure 1.3
+
+shakedown --dcos-url=$(dcos config show core.dcos_url) --ssh-key-file=~/.ssh/default.pem --stdout all --stdout-inline test_marathon_suicide.py
+
