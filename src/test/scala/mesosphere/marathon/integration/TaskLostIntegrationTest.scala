@@ -78,9 +78,9 @@ class TaskLostIntegrationTest extends IntegrationFunSuite with WithMesosCluster 
   }
 
   // regression test for https://github.com/mesosphere/marathon/issues/4059
-  test("Scaling down an app while constraints violated and lost tasks present") {
+  test("Scaling down an app with lost tasks will succeed") {
     import mesosphere.marathon.Protos.Constraint
-    Given("a new app")
+    Given("an app that is constrained to a unique hostname")
     val constraint: Constraint = Constraint.newBuilder
       .setField("hostname")
       .setOperator(Operator.UNIQUE)
@@ -98,18 +98,17 @@ class TaskLostIntegrationTest extends IntegrationFunSuite with WithMesosCluster 
     val enrichedTasks = waitForTasks(app.id, 2)
     val task = enrichedTasks.find(t => t.host == slave1).getOrElse(throw new RuntimeException("No matching task found on slave1"))
 
-    When("We stop slave 1, one task is declared lost")
+    When("agent1 is stopped")
     stopMesos(slave1)
+    Then("one task is declared lost")
     waitForEventMatching("Task is declared lost") { matchEvent("TASK_LOST", task) }
 
-    And("We try to scale down to one instance")
+    When("We try to scale down to one instance")
     marathon.updateApp(app.id, AppUpdate(instances = Some(1)))
     marathon.listDeploymentsForBaseGroup().value should have size 1
 
-    And("Make sure the deployment was successful")
+    Then("the deployment will eventually finish")
     waitForEventMatching("app should be scaled and deployment should be finished") { matchDeploymentSuccess(1, app.id.toString) }
-
-    And("Make sure the app is healthy")
     marathon.listDeploymentsForBaseGroup().value should have size 0
   }
 
