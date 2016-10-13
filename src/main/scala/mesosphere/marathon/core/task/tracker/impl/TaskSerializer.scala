@@ -48,7 +48,7 @@ object TaskSerializer {
       stagedAt = Timestamp(proto.getStagedAt),
       startedAt = if (proto.hasStartedAt) Some(Timestamp(proto.getStartedAt)) else None,
       mesosStatus = opt(_.hasStatus, _.getStatus),
-      taskStatus = MarathonTaskStatusSerializer.fromProto(proto.getMarathonTaskStatus)
+      taskCondition = MarathonTaskStatusSerializer.fromProto(proto.getMarathonTaskStatus)
     )
 
     def hostPorts = proto.getPortsList.map(_.intValue())(collection.breakOut)
@@ -123,13 +123,13 @@ object TaskSerializer {
       status.mesosStatus.foreach(status => builder.setStatus(status))
       builder.addAllPorts(hostPorts.map(Integer.valueOf))
     }
-    def setMarathonTaskStatus(marathonTaskStatus: Condition): Unit = {
-      builder.setMarathonTaskStatus(MarathonTaskStatusSerializer.toProto(marathonTaskStatus))
+    def setTaskCondition(taskCondition: Condition): Unit = {
+      builder.setMarathonTaskStatus(MarathonTaskStatusSerializer.toProto(taskCondition))
     }
 
     setId(task.taskId)
     setAgentInfo(task.agentInfo)
-    setMarathonTaskStatus(task.status.taskStatus)
+    setTaskCondition(task.status.taskCondition)
 
     task match {
       case launched: Task.LaunchedEphemeral =>
@@ -176,10 +176,10 @@ object MarathonTaskStatusSerializer {
     proto2model.getOrElse(proto, throw SerializationFailedException(s"Unable to parse $proto"))
   }
 
-  def toProto(marathonTaskStatus: Condition): Protos.MarathonTask.MarathonTaskStatus = {
+  def toProto(taskCondition: Condition): Protos.MarathonTask.MarathonTaskStatus = {
     model2proto.getOrElse(
-      marathonTaskStatus,
-      throw SerializationFailedException(s"Unable to serialize $marathonTaskStatus"))
+      taskCondition,
+      throw SerializationFailedException(s"Unable to serialize $taskCondition"))
   }
 }
 

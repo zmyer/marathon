@@ -542,7 +542,7 @@ class SchedulerActions(
       launchQueue.purge(runSpec.id)
 
       val toKill = instanceTracker.specInstancesSync(runSpec.id).toSeq
-        .filter(t => runningOrStaged.contains(t.state.status))
+        .filter(t => runningOrStaged.contains(t.state.condition))
         .sortWith(sortByStateAndTime)
         .take(launchedCount - targetCount)
 
@@ -575,7 +575,7 @@ private[this] object SchedulerActions {
       val stagedB = b.tasks.map(_.status.stagedAt)
       if (stagedA.nonEmpty && stagedB.nonEmpty) stagedA.max.compareTo(stagedB.max) > 0 else false
     }
-    runningOrStaged(b.state.status).compareTo(runningOrStaged(a.state.status)) match {
+    runningOrStaged(b.state.condition).compareTo(runningOrStaged(a.state.condition)) match {
       case 0 => stagedEarlier
       case value: Int => value > 0
     }

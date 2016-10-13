@@ -69,7 +69,7 @@ class TasksResource @Inject() (
     val enrichedTasks = tasks.flatMap {
       case (appId, task) =>
         val app = appIdsToApps(appId)
-        if (isAuthorized(ViewRunSpec, app) && (statusSet.isEmpty || statusSet(task.status.taskStatus))) {
+        if (isAuthorized(ViewRunSpec, app) && (statusSet.isEmpty || statusSet(task.status.taskCondition))) {
           Some(EnrichedTask(
             appId,
             task,

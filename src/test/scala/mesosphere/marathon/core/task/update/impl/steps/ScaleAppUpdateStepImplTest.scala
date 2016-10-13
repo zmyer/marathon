@@ -66,7 +66,7 @@ class ScaleAppUpdateStepImplTest extends FunSuite with Matchers with GivenWhenTh
     }
 
     def makeFailedUpdateOp(instance: Instance, lastState: Option[Condition], newState: Condition) =
-      InstanceUpdated(instance.copy(state = instance.state.copy(status = newState)), lastState.map(state => Instance.InstanceState(state, Timestamp.now(), instance.runSpecVersion, Some(true))), Seq.empty[MarathonEvent])
+      InstanceUpdated(instance.copy(state = instance.state.copy(condition = newState)), lastState.map(state => Instance.InstanceState(state, Timestamp.now(), instance.runSpecVersion, Some(true))), Seq.empty[MarathonEvent])
 
     val step = new ScaleAppUpdateStepImpl(schedulerActorProvider)
   }

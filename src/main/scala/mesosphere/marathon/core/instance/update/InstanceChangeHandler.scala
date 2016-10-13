@@ -33,7 +33,7 @@ sealed trait InstanceChange extends Product with Serializable {
   /** version of the related run spec */
   val runSpecVersion: Timestamp = instance.runSpecVersion
   /** Status of the [[Instance]] */
-  val status: Condition = instance.state.status
+  val condition: Condition = instance.state.condition
   /** Id of the related [[mesosphere.marathon.state.RunSpec]] */
   val runSpecId: PathId = id.runSpecId
   /** the previous state of this instance */

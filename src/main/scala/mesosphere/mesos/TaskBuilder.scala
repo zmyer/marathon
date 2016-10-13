@@ -297,7 +297,7 @@ class TaskBuilder(
         runSpecVersion = runSpec.version,
         status = Task.Status(
           stagedAt = Timestamp.zero,
-          taskStatus = Condition.Created
+          taskCondition = Condition.Created
         ),
         hostPorts = hostPorts
       )

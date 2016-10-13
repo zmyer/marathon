@@ -426,7 +426,7 @@ object PodStatusConversionTest {
 
   def fakeInstance(
     pod: PodDefinition,
-    instanceStatus: Condition,
+    condition: Condition,
     taskStatus: Condition,
     maybeTaskState: Option[Protos.TaskState] = None,
     maybeNetworks: Option[Map[String, String]] = None,
@@ -463,7 +463,7 @@ object PodStatusConversionTest {
       instanceId = instanceId,
       agentInfo = agentInfo,
       state = Instance.InstanceState(
-        status = instanceStatus,
+        condition = condition,
         since = since,
         version = pod.version,
         healthy = None),
@@ -476,7 +476,7 @@ object PodStatusConversionTest {
             stagedAt = since,
             startedAt = if (taskStatus == Condition.Created) None else Some(since),
             mesosStatus = mesosStatus,
-            taskStatus = taskStatus
+            taskCondition = taskStatus
           ),
           hostPorts = Seq(1001)
         )
@@ -498,7 +498,7 @@ object PodStatusConversionTest {
           .setContainerStatus(Protos.ContainerStatus.newBuilder()
             .addAllNetworkInfos(networks).build())
           .build()),
-        taskStatus = Condition.Finished
+        taskCondition = Condition.Finished
       ),
       runSpecVersion = Timestamp.zero,
       hostPorts = Seq.empty)

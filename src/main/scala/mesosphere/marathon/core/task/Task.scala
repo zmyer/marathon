@@ -253,7 +253,7 @@ object Task {
       stagedAt: Timestamp,
       startedAt: Option[Timestamp] = None,
       mesosStatus: Option[MesosProtos.TaskStatus] = None,
-      taskStatus: Condition) {
+      taskCondition: Condition) {
 
     /**
       * @return the health status reported by mesos for this task
@@ -327,7 +327,7 @@ object Task {
       case TaskUpdateOperation.MesosUpdate(Condition.Running, mesosStatus, now) if !hasStartedRunning =>
         val updatedTask = copy(status = status.copy(
           mesosStatus = Some(mesosStatus),
-          taskStatus = Condition.Running,
+          taskCondition = Condition.Running,
           startedAt = Some(now)
         ))
         TaskUpdateEffect.Update(newState = updatedTask)
@@ -336,15 +336,15 @@ object Task {
       case TaskUpdateOperation.MesosUpdate(newStatus: Terminal, mesosStatus, _) =>
         val updated = copy(status = status.copy(
           mesosStatus = Some(mesosStatus),
-          taskStatus = newStatus))
+          taskCondition = newStatus))
         TaskUpdateEffect.Update(updated)
 
       case TaskUpdateOperation.MesosUpdate(newStatus, mesosStatus, _) =>
-        // TODO(PODS): strange to use InstanceStatus here
+        // TODO(PODS): strange to use Condition here
         updatedHealthOrState(status.mesosStatus, mesosStatus).map { newTaskStatus =>
           val updatedTask = copy(status = status.copy(
             mesosStatus = Some(newTaskStatus),
-            taskStatus = newStatus
+            taskCondition = newStatus
           ))
           // TODO(PODS): The instance needs to handle a terminal task via an Update here
           // Or should we use Expunge in case of a terminal update for resident tasks?
@@ -516,7 +516,7 @@ object Task {
           status = status.copy(
             startedAt = Some(now),
             mesosStatus = Some(mesosStatus),
-            taskStatus = Condition.Running))
+            taskCondition = Condition.Running))
         TaskUpdateEffect.Update(updated)
 
       // case 2: terminal
@@ -528,7 +528,7 @@ object Task {
           status = status.copy(
             mesosStatus = Some(mesosStatus),
             // Note the task needs to transition to Reserved, otherwise the instance will not transition to Reserved
-            taskStatus = Condition.Reserved
+            taskCondition = Condition.Reserved
           )
         )
         TaskUpdateEffect.Update(updatedTask)
@@ -538,7 +538,7 @@ object Task {
         updatedHealthOrState(status.mesosStatus, mesosUpdate).map { newTaskStatus =>
           val updatedTask = copy(status = status.copy(
             mesosStatus = Some(newTaskStatus),
-            taskStatus = newStatus))
+            taskCondition = newStatus))
           TaskUpdateEffect.Update(newState = updatedTask)
         } getOrElse {
           log.debug("Ignoring status update for {}. Status did not change.", taskId)
@@ -577,21 +577,21 @@ object Task {
   def tasksById(tasks: Iterable[Task]): Map[Task.Id, Task] = tasks.iterator.map(task => task.taskId -> task).toMap
 
   implicit class TaskStatusComparison(val task: Task) extends AnyVal {
-    def isReserved: Boolean = task.status.taskStatus == Condition.Reserved
-    def isCreated: Boolean = task.status.taskStatus == Condition.Created
-    def isError: Boolean = task.status.taskStatus == Condition.Error
-    def isFailed: Boolean = task.status.taskStatus == Condition.Failed
-    def isFinished: Boolean = task.status.taskStatus == Condition.Finished
-    def isKilled: Boolean = task.status.taskStatus == Condition.Killed
-    def isKilling: Boolean = task.status.taskStatus == Condition.Killing
-    def isRunning: Boolean = task.status.taskStatus == Condition.Running
-    def isStaging: Boolean = task.status.taskStatus == Condition.Staging
-    def isStarting: Boolean = task.status.taskStatus == Condition.Starting
-    def isUnreachable: Boolean = task.status.taskStatus == Condition.Unreachable
-    def isGone: Boolean = task.status.taskStatus == Condition.Gone
-    def isUnknown: Boolean = task.status.taskStatus == Condition.Unknown
-    def isDropped: Boolean = task.status.taskStatus == Condition.Dropped
-    def isTerminal: Boolean = task.status.taskStatus.isTerminal
+    def isReserved: Boolean = task.status.taskCondition == Condition.Reserved
+    def isCreated: Boolean = task.status.taskCondition == Condition.Created
+    def isError: Boolean = task.status.taskCondition == Condition.Error
+    def isFailed: Boolean = task.status.taskCondition == Condition.Failed
+    def isFinished: Boolean = task.status.taskCondition == Condition.Finished
+    def isKilled: Boolean = task.status.taskCondition == Condition.Killed
+    def isKilling: Boolean = task.status.taskCondition == Condition.Killing
+    def isRunning: Boolean = task.status.taskCondition == Condition.Running
+    def isStaging: Boolean = task.status.taskCondition == Condition.Staging
+    def isStarting: Boolean = task.status.taskCondition == Condition.Starting
+    def isUnreachable: Boolean = task.status.taskCondition == Condition.Unreachable
+    def isGone: Boolean = task.status.taskCondition == Condition.Gone
+    def isUnknown: Boolean = task.status.taskCondition == Condition.Unknown
+    def isDropped: Boolean = task.status.taskCondition == Condition.Dropped
+    def isTerminal: Boolean = task.status.taskCondition.isTerminal
   }
 
   implicit object TaskFormat extends Format[Task] {
