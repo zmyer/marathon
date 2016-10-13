@@ -1,7 +1,7 @@
 package mesosphere.marathon
 package core.task.tracker.impl
 
-import mesosphere.marathon.core.instance.{ Instance, InstanceStatus }
+import mesosphere.marathon.core.instance.{ Instance, Condition }
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.Task.{ LocalVolumeId, Reservation }
 import mesosphere.marathon.state.Timestamp
@@ -122,7 +122,7 @@ object TaskSerializer {
       status.mesosStatus.foreach(status => builder.setStatus(status))
       builder.addAllPorts(hostPorts.map(Integer.valueOf))
     }
-    def setMarathonTaskStatus(marathonTaskStatus: InstanceStatus): Unit = {
+    def setMarathonTaskStatus(marathonTaskStatus: Condition): Unit = {
       builder.setMarathonTaskStatus(MarathonTaskStatusSerializer.toProto(marathonTaskStatus))
     }
 
@@ -149,7 +149,7 @@ object TaskSerializer {
 object MarathonTaskStatusSerializer {
 
   import mesosphere._
-  import mesosphere.marathon.core.instance.InstanceStatus._
+  import mesosphere.marathon.core.instance.Condition._
 
   private val proto2model = Map(
     marathon.Protos.MarathonTask.MarathonTaskStatus.Reserved -> Reserved,
@@ -168,14 +168,14 @@ object MarathonTaskStatusSerializer {
     marathon.Protos.MarathonTask.MarathonTaskStatus.Dropped -> Dropped
   )
 
-  private val model2proto: Map[InstanceStatus, marathon.Protos.MarathonTask.MarathonTaskStatus] =
+  private val model2proto: Map[Condition, marathon.Protos.MarathonTask.MarathonTaskStatus] =
     proto2model.map(_.swap)
 
-  def fromProto(proto: Protos.MarathonTask.MarathonTaskStatus): InstanceStatus = {
+  def fromProto(proto: Protos.MarathonTask.MarathonTaskStatus): Condition = {
     proto2model.getOrElse(proto, throw SerializationFailedException(s"Unable to parse $proto"))
   }
 
-  def toProto(marathonTaskStatus: InstanceStatus): Protos.MarathonTask.MarathonTaskStatus = {
+  def toProto(marathonTaskStatus: Condition): Protos.MarathonTask.MarathonTaskStatus = {
     model2proto.getOrElse(
       marathonTaskStatus,
       throw SerializationFailedException(s"Unable to serialize $marathonTaskStatus"))
