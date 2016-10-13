@@ -45,75 +45,54 @@ def launch_pods(count=1, instances=1):
     for num in range(1, count + 1):
         client.add_pod(pod(num, instances))
 
-
 def test_pod_instances_1():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
-
-    time = scale_pods(1, 1)
-    instances_results.append(time)
+    _test_pod_scale(1, 1, instances_results)
 
 def test_pod_instances_10():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
-
-    time = scale_pods(1, 10)
-    instances_results.append(time)
+    _test_pod_scale(1, 10, instances_results)
 
 def test_pod_instances_100():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
+    _test_pod_scale(1, 100, instances_results)
 
-    time = scale_pods(1, 100)
-    instances_results.append(time)
+def test_pod_instances_200():
+    _test_pod_scale(1, 200, instances_results)
+
+def test_pod_instances_300():
+    _test_pod_scale(1, 300, instances_results)
 
 def test_pod_instances_500():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
-
-    time = scale_pods(1, 500)
-    instances_results.append(time)
-
+    _test_pod_scale(1, 500, instances_results)
 
 def test_pod_count_1():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
-
-    time = scale_pods(1, 1)
-    count_results.append(time)
+    _test_pod_scale(1, 1, count_results)
 
 def test_pod_count_10():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
-
-    time = scale_pods(10, 1)
-    count_results.append(time)
+    _test_pod_scale(10, 1, count_results)
 
 def test_pod_count_100():
-    client = marathon.create_client()
-    delete_all_pods()
-    pod_time_deployment("undeploy")
+    _test_pod_scale(100, 1, count_results)
 
-    time = scale_pods(100, 1)
-    count_results.append(time)
+def test_pod_count_200():
+    _test_pod_scale(200, 1, count_results)
+
+def test_pod_count_300():
+    _test_pod_scale(300, 1, count_results)
 
 def test_pod_count_500():
+    _test_pod_scale(500, 1, count_results)
+
+def _test_pod_scale(pod_count, instances, test_results):
     client = marathon.create_client()
     delete_all_pods()
     pod_time_deployment("undeploy")
 
-    time = scale_pods(500, 1)
-    count_results.append(time)
+    time = scale_pods(pod_count, instances)
+    test_results.append(time)
 
 def scale_pods(pod_count=1, instances=1):
     test = "scaling pods: " + str(pod_count) + " instances: " + str(instances)
     launch_pods(pod_count, instances)
+    print("pods launched")
     time = pod_time_deployment(test)
     delete_all_pods()
     pod_time_deployment("undeploy")
@@ -122,6 +101,7 @@ def scale_pods(pod_count=1, instances=1):
 def delete_all_pods():
     client = marathon.create_client()
     pods = client.list_pod()
+    print("deleting {} pods".format(len(pods)))
     for pod in pods:
         client.remove_pod(pod['id'], True)
 
