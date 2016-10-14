@@ -5,7 +5,6 @@ import mesosphere.marathon.Protos.Constraint
 import mesosphere.marathon.Protos.Constraint.Operator
 import mesosphere.marathon.Protos.HealthCheckDefinition.Protocol
 import mesosphere.marathon.Protos.ResidencyDefinition.TaskLostBehavior
-import mesosphere.marathon.SerializationFailedException
 import mesosphere.marathon.core.appinfo._
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.health._
@@ -714,9 +713,27 @@ trait HealthCheckFormats {
       (__ \ "maxConsecutiveFailures").formatNullable[Int].withDefault(DefaultMaxConsecutiveFailures)
   }
 
+  implicit lazy val PortReferenceFormat: Format[PortReference] = Format[PortReference](
+    Reads[PortReference] { js =>
+      js.asOpt[Int].map { intIndex =>
+        JsSuccess(PortReference(intIndex))
+      }.getOrElse {
+        js.asOpt[String].map { stringIndex =>
+          JsSuccess(PortReference(stringIndex))
+        }.getOrElse {
+          JsError("expected string (port name) or integer (port offset) for port-index")
+        }
+      }
+    },
+    Writes[PortReference] {
+      case byInt: PortReference.ByIndex => JsNumber(byInt.value)
+      case byName: PortReference.ByName => JsString(byName.value)
+    }
+  )
+
   val HealthCheckWithPortsFormatBuilder =
     BasicHealthCheckFormatBuilder ~
-      (__ \ "portIndex").formatNullable[Int] ~
+      (__ \ "portIndex").formatNullable[PortReference] ~
       (__ \ "port").formatNullable[Int]
 
   val HttpHealthCheckFormatBuilder = {
@@ -1065,16 +1082,16 @@ trait AppAndGroupFormats {
 
     healthChecks.map {
       case healthCheck: MarathonTcpHealthCheck =>
-        def addPort(hc: MarathonTcpHealthCheck): MarathonTcpHealthCheck = hc.copy(portIndex = Some(0))
+        def addPort(hc: MarathonTcpHealthCheck): MarathonTcpHealthCheck = hc.copy(portIndex = Some(PortReference(0)))
         withPort(healthCheck, addPort)
       case healthCheck: MarathonHttpHealthCheck =>
-        def addPort(hc: MarathonHttpHealthCheck): MarathonHttpHealthCheck = hc.copy(portIndex = Some(0))
+        def addPort(hc: MarathonHttpHealthCheck): MarathonHttpHealthCheck = hc.copy(portIndex = Some(PortReference(0)))
         withPort(healthCheck, addPort)
       case healthCheck: MesosTcpHealthCheck =>
-        def addPort(hc: MesosTcpHealthCheck): MesosTcpHealthCheck = hc.copy(portIndex = Some(0))
+        def addPort(hc: MesosTcpHealthCheck): MesosTcpHealthCheck = hc.copy(portIndex = Some(PortReference(0)))
         withPort(healthCheck, addPort)
       case healthCheck: MesosHttpHealthCheck =>
-        def addPort(hc: MesosHttpHealthCheck): MesosHttpHealthCheck = hc.copy(portIndex = Some(0))
+        def addPort(hc: MesosHttpHealthCheck): MesosHttpHealthCheck = hc.copy(portIndex = Some(PortReference(0)))
         withPort(healthCheck, addPort)
       case healthCheck: HealthCheck => healthCheck
     }

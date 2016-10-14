@@ -82,12 +82,11 @@ object TaskGroupBuilder {
       instanceId,
       offer.getFrameworkId)
 
-    val envPrefix: Option[String] = config.envVarsPrefix
-
     val taskGroup = mesos.TaskGroupInfo.newBuilder
+    val portAssignments = computePortAssignments(podDefinition, resourceMatch.hostPorts)
 
     podDefinition.containers
-      .map(computeTaskInfo(_, podDefinition, offer, instanceId, resourceMatch.hostPorts, config))
+      .map(computeTaskInfo(_, podDefinition, offer, instanceId, resourceMatch.hostPorts, config, portAssignments))
       .foreach(taskGroup.addTasks)
 
     // call all configured run spec customizers here (plugin)
@@ -134,7 +133,8 @@ object TaskGroupBuilder {
     offer: mesos.Offer,
     instanceId: Instance.Id,
     hostPorts: Seq[Option[Int]],
-    config: BuilderConfig): mesos.TaskInfo.Builder = {
+    config: BuilderConfig,
+    portAssignments: Seq[PortAssignment]): mesos.TaskInfo.Builder = {
 
     val endpointVars = endpointEnvVars(podDefinition, hostPorts, config)
 
@@ -170,7 +170,7 @@ object TaskGroupBuilder {
       .foreach(builder.setContainer)
 
     container.healthCheck.foreach { healthCheck =>
-      builder.setHealthCheck(computeHealthCheck(healthCheck, podDefinition, hostPorts))
+      builder.setHealthCheck(computeHealthCheck(healthCheck, portAssignments))
     }
 
     builder
@@ -377,32 +377,38 @@ object TaskGroupBuilder {
     }
   }
 
+  private[this] def computePortAssignments(
+    podDefinition: PodDefinition,
+    hostPorts: Seq[Option[Int]]): Seq[PortAssignment] = {
+
+    assume(
+      podDefinition.endpoints.size == hostPorts.size,
+      s"Endpoints without resolved host ports: ${podDefinition.endpoints.size} hostPorts: ${hostPorts.size}")
+
+    val isHostModeNetworking = podDefinition.networks.contains(HostNetwork)
+
+    podDefinition.endpoints.zip(hostPorts).map { entry =>
+      PortAssignment(
+        portName = Some(entry._1.name),
+        hostPort = entry._2.find(_ => isHostModeNetworking),
+        containerPort = entry._1.containerPort.find(_ => !isHostModeNetworking),
+        // we don't need these for health checks proto generation, presumably because we can't definitively know,
+        // in all cases, the full network address of the health check until the task is actually launched.
+        effectiveIpAddress = None,
+        effectivePort = 0
+      )
+    }
+  }
+
   private[this] def computeHealthCheck(
     healthCheck: MesosHealthCheck,
-    podDefinition: PodDefinition,
-    hostPorts: Seq[Option[Int]]): mesos.HealthCheck = {
+    portAssignments: Seq[PortAssignment]): mesos.HealthCheck = {
 
     healthCheck match {
       case _: MesosCommandHealthCheck =>
         healthCheck.toMesos()
       case _ =>
-        assume(
-          podDefinition.endpoints.size == hostPorts.size,
-          s"Endpoints without resolved host ports: ${podDefinition.endpoints.size} hostPorts: ${hostPorts.size}")
-
-        val isHostModeNetworking = podDefinition.networks.contains(HostNetwork)
-
-        healthCheck.toMesos(podDefinition.endpoints.zip(hostPorts).map { entry =>
-          PortAssignment(
-            portName = Some(entry._1.name),
-            hostPort = entry._2.find(_ => isHostModeNetworking),
-            containerPort = entry._1.containerPort.find(_ => !isHostModeNetworking),
-            // we don't need these for health checks proto generation, presumably because we can't definitively know,
-            // in all cases, the full network address of the health check until the task is actually launched.
-            effectiveIpAddress = None,
-            effectivePort = 0
-          )
-        })
+        healthCheck.toMesos(portAssignments)
     }
   }
 

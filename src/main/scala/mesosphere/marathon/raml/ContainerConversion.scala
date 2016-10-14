@@ -1,10 +1,9 @@
 package mesosphere.marathon.raml
 
-import mesosphere.marathon.core.pod.{ MesosContainer, PodDefinition }
+import mesosphere.marathon.core.pod.MesosContainer
 
 trait ContainerConversion extends HealthCheckConversion {
-  implicit val containerRamlWrites: Writes[(PodDefinition, MesosContainer), PodContainer] = Writes { src =>
-    val (pod, c) = src
+  implicit val containerRamlWrites: Writes[MesosContainer, PodContainer] = Writes { c =>
     PodContainer(
       name = c.name,
       exec = c.exec,
@@ -13,7 +12,7 @@ trait ContainerConversion extends HealthCheckConversion {
       image = c.image,
       environment = Raml.toRaml(c.env),
       user = c.user,
-      healthCheck = c.healthCheck.map(check => Raml.toRaml((pod, check))),
+      healthCheck = c.healthCheck.map(Raml.toRaml(_)),
       volumeMounts = c.volumeMounts,
       artifacts = c.artifacts,
       labels = c.labels,
@@ -30,13 +29,11 @@ trait ContainerConversion extends HealthCheckConversion {
       image = c.image,
       env = Raml.fromRaml(c.environment),
       user = c.user,
+      healthCheck = c.healthCheck.map(Raml.fromRaml(_)),
       volumeMounts = c.volumeMounts,
       artifacts = c.artifacts,
       labels = c.labels,
       lifecycle = c.lifecycle
-    // we can't do healthCheck here, it's a chicken-and-egg problem. we need the entire PodDefinition
-    // in order to convert healthCheck, but we won't have what need in PodDefinition until we mostly convert
-    // the container.
     )
   }
 }

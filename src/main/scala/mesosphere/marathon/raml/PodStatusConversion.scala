@@ -4,6 +4,7 @@ package raml
 import java.time.OffsetDateTime
 
 import mesosphere.marathon.core.condition.Condition
+import mesosphere.marathon.core.health.{ MesosCommandHealthCheck, MesosHttpHealthCheck, MesosTcpHealthCheck, PortReference }
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.pod.{ MesosContainer, PodDefinition }
 import mesosphere.marathon.core.task.Task
@@ -45,7 +46,7 @@ trait PodStatusConversion {
       statusSince = since,
       containerId = task.launchedMesosId.map(_.getValue),
       endpoints = endpointStatus,
-      conditions = Seq(maybeHealthCondition(pod, task.status, maybeContainerSpec, endpointStatus, since)).flatten,
+      conditions = Seq(maybeHealthCondition(task.status, maybeContainerSpec, endpointStatus, since)).flatten,
       resources = resources,
       lastUpdated = since, // TODO(jdef) pods fixme
       lastChanged = since // TODO(jdef) pods.fixme
@@ -107,13 +108,18 @@ trait PodStatusConversion {
     networkStatus.copy(addresses = networkStatus.addresses.distinct)
   }(collection.breakOut)
 
-  def healthCheckEndpoint(podSpec: PodDefinition, spec: MesosContainer): Option[String] = {
+  def healthCheckEndpoint(spec: MesosContainer): Option[String] = {
     def invalidPortIndex[T](msg: String): T = throw new IllegalStateException(msg)
     spec.healthCheck.collect {
-      case check: core.health.HealthCheckWithPort =>
-        check.portIndex.fold(
-          invalidPortIndex(s"expected portIndex ${check.portIndex} to map to an endpoint for pod ${podSpec.id}")
-        )(i => podSpec.endpoints(i).name)
+      case check: MesosHttpHealthCheck => check.portIndex
+      case check: MesosTcpHealthCheck => check.portIndex
+    }.map {
+      _.fold(
+        invalidPortIndex(s"missing portIndex to map to an endpoint for container ${spec.name}")
+      ){
+          case portName: PortReference.ByName => portName.value
+          case _ => invalidPortIndex("index byInt not supported for pods")
+        }
     }
   }
 
@@ -122,7 +128,6 @@ trait PodStatusConversion {
     * or else endpoint health checks.
     */
   def maybeHealthCondition(
-    pod: PodDefinition,
     status: Task.Status,
     maybeContainerSpec: Option[MesosContainer],
     endpointStatuses: Seq[ContainerEndpointStatus],
@@ -135,13 +140,13 @@ trait PodStatusConversion {
       case _ =>
         val healthy: Option[(Boolean, String)] = maybeContainerSpec.flatMap { containerSpec =>
           val usingCommandHealthCheck: Boolean = containerSpec.healthCheck.exists {
-            case _: core.health.MesosCommandHealthCheck => true
+            case _: MesosCommandHealthCheck => true
             case _ => false
           }
           if (usingCommandHealthCheck) {
             Some(status.healthy.fold(false -> HEALTH_UNREPORTED) { _ -> HEALTH_REPORTED })
           } else {
-            val ep = healthCheckEndpoint(pod, containerSpec)
+            val ep = healthCheckEndpoint(containerSpec)
             ep.map { endpointName =>
               val epHealthy: Option[Boolean] = endpointStatuses.find(_.name == endpointName).flatMap(_.healthy)
               // health check endpoint was specified, but if we don't have a value for health yet then generate a
@@ -200,7 +205,7 @@ trait PodStatusConversion {
 
               // check whether health checks are enabled for this endpoint. if they are then propagate the mesos task
               // health check result.
-              healthCheckEndpoint(pod, containerSpec).flatMap { name =>
+              healthCheckEndpoint(containerSpec).flatMap { name =>
                 // update the `health` field of the endpoint status...
                 allEndpoints.find(_.name == name).map(_.copy(healthy = taskHealthy))
               }.fold(allEndpoints) { updated =>

@@ -3,7 +3,7 @@ package raml
 
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.condition.Condition
-import mesosphere.marathon.core.health.{ MesosCommandHealthCheck, MesosHttpHealthCheck }
+import mesosphere.marathon.core.health.{ MesosCommandHealthCheck, MesosHttpHealthCheck, PortReference }
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.pod.{ ContainerNetwork, MesosContainer, PodDefinition }
 import mesosphere.marathon.core.task.Task
@@ -396,7 +396,7 @@ object PodStatusConversionTest {
           Endpoint(name = "web", containerPort = Some(80)),
           Endpoint(name = "admin", containerPort = Some(90), hostPort = Some(0))
         ),
-        healthCheck = Some(MesosHttpHealthCheck(portIndex = Some(0), path = Some("/ping")))
+        healthCheck = Some(MesosHttpHealthCheck(portIndex = Some(PortReference("web")), path = Some("/ping")))
       )
     ),
     networks = Seq(ContainerNetwork(name = "dcos"), ContainerNetwork("bigdog"))

@@ -1,7 +1,7 @@
 package mesosphere.mesos
 
 import mesosphere.UnitTest
-import mesosphere.marathon.core.health.{ MesosCommandHealthCheck, MesosHttpHealthCheck, MesosTcpHealthCheck }
+import mesosphere.marathon.core.health.{ MesosCommandHealthCheck, MesosHttpHealthCheck, MesosTcpHealthCheck, PortReference }
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.pod._
 import mesosphere.marathon.core.task.Task
@@ -14,7 +14,6 @@ import mesosphere.marathon.stream._
 import mesosphere.marathon.test.MarathonTestHelper
 import org.apache.mesos.Protos.{ ExecutorInfo, TaskGroupInfo, TaskInfo }
 import org.apache.mesos.{ Protos => mesos }
-import mesosphere.marathon.stream._
 
 import scala.collection.immutable.Seq
 import scala.collection.breakOut
@@ -488,7 +487,7 @@ class TaskGroupBuilderTest extends UnitTest {
             MesosContainer(
               name = "Foo1",
               resources = raml.Resources(cpus = 1.0f, mem = 128.0f),
-              healthCheck = Some(MesosHttpHealthCheck(portIndex = Some(0), path = Some("healthcheck"))),
+              healthCheck = Some(MesosHttpHealthCheck(portIndex = Some(PortReference("foo1")), path = Some("healthcheck"))),
               endpoints = List(
                 raml.Endpoint(
                   name = "foo1",
@@ -499,7 +498,7 @@ class TaskGroupBuilderTest extends UnitTest {
             MesosContainer(
               name = "Foo2",
               resources = raml.Resources(cpus = 1.0f, mem = 128.0f),
-              healthCheck = Some(MesosTcpHealthCheck(portIndex = Some(1))),
+              healthCheck = Some(MesosTcpHealthCheck(portIndex = Some(PortReference("foo2")))),
               endpoints = List(
                 raml.Endpoint(
                   name = "foo2",
@@ -560,7 +559,7 @@ class TaskGroupBuilderTest extends UnitTest {
             MesosContainer(
               name = "Foo1",
               resources = raml.Resources(cpus = 1.0f, mem = 128.0f),
-              healthCheck = Some(MesosHttpHealthCheck(portIndex = Some(0), path = Some("healthcheck"))),
+              healthCheck = Some(MesosHttpHealthCheck(portIndex = Some(PortReference("foo1")), path = Some("healthcheck"))),
               endpoints = List(
                 raml.Endpoint(
                   name = "foo1",
@@ -571,7 +570,7 @@ class TaskGroupBuilderTest extends UnitTest {
             MesosContainer(
               name = "Foo2",
               resources = raml.Resources(cpus = 1.0f, mem = 128.0f),
-              healthCheck = Some(MesosTcpHealthCheck(portIndex = Some(1))),
+              healthCheck = Some(MesosTcpHealthCheck(portIndex = Some(PortReference("foo2")))),
               endpoints = List(
                 raml.Endpoint(
                   name = "foo2",

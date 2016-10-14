@@ -2,8 +2,7 @@ package mesosphere.marathon
 package raml
 
 import mesosphere.marathon.Protos.HealthCheckDefinition
-import mesosphere.marathon.core.health.{ MesosCommandHealthCheck, MesosHealthCheck, MesosHttpHealthCheck, MesosTcpHealthCheck }
-import mesosphere.marathon.core.pod.PodDefinition
+import mesosphere.marathon.core.health._
 import mesosphere.marathon.state.{ ArgvList, Command, Executable }
 
 import scala.concurrent.duration._
@@ -28,57 +27,49 @@ trait HealthCheckConversion {
     }
   }
 
-  implicit val healthCheckRamlReader: Reads[(PodDefinition, HealthCheck), MesosHealthCheck] = Reads { src =>
-    val (pod, check) = src
-
-    def portIndex(endpointName: String): Option[Int] = {
-      val i = pod.endpoints.indexWhere(_.name == endpointName)
-      if (i == -1) throw new IllegalStateException(s"endpoint named $endpointName not defined in pod ${pod.id}")
-      else Some(i)
-    }
-
-    check match {
-      case HealthCheck(Some(httpCheck), None, None, gracePeriod, interval, maxConFailures, timeout, delay) =>
-        MesosHttpHealthCheck(
-          gracePeriod = gracePeriod.seconds,
-          interval = interval.seconds,
-          timeout = timeout.seconds,
-          maxConsecutiveFailures = maxConFailures,
-          delay = delay.seconds,
-          path = httpCheck.path,
-          protocol = httpCheck.scheme.map(Raml.fromRaml(_)).getOrElse(HealthCheckDefinition.Protocol.HTTP),
-          portIndex = portIndex(httpCheck.endpoint)
-        )
-      case HealthCheck(None, Some(tcpCheck), None, gracePeriod, interval, maxConFailures, timeout, delay) =>
-        MesosTcpHealthCheck(
-          gracePeriod = gracePeriod.seconds,
-          interval = interval.seconds,
-          timeout = timeout.seconds,
-          maxConsecutiveFailures = maxConFailures,
-          delay = delay.seconds,
-          portIndex = portIndex(tcpCheck.endpoint)
-        )
-      case HealthCheck(None, None, Some(execCheck), gracePeriod, interval, maxConFailures, timeout, delay) =>
-        MesosCommandHealthCheck(
-          gracePeriod = gracePeriod.seconds,
-          interval = interval.seconds,
-          timeout = timeout.seconds,
-          maxConsecutiveFailures = maxConFailures,
-          delay = delay.seconds,
-          command = Raml.fromRaml(execCheck)
-        )
-      case _ =>
-        throw new IllegalStateException("illegal RAML HealthCheck: expected one of http, tcp or exec checks")
-    }
+  implicit val healthCheckRamlReader: Reads[HealthCheck, MesosHealthCheck] = Reads {
+    case HealthCheck(Some(httpCheck), None, None, gracePeriod, interval, maxConFailures, timeout, delay) =>
+      MesosHttpHealthCheck(
+        gracePeriod = gracePeriod.seconds,
+        interval = interval.seconds,
+        timeout = timeout.seconds,
+        maxConsecutiveFailures = maxConFailures,
+        delay = delay.seconds,
+        path = httpCheck.path,
+        protocol = httpCheck.scheme.map(Raml.fromRaml(_)).getOrElse(HealthCheckDefinition.Protocol.HTTP),
+        portIndex = Some(PortReference(httpCheck.endpoint))
+      )
+    case HealthCheck(None, Some(tcpCheck), None, gracePeriod, interval, maxConFailures, timeout, delay) =>
+      MesosTcpHealthCheck(
+        gracePeriod = gracePeriod.seconds,
+        interval = interval.seconds,
+        timeout = timeout.seconds,
+        maxConsecutiveFailures = maxConFailures,
+        delay = delay.seconds,
+        portIndex = Some(PortReference(tcpCheck.endpoint))
+      )
+    case HealthCheck(None, None, Some(execCheck), gracePeriod, interval, maxConFailures, timeout, delay) =>
+      MesosCommandHealthCheck(
+        gracePeriod = gracePeriod.seconds,
+        interval = interval.seconds,
+        timeout = timeout.seconds,
+        maxConsecutiveFailures = maxConFailures,
+        delay = delay.seconds,
+        command = Raml.fromRaml(execCheck)
+      )
+    case _ =>
+      throw new IllegalStateException("illegal RAML HealthCheck: expected one of http, tcp or exec checks")
   }
 
-  implicit val healthCheckRamlWriter: Writes[(PodDefinition, MesosHealthCheck), HealthCheck] = Writes { src =>
-    val (pod, check) = src
+  implicit val healthCheckRamlWriter: Writes[MesosHealthCheck, HealthCheck] = Writes { check =>
     def requiredField[T](msg: String): T = throw new IllegalStateException(msg)
-    def endpointAt(portIndex: Option[Int]): String = portIndex
-      .fold(requiredField[String](s"portIndex missing for health-check with pod ${pod.id}")){ idx =>
-        pod.endpoints(idx).name
+    def requireEndpoint(portIndex: Option[PortReference]): String = portIndex.fold(
+      requiredField[String]("portIndex undefined for health-check")
+    ) {
+        case byName: PortReference.ByName => byName.value
+        case index => throw new IllegalStateException(s"unsupported type of port-index for $index")
       }
+
     val partialCheck = HealthCheck(
       gracePeriodSeconds = check.gracePeriod.toSeconds,
       intervalSeconds = check.interval.toSeconds.toInt,
@@ -90,14 +81,14 @@ trait HealthCheckConversion {
       case httpCheck: MesosHttpHealthCheck =>
         partialCheck.copy(
           http = Some(HttpHealthCheck(
-            endpoint = endpointAt(httpCheck.portIndex),
+            endpoint = requireEndpoint(httpCheck.portIndex),
             path = httpCheck.path,
             scheme = Some(Raml.toRaml(httpCheck.protocol))))
         )
       case tcpCheck: MesosTcpHealthCheck =>
         partialCheck.copy(
           tcp = Some(TcpHealthCheck(
-            endpoint = endpointAt(tcpCheck.portIndex)
+            endpoint = requireEndpoint(tcpCheck.portIndex)
           ))
         )
       case cmdCheck: MesosCommandHealthCheck =>

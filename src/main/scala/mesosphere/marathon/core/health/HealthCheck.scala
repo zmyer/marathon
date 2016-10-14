@@ -24,8 +24,40 @@ sealed trait HealthCheck {
       .setMaxConsecutiveFailures(this.maxConsecutiveFailures)
 }
 
+sealed trait PortReference extends Product with Serializable {
+  def apply(assignments: Seq[PortAssignment]): PortAssignment
+  def buildProto(builder: Protos.HealthCheckDefinition.Builder): Unit
+}
+
+object PortReference {
+  case class ByIndex(value: Int) extends PortReference {
+    override def apply(assignments: Seq[PortAssignment]): PortAssignment =
+      assignments(value)
+    override def buildProto(builder: Protos.HealthCheckDefinition.Builder): Unit =
+      builder.setPortIndex(value)
+  }
+
+  case class ByName(value: String) extends PortReference {
+    override def apply(assignments: Seq[PortAssignment]): PortAssignment =
+      assignments.find(_.portName.contains(value)).getOrElse(
+        throw new IndexOutOfBoundsException(s"no PortAssignment named ${value}")
+      )
+    override def buildProto(builder: Protos.HealthCheckDefinition.Builder): Unit =
+      builder.setPortName(value)
+  }
+
+  def apply(value: Int): PortReference = ByIndex(value)
+  def apply(value: String): PortReference = ByName(value)
+
+  def fromProto(pb: Protos.HealthCheckDefinition): Option[PortReference] =
+    if (pb.hasPortIndex) Some(ByIndex(pb.getPortIndex))
+    else if (pb.hasPortName) Some(ByName(pb.getPortName))
+    else if (!pb.hasPort) Some(ByIndex(0)) // backward compatibility, this used to be the default value in marathon.proto
+    else None
+}
+
 sealed trait HealthCheckWithPort extends HealthCheck {
-  def portIndex: Option[Int]
+  def portIndex: Option[PortReference]
   def port: Option[Int]
 }
 
@@ -42,15 +74,12 @@ object HealthCheckWithPort {
 }
 
 sealed trait MarathonHealthCheck extends HealthCheckWithPort { this: HealthCheck =>
-  def portIndex: Option[Int]
+  def portIndex: Option[PortReference]
   def port: Option[Int]
 
   @SuppressWarnings(Array("OptionGet"))
   def effectivePort(app: AppDefinition, task: Task): Int = {
-    def portViaIndex: Option[Int] = portIndex.map { portIndex =>
-      app.portAssignments(task)(portIndex).effectivePort
-    }
-
+    def portViaIndex: Option[Int] = portIndex.map(_(app.portAssignments(task)).effectivePort)
     port.orElse(portViaIndex).get
   }
 }
@@ -72,7 +101,10 @@ sealed trait MesosHealthCheckWithPorts extends HealthCheckWithPort { this: Healt
   @SuppressWarnings(Array("OptionGet"))
   def effectivePort(portAssignments: Seq[PortAssignment]): Int = {
     port.getOrElse {
-      val portAssignment = portIndex.map(portAssignments(_))
+      val portAssignment: Option[PortAssignment] = portIndex.flatMap {
+        case intIndex: PortReference.ByIndex => Some(portAssignments(intIndex.value))
+        case nameIndex: PortReference.ByName => portAssignments.find(_.portName.contains(nameIndex.value))
+      }
       portAssignment.flatMap(_.containerPort).getOrElse(portAssignment.flatMap(_.hostPort).get)
     }
   }
@@ -83,7 +115,7 @@ case class MarathonHttpHealthCheck(
   interval: FiniteDuration = HealthCheck.DefaultInterval,
   timeout: FiniteDuration = HealthCheck.DefaultTimeout,
   maxConsecutiveFailures: Int = HealthCheck.DefaultMaxConsecutiveFailures,
-  portIndex: Option[Int] = HealthCheckWithPort.DefaultPortIndex,
+  portIndex: Option[PortReference] = HealthCheckWithPort.DefaultPortIndex,
   port: Option[Int] = HealthCheckWithPort.DefaultPort,
   path: Option[String] = MarathonHttpHealthCheck.DefaultPath,
   protocol: Protocol = MarathonHttpHealthCheck.DefaultProtocol,
@@ -95,8 +127,7 @@ case class MarathonHttpHealthCheck(
       .setIgnoreHttp1Xx(this.ignoreHttp1xx)
 
     path.foreach(builder.setPath)
-
-    portIndex.foreach(builder.setPortIndex)
+    portIndex.foreach(_.buildProto(builder))
     port.foreach(builder.setPort)
 
     builder.build
@@ -116,13 +147,7 @@ object MarathonHttpHealthCheck {
       maxConsecutiveFailures = proto.getMaxConsecutiveFailures,
       ignoreHttp1xx = proto.getIgnoreHttp1Xx,
       path = if (proto.hasPath) Some(proto.getPath) else None,
-      portIndex =
-      if (proto.hasPortIndex)
-        Some(proto.getPortIndex)
-      else if (!proto.hasPort)
-        Some(0) // backward compatibility, this used to be the default value in marathon.proto
-      else
-        None,
+      portIndex = PortReference.fromProto(proto),
       port = if (proto.hasPort) Some(proto.getPort) else None,
       protocol = proto.getProtocol
     )
@@ -133,13 +158,13 @@ case class MarathonTcpHealthCheck(
   interval: FiniteDuration = HealthCheck.DefaultInterval,
   timeout: FiniteDuration = HealthCheck.DefaultTimeout,
   maxConsecutiveFailures: Int = HealthCheck.DefaultMaxConsecutiveFailures,
-  portIndex: Option[Int] = HealthCheckWithPort.DefaultPortIndex,
+  portIndex: Option[PortReference] = HealthCheckWithPort.DefaultPortIndex,
   port: Option[Int] = HealthCheckWithPort.DefaultPort)
     extends HealthCheck with MarathonHealthCheck {
   override def toProto: Protos.HealthCheckDefinition = {
     val builder = protoBuilder.setProtocol(Protos.HealthCheckDefinition.Protocol.TCP)
 
-    portIndex.foreach(builder.setPortIndex)
+    portIndex.foreach(_.buildProto(builder))
     port.foreach(builder.setPort)
 
     builder.build
@@ -153,13 +178,7 @@ object MarathonTcpHealthCheck {
       timeout = proto.getTimeoutSeconds.seconds,
       interval = proto.getIntervalSeconds.seconds,
       maxConsecutiveFailures = proto.getMaxConsecutiveFailures,
-      portIndex =
-      if (proto.hasPortIndex)
-        Some(proto.getPortIndex)
-      else if (!proto.hasPort)
-        Some(0) // backward compatibility, this used to be the default value in marathon.proto
-      else
-        None,
+      portIndex = PortReference.fromProto(proto),
       port = if (proto.hasPort) Some(proto.getPort) else None
     )
 }
@@ -209,7 +228,7 @@ case class MesosHttpHealthCheck(
   interval: FiniteDuration = HealthCheck.DefaultInterval,
   timeout: FiniteDuration = HealthCheck.DefaultTimeout,
   maxConsecutiveFailures: Int = HealthCheck.DefaultMaxConsecutiveFailures,
-  portIndex: Option[Int] = HealthCheckWithPort.DefaultPortIndex,
+  portIndex: Option[PortReference] = HealthCheckWithPort.DefaultPortIndex,
   port: Option[Int] = HealthCheckWithPort.DefaultPort,
   path: Option[String] = MarathonHttpHealthCheck.DefaultPath,
   protocol: Protocol = MesosHttpHealthCheck.DefaultProtocol,
@@ -223,7 +242,7 @@ case class MesosHttpHealthCheck(
 
     path.foreach(builder.setPath)
 
-    portIndex.foreach(builder.setPortIndex)
+    portIndex.foreach(_.buildProto(builder))
     port.foreach(builder.setPort)
 
     builder.build
@@ -259,13 +278,7 @@ object MesosHttpHealthCheck {
       maxConsecutiveFailures = proto.getMaxConsecutiveFailures,
       delay = proto.getDelaySeconds.seconds,
       path = if (proto.hasPath) Some(proto.getPath) else None,
-      portIndex =
-      if (proto.hasPortIndex)
-        Some(proto.getPortIndex)
-      else if (!proto.hasPort)
-        Some(0) // backward compatibility, this used to be the default value in marathon.proto
-      else
-        None,
+      portIndex = PortReference.fromProto(proto),
       port = if (proto.hasPort) Some(proto.getPort) else None,
       protocol = proto.getProtocol
     )
@@ -276,14 +289,14 @@ case class MesosTcpHealthCheck(
   interval: FiniteDuration = HealthCheck.DefaultInterval,
   timeout: FiniteDuration = HealthCheck.DefaultTimeout,
   maxConsecutiveFailures: Int = HealthCheck.DefaultMaxConsecutiveFailures,
-  portIndex: Option[Int] = HealthCheckWithPort.DefaultPortIndex,
+  portIndex: Option[PortReference] = HealthCheckWithPort.DefaultPortIndex,
   port: Option[Int] = HealthCheckWithPort.DefaultPort,
   delay: FiniteDuration = HealthCheck.DefaultDelay)
     extends HealthCheck with MesosHealthCheck with MesosHealthCheckWithPorts {
   override def toProto: Protos.HealthCheckDefinition = {
     val builder = protoBuilder.setProtocol(Protos.HealthCheckDefinition.Protocol.MESOS_TCP)
 
-    portIndex.foreach(builder.setPortIndex)
+    portIndex.foreach(_.buildProto(builder))
     port.foreach(builder.setPort)
 
     builder.build
@@ -312,13 +325,7 @@ object MesosTcpHealthCheck {
       interval = proto.getIntervalSeconds.seconds,
       maxConsecutiveFailures = proto.getMaxConsecutiveFailures,
       delay = proto.getDelaySeconds.seconds,
-      portIndex =
-      if (proto.hasPortIndex)
-        Some(proto.getPortIndex)
-      else if (!proto.hasPort)
-        Some(0) // backward compatibility, this used to be the default value in marathon.proto
-      else
-        None,
+      portIndex = PortReference.fromProto(proto),
       port = if (proto.hasPort) Some(proto.getPort) else None
     )
 }
