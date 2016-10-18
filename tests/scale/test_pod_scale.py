@@ -15,8 +15,8 @@ count_results = []
     to launch: shakedown --dcos-url=$(dcos config show core.dcos_url) --ssh-key-file=~/.ssh/default.pem --stdout all --stdout-inline test_pod_scale.py
 """
 
-def pod (id=1, instance=1):
-    data = get_resource("pod-scale.json")
+def pod (id=1, instance=1, type="4"):
+    data = get_resource("pod-scale-{}.json".format(type))
     data['id'] = "/" + str(id)
     data['scaling']['instances'] = instance
     return data
@@ -54,14 +54,14 @@ def test_pod_instances_10():
 def test_pod_instances_100():
     _test_pod_scale(1, 100, instances_results)
 
-def test_pod_instances_200():
-    _test_pod_scale(1, 200, instances_results)
-
-def test_pod_instances_300():
-    _test_pod_scale(1, 300, instances_results)
-
 def test_pod_instances_500():
     _test_pod_scale(1, 500, instances_results)
+
+def test_pod_instances_1000():
+    _test_pod_scale(1, 1000, instances_results)
+
+# def test_pod_instances_3000():
+#     _test_pod_scale(1, 3000, instances_results)
 
 def test_pod_count_1():
     _test_pod_scale(1, 1, count_results)
@@ -72,20 +72,16 @@ def test_pod_count_10():
 def test_pod_count_100():
     _test_pod_scale(100, 1, count_results)
 
-def test_pod_count_200():
-    _test_pod_scale(200, 1, count_results)
-
-def test_pod_count_300():
-    _test_pod_scale(300, 1, count_results)
-
 def test_pod_count_500():
     _test_pod_scale(500, 1, count_results)
+
+def test_pod_count_1000():
+    _test_pod_scale(1000, 1, count_results)
 
 def _test_pod_scale(pod_count, instances, test_results):
     client = marathon.create_client()
     delete_all_pods()
     pod_time_deployment("undeploy")
-
     time = scale_pods(pod_count, instances)
     test_results.append(time)
 
@@ -109,6 +105,9 @@ def setup_module(module):
     # verify test system requirements are met (number of nodes needed)
     agents = get_private_agents()
     print("agents: {}".format(len(agents)))
+    client = marathon.create_client()
+    about = client.get_about()
+    print("marathon version: {}".format(about.get("version")))
 
 def teardown_module(module):
     print("instance test: {}".format(instances_results))

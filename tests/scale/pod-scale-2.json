@@ -6,7 +6,7 @@
     {
       "name": "ct1",
       "resources": {
-        "cpus": 0.1,
+        "cpus": 0.01,
         "mem": 32
       },
       "image": { "kind": "DOCKER", "id": "busybox" },
@@ -21,43 +21,7 @@
     {
       "name": "ct2",
       "resources": {
-        "cpus": 0.1,
-        "mem": 32
-      },
-      "exec": { "command": { "shell": "while true; do echo -n $PING ' '; cat ./etc/clock; sleep 1; done" } },
-      "volumeMounts": [
-        {
-          "name": "v1",
-          "mountPath": "etc"
-        },
-        {
-          "name": "v2",
-          "mountPath": "docker"
-        }
-      ]
-    },
-    {
-      "name": "ct3",
-      "resources": {
-        "cpus": 0.1,
-        "mem": 32
-      },
-      "exec": { "command": { "shell": "while true; do echo -n $PING ' '; cat ./etc/clock; sleep 1; done" } },
-      "volumeMounts": [
-        {
-          "name": "v1",
-          "mountPath": "etc"
-        },
-        {
-          "name": "v2",
-          "mountPath": "docker"
-        }
-      ]
-    },
-    {
-      "name": "ct4",
-      "resources": {
-        "cpus": 0.1,
+        "cpus": 0.01,
         "mem": 32
       },
       "exec": { "command": { "shell": "while true; do echo -n $PING ' '; cat ./etc/clock; sleep 1; done" } },
