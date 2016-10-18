@@ -36,11 +36,6 @@ def test_apps_instances_1000():
     time = scale_apps(1,1000)
     instances_results.append(time)
 
-# def test_apps_instances_3000():
-#     delete_all_apps_wait()
-#     time = scale_apps(1,3000)
-#     instances_results.append(time)
-
 def test_groups_instances_1():
     delete_all_apps_wait()
     time = scale_groups(1)
@@ -65,11 +60,6 @@ def test_groups_instances_1000():
     delete_all_apps_wait()
     time = scale_groups(1000)
     group_results.append(time)
-
-# def test_groups_instances_3000():
-#     delete_all_apps_wait()
-#     time = scale_groups(3000)
-#     group_results.append(time)
 
 def update_marathon_client():
     global client

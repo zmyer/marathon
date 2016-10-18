@@ -2,14 +2,6 @@ from shakedown import *
 
 from utils import file_dir
 
-# services = mesos.get_master().frameworks(inactive=False, completed=False)
-#
-# for service in services:
-#     print(service["name"])
-
-# list of nodes
-# copy file
-# execute file
 
 private_agents = get_private_agents()
 
