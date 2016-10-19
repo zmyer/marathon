@@ -7,6 +7,7 @@ import requests
 import json
 import time
 import subprocess
+from common import *
 
 instances_results = []
 count_results = []
@@ -16,7 +17,7 @@ count_results = []
 """
 
 def pod (id=1, instance=1, type="4"):
-    data = get_resource("pod-scale-{}.json".format(type))
+    data = get_resource("pod-{}-containers.json".format(type))
     data['id'] = "/" + str(id)
     data['scaling']['instances'] = instance
     return data
