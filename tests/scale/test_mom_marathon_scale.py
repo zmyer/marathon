@@ -21,62 +21,56 @@ that the name is 'marathon-user'.
 """
 
 
-def test_apps_instances_1():
+def setup_function(function):
     delete_all_apps_wait(client)
+
+
+def test_apps_instances_1():
     time = scale_apps(client, 1, 1)
     instances_results.append(time)
 
 
 def test_apps_instances_10():
-    delete_all_apps_wait(client)
     time = scale_apps(client, 1, 10)
     instances_results.append(time)
 
 
 def test_apps_instances_100():
-    delete_all_apps_wait(client)
     time = scale_apps(client, 1, 100)
     instances_results.append(time)
 
 
 def test_apps_instances_500():
-    delete_all_apps_wait(client)
     time = scale_apps(client, 1, 500)
     instances_results.append(time)
 
 
 def test_apps_instances_1000():
-    delete_all_apps_wait(client)
     time = scale_apps(client, 1, 1000)
     instances_results.append(time)
 
 
 def test_groups_instances_1():
-    delete_all_apps_wait(client)
     time = scale_groups(client, 1)
     group_results.append(time)
 
 
 def test_groups_instances_10():
-    delete_all_apps_wait(client)
     time = scale_groups(client, 10)
     group_results.append(time)
 
 
 def test_groups_instances_100():
-    delete_all_apps_wait(client)
     time = scale_groups(client, 100)
     group_results.append(time)
 
 
 def test_groups_instances_500():
-    delete_all_apps_wait(client)
     time = scale_groups(client, 500)
     group_results.append(time)
 
 
 def test_groups_instances_1000():
-    delete_all_apps_wait(client)
     time = scale_groups(client, 1000)
     group_results.append(time)
 
