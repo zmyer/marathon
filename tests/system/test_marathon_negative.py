@@ -10,7 +10,7 @@ from utils import *
 
 def test_pinned_task_scales_on_host_only():
     app_def = app('pinned')
-    host = get_private_agents()[0]
+    host = ip_other_than_mom()
     pin_to_host(app_def, host)
 
     with marathon_on_marathon():
@@ -32,7 +32,7 @@ def test_pinned_task_scales_on_host_only():
 
 def test_pinned_task_recovers_on_host():
     app_def = app('pinned')
-    host = get_private_agents()[0]
+    host = ip_other_than_mom()
     pin_to_host(app_def, host)
 
     with marathon_on_marathon():
@@ -48,9 +48,10 @@ def test_pinned_task_recovers_on_host():
         assert tasks[0]['id'] != new_tasks[0]['id']
         assert new_tasks[0]['host'] == host
 
+
 def test_pinned_task_does_not_scale_to_unpinned_host():
     app_def = app('pinned')
-    host = get_private_agents()[0]
+    host = ip_other_than_mom()
     pin_to_host(app_def, host)
     # only 1 can fit on the node
     app_def['cpus'] = 3.5
@@ -69,14 +70,14 @@ def test_pinned_task_does_not_scale_to_unpinned_host():
         assert len(tasks) == 1
 
 
-# def setup_function(function):
-#     with marathon_on_marathon():
-#         delete_all_apps_wait()
+def setup_function(function):
+    with marathon_on_marathon():
+        delete_all_apps_wait()
 
 
 def setup_module(module):
     cluster_info()
 
-# def teardown_module(module):
-#     with marathon_on_marathon():
-#         delete_all_apps_wait()
+def teardown_module(module):
+    with marathon_on_marathon():
+        delete_all_apps_wait()
