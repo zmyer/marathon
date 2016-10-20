@@ -79,3 +79,15 @@ def deployment_wait():
     end = time.time()
     elapse = round(end - start, 3)
     return elapse
+
+def ip_other_than_mom():
+    service_ips = get_service_ips('marathon', 'marathon-user')
+    for mom_ip in service_ips:
+        break
+
+    agents = get_private_agents()
+    for agent in agents:
+        if agent != mom_ip:
+            return agent
+
+    return None
