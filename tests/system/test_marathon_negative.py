@@ -76,6 +76,7 @@ def setup_function(function):
 
 
 def setup_module(module):
+    ensure_mom()
     cluster_info()
 
 def teardown_module(module):
