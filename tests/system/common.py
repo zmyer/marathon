@@ -104,7 +104,7 @@ def ensure_mom():
                 break
             time.sleep(1)
 
-        if not is_service_endpoint_ready('marathon-user'):
+        if not wait_for_service_url('marathon-user'):
             print('ERROR: Timeout waiting for endpoint')
 
 
@@ -113,8 +113,8 @@ def is_mom_installed():
     return len(mom_ips) != 0
 
 
-def is_service_endpoint_ready(service_name, timeout_sec=120):
-    """Checks the service url if available it returns true on expiration
+def wait_for_service_url(service_name, timeout_sec=120):
+    """Checks the service url if available it returns true, on expiration
     it returns false"""
 
     future = time.time() + timeout_sec
@@ -126,9 +126,33 @@ def is_service_endpoint_ready(service_name, timeout_sec=120):
         except Exception as e:
             pass
 
-        if response.status_code == 200:
+        if response == None:
+            time.sleep(5)
+        elif response.status_code == 200:
             return True
         else:
             time.sleep(5)
 
     return False
+
+def wait_for_task(service, task, timeout_sec=120):
+    """Waits for a task which was launched to be launched"""
+
+    now = time.time()
+    future = now + timeout_sec
+    time.sleep(5)
+
+    while now < future:
+        response = None
+        try:
+            response = get_service_task(service, task)
+        except Exception as e:
+            pass
+
+        if response is None:
+            time.sleep(5)
+            now = time.time()
+        else:
+            return response
+
+    return None

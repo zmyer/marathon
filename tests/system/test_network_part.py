@@ -5,7 +5,9 @@ import os
 import pytest
 import requests
 
+from common import *
 from shakedown import *
+from utils import *
 
 
 PACKAGE_NAME = 'marathon'
@@ -31,7 +33,7 @@ def test_mom_with_network_failure():
     install_package_and_wait(PACKAGE_NAME)
     assert package_installed(PACKAGE_NAME), 'Package failed to install'
 
-    wait_for_service_url(DCOS_SERVICE_URL)
+    wait_for_service_url(PACKAGE_APP_ID)
 
     # get MoM ip
     service_ips = get_service_ips(PACKAGE_NAME, "marathon-user")
@@ -45,7 +47,7 @@ def test_mom_with_network_failure():
     copy_file_to_master("{}/net-services-master.sh".format(fixture_dir()))
 
     # we have to wait until the admin router is mapped
-    wait_for_service_url(DCOS_SERVICE_URL)
+    wait_for_service_url(PACKAGE_APP_ID)
 
     # launch job on MoM
     # TODO:  switch to using Marathon client to MoM
@@ -77,7 +79,7 @@ def test_mom_with_network_failure():
     reconnect_agent(task_ip)
 
     service_delay()
-    wait_for_service_url(DCOS_SERVICE_URL)
+    wait_for_service_url(PACKAGE_APP_ID)
     wait_for_task("marathon-user", "sleep")
 
     json = get_json(__marathon_url("apps/sleep", "marathon-user"))
@@ -96,7 +98,7 @@ def test_mom_with_network_failure_bounce_master():
     install_package_and_wait(PACKAGE_NAME)
     assert package_installed(PACKAGE_NAME), 'Package failed to install'
 
-    wait_for_service_url(DCOS_SERVICE_URL)
+    wait_for_service_url(PACKAGE_APP_ID)
 
     # get MoM ip
     service_ips = get_service_ips(PACKAGE_NAME, "marathon-user")
@@ -110,7 +112,7 @@ def test_mom_with_network_failure_bounce_master():
     copy_file_to_master("{}/net-services-master.sh".format(fixture_dir()))
 
     # we have to wait until the admin router is mapped
-    wait_for_service_url(DCOS_SERVICE_URL)
+    wait_for_service_url(PACKAGE_APP_ID)
 
     # launch job on MoM
     # TODO:  switch to using Marathon client to MoM
@@ -145,7 +147,7 @@ def test_mom_with_network_failure_bounce_master():
     reconnect_agent(task_ip)
 
     service_delay()
-    wait_for_service_url(DCOS_SERVICE_URL)
+    wait_for_service_url(PACKAGE_APP_ID)
     wait_for_task("marathon-user", "sleep")
 
     json = get_json(__marathon_url("apps/sleep", "marathon-user"))
@@ -240,85 +242,3 @@ def reconnect_agent(hostname):
     """Reconnect a node to cluster"""
 
     run_command_on_agent(hostname, 'sh net-services-agent.sh')
-
-
-def fixture_dir():
-    """Gets the path to the shakedown dcos fixture directory"""
-
-    return "{}/fixtures".format(os.path.dirname(os.path.realpath(__file__)))
-
-
-def wait_for_service_url(url, timeout_sec=120):
-    """Checks the service url if available it returns true on expiration
-    it returns false"""
-
-    now = time.time()
-    future = now + timeout_sec
-    time.sleep(5)
-
-    while now < future:
-        response = None
-        try:
-            response = http.get(url)
-        except Exception as e:
-            pass
-
-        if response is None:
-            time.sleep(5)
-            now = time.time()
-        elif response.status_code == 200:
-            return True
-
-    return False
-
-
-def wait_for_task(service, task, timeout_sec=120):
-    """Waits for a task which was launched to be launched"""
-
-    now = time.time()
-    future = now + timeout_sec
-    time.sleep(5)
-
-    while now < future:
-        response = None
-        try:
-            response = get_service_task(service, task)
-        except Exception as e:
-            pass
-
-        if response is None:
-            time.sleep(5)
-            now = time.time()
-        else:
-            return response
-
-    return None
-
-
-# There is PR out for shakedown
-def get_private_agents():
-    """Provides a list of hostnames / IPs that are private agents in the cluster"""
-
-    agent_list = []
-    agents = __get_all_agents()
-    for agent in agents:
-        if(len(agent["reserved_resources"]) == 0):
-            agent_list.append(agent["hostname"])
-        else:
-            private = True
-            for reservation in agent["reserved_resources"]:
-                if("slave_public" in reservation):
-                    private = False
-
-            if(private):
-                agent_list.append(agent["hostname"])
-
-    return agent_list
-
-
-def __get_all_agents():
-    """Provides all agent json in the cluster which can be used for filtering"""
-
-    client = mesos.DCOSClient()
-    slaves = client.get_state_summary()['slaves']
-    return slaves
