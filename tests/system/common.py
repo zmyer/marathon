@@ -80,6 +80,7 @@ def deployment_wait():
     elapse = round(end - start, 3)
     return elapse
 
+
 def ip_other_than_mom():
     service_ips = get_service_ips('marathon', 'marathon-user')
     for mom_ip in service_ips:
@@ -91,3 +92,43 @@ def ip_other_than_mom():
             return agent
 
     return None
+
+
+def ensure_mom():
+    if not is_mom_installed():
+        install_package_and_wait('marathon')
+        deployment_wait()
+        end_time = time.time() + 120
+        while time.time() < end_time:
+            if service_healthy('marathon-user'):
+                break
+            time.sleep(1)
+
+        if not is_service_endpoint_ready('marathon-user'):
+            print('ERROR: Timeout waiting for endpoint')
+
+
+def is_mom_installed():
+    mom_ips = get_service_ips('marathon', "marathon-user")
+    return len(mom_ips) != 0
+
+
+def is_service_endpoint_ready(service_name, timeout_sec=120):
+    """Checks the service url if available it returns true on expiration
+    it returns false"""
+
+    future = time.time() + timeout_sec
+    url = dcos_service_url(service_name)
+    while time.time() < future:
+        response = None
+        try:
+            response = http.get(url)
+        except Exception as e:
+            pass
+
+        if response.status_code == 200:
+            return True
+        else:
+            time.sleep(5)
+
+    return False

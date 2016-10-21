@@ -2,9 +2,11 @@
 
 import pytest
 
+from common import *
 from shakedown import *
 
 PACKAGE_NAME = 'marathon'
+SERVICE_NAME = 'marathon-user'
 DCOS_SERVICE_URL = dcos_service_url(PACKAGE_NAME)
 WAIT_TIME_IN_SECS = 300
 
@@ -22,13 +24,15 @@ def test_install_marathon():
     found = False
     while time.time() < end_time:
         found = get_service(PACKAGE_NAME) is not None
-        if found and service_healthy(PACKAGE_NAME):
+        if found and service_healthy(SERVICE_NAME):
             break
         time.sleep(1)
 
     assert found, 'Service did not register with DCOS'
 
+    #Uninstall
     uninstall_package_and_wait(PACKAGE_NAME)
+    deployment_wait()
     assert not package_installed(PACKAGE_NAME), 'Package failed to uninstall'
 
     # Reinstall
@@ -44,10 +48,17 @@ def test_install_marathon():
         assert False, "Error: CLI returns 0 when asked to install Marathon"
 
 
+def setup_module(module):
+    if is_mom_installed():
+        uninstall_package_and_wait(PACKAGE_NAME)
+        deployment_wait()
+
+
 def teardown_module(module):
     # pytest teardown do not seem to be working
     try:
         uninstall_package_and_wait(PACKAGE_NAME)
+        deployment_wait()
     except Exception as e:
         pass
 
