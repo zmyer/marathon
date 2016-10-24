@@ -92,8 +92,8 @@ def test_ui_registration_requirement():
 
 
 def test_ui_available():
-    response = http.get("{}service/marathon-user".format(dcos_url()))
-
+    response = http.get("{}service/marathon-user/ui/".format(dcos_url()))
+    assert response.status_code == 200
 
 
 def setup_function(function):
