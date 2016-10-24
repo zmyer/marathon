@@ -114,8 +114,8 @@ def delete_all_pods():
     client = marathon.create_client()
     pods = client.list_pod()
     print("deleting {} pods".format(len(pods)))
-    for pod in pods:
-        client.remove_pod(pod['id'], True)
+    client.remove_group("/")
+    pod_time_deployment("undeploy")
 
 
 def setup_module(module):
