@@ -36,12 +36,8 @@ def group(gcount=1, instances=1):
 
 def delete_all_apps():
     client = marathon.create_client()
-    apps = client.get_apps()
-    for app in apps:
-        if app['id'] == '/marathon-user':
-            print('WARNING: marathon-user installed')
-        else:
-            client.remove_app(app['id'], True)
+    client.remove_group("/")
+    time_deployment("undeploy")
 
 
 def time_deployment(test=""):
