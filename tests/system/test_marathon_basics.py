@@ -65,7 +65,7 @@ def test_docker_dns_mapping():
         tasks = client.get_tasks(app_name)
         host = tasks[0]['host']
 
-        time.sleep(2)
+        time.sleep(5)
         bad_cmd = 'ping -c 1 docker-test.marathon-user.mesos-bad'
         cmd = 'ping -c 1 {}.marathon-user.mesos'.format(app_name)
         status, output = run_command_on_agent(host, bad_cmd)
@@ -73,6 +73,27 @@ def test_docker_dns_mapping():
 
         status, output = run_command_on_agent(host, cmd)
         assert status
+
+        client.remove_app(app_name)
+
+
+def test_ui_registration_requirement():
+    response = http.get("{}mesos/master/tasks.json".format(dcos_url()))
+    tasks = response.json()['tasks']
+    for task in tasks:
+        if task['name'] == 'marathon-user':
+            for label in task['labels']:
+                if label['key'] == 'DCOS_PACKAGE_NAME':
+                    assert label['value'] == 'marathon'
+                if label['key'] == 'DCOS_PACKAGE_IS_FRAMEWORK':
+                    assert label['value'] == 'true'
+                if label['key'] == 'DCOS_SERVICE_NAME':
+                    assert label['value'] == 'marathon-user'
+
+
+def test_ui_available():
+    response = http.get("{}service/marathon-user".format(dcos_url()))
+
 
 
 def setup_function(function):
