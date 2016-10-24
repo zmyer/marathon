@@ -2,6 +2,9 @@
 
 import pytest
 
+from dcos import (cosmospackage, subcommand)
+from dcoscli.package.main import get_cosmos_url
+
 from common import *
 from shakedown import *
 
@@ -47,6 +50,15 @@ def test_install_marathon():
         # Exception is not raised -> exit code was 0
         assert False, "Error: CLI returns 0 when asked to install Marathon"
 
+
+def test_custom_service_name():
+    cosmos = cosmospackage.Cosmos(get_cosmos_url())
+    pkg = cosmos.get_package_version('marathon', None)
+    options = {
+        'service' : { 'name' : "test-marathon"}
+    }
+    cosmos.install_app(pkg, options, 'test-marathon')
+    # install_package(PACKAGE_NAME, app_id='custom-marathon-name')
 
 def setup_module(module):
     if is_mom_installed():
