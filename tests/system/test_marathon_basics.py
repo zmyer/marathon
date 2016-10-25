@@ -96,6 +96,56 @@ def test_ui_available():
     assert response.status_code == 200
 
 
+def test_task_failure_recovers():
+    app_def = app()
+    app_id = app_def['id']
+
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks(app_id)
+        host = tasks[0]['host']
+        kill_process_on_host(host,'[s]leep')
+        deployment_wait()
+        time.sleep(1)
+        new_tasks = client.get_tasks(app_id)
+
+        assert tasks[0]['id'] != new_tasks[0]['id']
+
+
+def test_good_user():
+    app_def = app()
+    app_id = app_def['id']
+    app_def['user'] = 'core'
+
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks(app_id)
+        deployment_wait()
+        time.sleep(1)
+
+        assert tasks[0]['id'] != app_def['id']
+
+
+def test_bad_user():
+    app_def = app()
+    app_id = app_def['id']
+    app_def['user'] = 'core'
+
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks(app_id)
+        deployment_wait()
+        time.sleep(1)
+
+        assert tasks[0]['id'] != app_def['id']
+
+
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
