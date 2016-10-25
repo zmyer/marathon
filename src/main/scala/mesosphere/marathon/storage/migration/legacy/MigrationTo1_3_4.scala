@@ -9,8 +9,9 @@ import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ AppDefinition, Group, Timestamp }
 import mesosphere.marathon.storage.LegacyStorageConfig
-import mesosphere.marathon.storage.repository.{ AppRepository, GroupRepository, PodRepository }
+import mesosphere.marathon.storage.repository.{ AppRepository, DeploymentRepository, GroupRepository, PodRepository }
 import mesosphere.marathon.Protos.Constraint
+import mesosphere.marathon.upgrade.DeploymentPlan
 import org.slf4j.LoggerFactory
 
 import scala.async.Async.{ async, await }
@@ -21,9 +22,9 @@ import scala.util.Try
   * Fix apps that use invalid constraints.
   */
 class MigrationTo1_3_4(legacyConfig: Option[LegacyStorageConfig])(implicit
-                                                                  ctx: ExecutionContext,
-                                                                  metrics: Metrics,
-                                                                  mat: Materializer) {
+  ctx: ExecutionContext,
+    metrics: Metrics,
+    mat: Materializer) {
 
   private[this] val log = LoggerFactory.getLogger(getClass)
 
@@ -68,11 +69,30 @@ class MigrationTo1_3_4(legacyConfig: Option[LegacyStorageConfig])(implicit
       async {
         log.info("Start 1.3 migration")
 
+        val deploymentRepo = DeploymentRepository.legacyRepository(config.entityStore[DeploymentPlan]).store
         val appRepository = AppRepository.legacyRepository(config.entityStore[AppDefinition], config.maxVersions)
         val podRepository = PodRepository.legacyRepository(config.entityStore[PodDefinition], config.maxVersions)
         val groupRepository =
           GroupRepository.legacyRepository(config.entityStore[Group], config.maxVersions, appRepository, podRepository)
         implicit val groupOrdering = Ordering.by[Group, Timestamp](_.version)
+
+        val deploymentNames = await(deploymentRepo.names())
+        val deployments: Map[String, DeploymentPlan] = await(Future.sequence(deploymentNames.map { name =>
+          deploymentRepo.fetch(name).collect { case Some(d) => name -> d }
+        })).toMap
+
+        await(Future.sequence(deployments.collect {
+          case (name, deployment) =>
+            // warning: non-tailrec recursion ahead..
+            def fixGroup(g: Group): Group = g.copy(
+              apps = g.apps.mapValues(fixConstraints),
+              groupsById = g.groupsById.mapValues(fixGroup)
+            )
+            val updated = deployment.copy(
+              original = fixGroup(deployment.original),
+              target = fixGroup(deployment.target))
+            deploymentRepo.store(name, updated)
+        }))
 
         val groupVersions = await {
           groupRepository.rootVersions().mapAsync(Int.MaxValue) { version =>
