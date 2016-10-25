@@ -18,7 +18,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 /**
-  * TODO(jdef) Fix apps that use invalid constraints.
+  * Fix apps that use invalid constraints.
   */
 class MigrationTo1_3_4(legacyConfig: Option[LegacyStorageConfig])(implicit
                                                                   ctx: ExecutionContext,
