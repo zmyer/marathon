@@ -11,9 +11,9 @@ import mesosphere.marathon.storage.LegacyInMemConfig
 import mesosphere.marathon.storage.repository.legacy.{ AppEntityRepository, GroupEntityRepository, PodEntityRepository }
 import mesosphere.marathon.storage.repository.legacy.store.MarathonStore
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
 
-class MigrationTo1_3Test extends AkkaUnitTest {
+class MigrationTo1_3_4Test extends AkkaUnitTest {
 
   class Fixture {
     implicit lazy val metrics = new Metrics(new MetricRegistry)
@@ -30,7 +30,7 @@ class MigrationTo1_3Test extends AkkaUnitTest {
     lazy val groupStore = new MarathonStore[Group](store, metrics, () => Group.empty, prefix = "group:")
     lazy val groupRepo = new GroupEntityRepository(groupStore, maxVersions = maxVersions, appRepo, podRepo)
 
-    lazy val migration = new MigrationTo1_3(Some(config))
+    lazy val migration = new MigrationTo1_3_4(Some(config))
   }
 
   val emptyGroup = Group.empty
@@ -42,12 +42,13 @@ class MigrationTo1_3Test extends AkkaUnitTest {
     builder.build()
   }
 
-  def dummyApps(): Seq[AppDefinition] = {
+  def dummyApps(parentGroup: Option[PathId] = None): Seq[AppDefinition] = {
     import Protos.Constraint.Operator._
     val version = VersionInfo.OnlyVersion(Timestamp(1L))
+    def appId(id: String): PathId = parentGroup.map(gid => gid / id).getOrElse(PathId(id))
     Seq(
       AppDefinition(
-        id = PathId("/foo"),
+        id = appId("/foo"),
         cmd = Some("foo"),
         versionInfo = version,
         constraints = Set(
@@ -55,7 +56,7 @@ class MigrationTo1_3Test extends AkkaUnitTest {
         )
       ),
       AppDefinition(
-        id = PathId("/bar"),
+        id = appId("/bar"),
         cmd = Some("bar"),
         versionInfo = version,
         constraints = Set(
@@ -63,7 +64,7 @@ class MigrationTo1_3Test extends AkkaUnitTest {
         )
       ),
       AppDefinition(
-        id = PathId("/qax"),
+        id = appId("/qax"),
         cmd = Some("qax"),
         versionInfo = version,
         constraints = Set(
@@ -71,7 +72,7 @@ class MigrationTo1_3Test extends AkkaUnitTest {
         )
       ),
       AppDefinition(
-        id = PathId("/wsx"),
+        id = appId("/wsx"),
         cmd = Some("wsx"),
         versionInfo = version,
         constraints = Set(
@@ -95,13 +96,12 @@ class MigrationTo1_3Test extends AkkaUnitTest {
       }
     }
 
-    "apps constraints" should {
+    "constraints for top-level apps" should {
       import Protos.Constraint.Operator._
       val f = new Fixture
       val apps = dummyApps()
       val root = emptyGroup.copy(apps = apps.map(app => app.id -> app).toMap)
       f.groupRepo.storeRoot(root, apps, Nil, Nil, Nil).futureValue
-      Future.sequence(apps.map(f.appRepo.store)).futureValue
       f.migration.migrate().futureValue
 
       "be transformed, if they're invalid and we can do the transformation" in {
@@ -128,6 +128,47 @@ class MigrationTo1_3Test extends AkkaUnitTest {
           app.constraints should be(Set(constraint("a", Some(UNIQUE), None)))
         }
         val wsx = f.appRepo.get(PathId("/wsx")).futureValue
+        wsx.nonEmpty should be(true)
+        wsx.foreach { app =>
+          app.constraints should be(Set(constraint("a", Some(GROUP_BY), Some("1"))))
+        }
+      }
+    }
+
+    "constraints for nested apps" should {
+      import Protos.Constraint.Operator._
+      val f = new Fixture
+      val gid = PathId("/g1")
+      val apps = dummyApps(Some(gid))
+      val groups = Seq(emptyGroup.copy(id = gid, apps = apps.map(app => app.id -> app).toMap))
+      val root = emptyGroup.copy(groupsById = groups.map(g => g.id -> g).toMap)
+      f.groupRepo.storeRoot(root, apps, Nil, Nil, Nil).futureValue
+      f.migration.migrate().futureValue
+
+      "be transformed, if they're invalid and we can do the transformation" in {
+        val foo = f.appRepo.get(PathId("/g1/foo")).futureValue
+        foo.nonEmpty should be(true)
+        foo.foreach { app =>
+          app.constraints.nonEmpty should be(true)
+          app.constraints should be(Set(constraint("a", Some(LIKE), Some(".*"))))
+        }
+      }
+
+      "be dropped, if they're invalid and we can't do the transformation" in {
+        val bar = f.appRepo.get(PathId("/g1/bar")).futureValue
+        bar.nonEmpty should be(true)
+        bar.foreach { app =>
+          app.constraints.nonEmpty should be(false)
+        }
+      }
+
+      "be unchanged if they're valid" in {
+        val qax = f.appRepo.get(PathId("/g1/qax")).futureValue
+        qax.nonEmpty should be(true)
+        qax.foreach { app =>
+          app.constraints should be(Set(constraint("a", Some(UNIQUE), None)))
+        }
+        val wsx = f.appRepo.get(PathId("/g1/wsx")).futureValue
         wsx.nonEmpty should be(true)
         wsx.foreach { app =>
           app.constraints should be(Set(constraint("a", Some(GROUP_BY), Some("1"))))

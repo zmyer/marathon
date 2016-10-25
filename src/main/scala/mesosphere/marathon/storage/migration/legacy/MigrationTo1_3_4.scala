@@ -20,10 +20,10 @@ import scala.util.Try
 /**
   * TODO(jdef) Fix apps that use invalid constraints.
   */
-class MigrationTo1_3(legacyConfig: Option[LegacyStorageConfig])(implicit
-  ctx: ExecutionContext,
-    metrics: Metrics,
-    mat: Materializer) {
+class MigrationTo1_3_4(legacyConfig: Option[LegacyStorageConfig])(implicit
+                                                                  ctx: ExecutionContext,
+                                                                  metrics: Metrics,
+                                                                  mat: Materializer) {
 
   private[this] val log = LoggerFactory.getLogger(getClass)
 

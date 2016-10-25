@@ -90,7 +90,7 @@ class Migration(
         }
       },
       StorageVersions(1, 3, 4) -> { () =>
-        new MigrationTo1_3(legacyConfig).migrate().recover {
+        new MigrationTo1_3_4(legacyConfig).migrate().recover {
           case NonFatal(e) => throw new MigrationFailedException("while migrating storage to 1.3.4", e)
         }
       },
