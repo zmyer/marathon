@@ -135,6 +135,24 @@ def wait_for_service_url(service_name, timeout_sec=120):
 
     return False
 
+
+def wait_for_service_url_removal(service_name, timeout_sec=120):
+    """Checks the service url if it is removed it returns true, on expiration
+    it returns false"""
+
+    future = time.time() + timeout_sec
+    url = dcos_service_url(service_name)
+    while time.time() < future:
+        response = None
+        try:
+            response = http.get(url)
+        except Exception as e:
+            return True
+
+        time.sleep(5)
+
+    return False
+
 def wait_for_task(service, task, timeout_sec=120):
     """Waits for a task which was launched to be launched"""
 

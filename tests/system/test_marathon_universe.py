@@ -58,7 +58,15 @@ def test_custom_service_name():
         'service' : { 'name' : "test-marathon"}
     }
     cosmos.install_app(pkg, options, 'test-marathon')
-    # install_package(PACKAGE_NAME, app_id='custom-marathon-name')
+    deployment_wait()
+
+    assert wait_for_service_url('test-marathon')
+    cosmos.uninstall_app('marathon', True, 'test-marathon')
+    deployment_wait()
+    assert wait_for_service_url_removal('test-marathon')
+
+
+
 
 def setup_module(module):
     if is_mom_installed():
@@ -70,6 +78,8 @@ def teardown_module(module):
     # pytest teardown do not seem to be working
     try:
         uninstall_package_and_wait(PACKAGE_NAME)
+        deployment_wait()
+        cosmos.uninstall_app('marathon', True, 'test-marathon')
         deployment_wait()
     except Exception as e:
         pass

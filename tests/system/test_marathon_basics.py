@@ -146,8 +146,6 @@ def test_bad_user():
         assert error in message
 
 
-
-
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
