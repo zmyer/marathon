@@ -165,6 +165,8 @@ def test_bad_uri():
         error = "Failed to fetch all URIs for container"
         assert error in message
 
+        client.remove_app(app_id)
+
 
 def setup_function(function):
     with marathon_on_marathon():
