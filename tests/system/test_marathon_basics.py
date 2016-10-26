@@ -133,17 +133,19 @@ def test_good_user():
 def test_bad_user():
     app_def = app()
     app_id = app_def['id']
-    app_def['user'] = 'core'
+    app_def['user'] = 'bad'
 
     with marathon_on_marathon():
         client = marathon.create_client()
         client.add_app(app_def)
-        deployment_wait()
-        tasks = client.get_tasks(app_id)
-        deployment_wait()
-        time.sleep(1)
+        time.sleep(2)
 
-        assert tasks[0]['id'] != app_def['id']
+        appl = client.get_app(app_id)
+        message = appl['lastTaskFailure']['message']
+        error = "Failed to get user information for 'bad'"
+        assert error in message
+
+
 
 
 def setup_function(function):
