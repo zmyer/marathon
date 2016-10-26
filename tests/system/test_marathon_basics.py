@@ -146,6 +146,26 @@ def test_bad_user():
         assert error in message
 
 
+def test_bad_uri():
+    app_def = app()
+    app_id = app_def['id']
+    fetch = [ {
+      "uri": "http://mesosphere.io/missing-artifact"
+    }]
+
+    app_def['fetch'] = fetch
+
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        time.sleep(2)
+
+        appl = client.get_app(app_id)
+        message = appl['lastTaskFailure']['message']
+        error = "Failed to fetch all URIs for container"
+        assert error in message
+
+
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
