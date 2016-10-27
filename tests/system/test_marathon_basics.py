@@ -167,6 +167,43 @@ def test_bad_uri():
 
         client.remove_app(app_id)
 
+def test_launch_group():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.create_group(group())
+        deployment_wait()
+
+        apps = client.get_group('/test-group/sleep')
+        assert len(apps) == 2
+
+
+def test_scale_group():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        try:
+            client.remove_group('/test-group', True)
+            deployment_wait()
+        except Exception as e:
+            pass
+
+        client.create_group(group())
+        deployment_wait()
+
+        group_apps = client.get_group('/test-group/sleep')
+        apps = group_apps['apps']
+        assert len(apps) == 2
+        tasks1 = client.get_tasks('/test-group/sleep/goodnight')
+        tasks2 = client.get_tasks('/test-group/sleep/goodnight2')
+        assert len(tasks1) == 1
+        assert len(tasks2) == 1
+
+        client.scale_group('/test-group/sleep', 2)
+        deployment_wait()
+        tasks1 = client.get_tasks('/test-group/sleep/goodnight')
+        tasks2 = client.get_tasks('/test-group/sleep/goodnight2')
+        assert len(tasks1) == 2
+        assert len(tasks2) == 2        
+
 
 def setup_function(function):
     with marathon_on_marathon():
