@@ -77,6 +77,16 @@ def test_docker_dns_mapping():
         client.remove_app(app_name)
 
 
+def test_launch_app_timed():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_mesos())
+        # if not launched in 3 sec fail
+        time.sleep(3)
+        tasks = client.get_tasks('/mesos-test')
+        assert len(tasks) == 1
+
+
 def test_ui_registration_requirement():
     response = http.get("{}mesos/master/tasks.json".format(dcos_url()))
     tasks = response.json()['tasks']
