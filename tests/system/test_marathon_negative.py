@@ -79,15 +79,14 @@ def test_pinned_task_does_not_find_unknown_host():
     with marathon_on_marathon():
         client = marathon.create_client()
         client.add_app(app_def)
-        time.sleep(3)
+        # deploys are within secs
+        # assuming after 10 no tasks meets criteria
+        time.sleep(10)
 
         tasks = client.get_tasks('/pinned')
         assert len(tasks)  == 0
 
-        appl = client.get_app(app_def['id'])
-        message = appl['lastTaskFailure']['message']
-        error = "Failed to get user information for 'bad'"
-        assert error in message
+        client.remove_app(app_def['id'])
 
 def setup_function(function):
     with marathon_on_marathon():
