@@ -233,6 +233,42 @@ def test_scale_app_in_group():
         assert len(tasks2) == 1
 
 
+def test_scale_app_in_group_then_group():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        try:
+            client.remove_group('/test-group', True)
+            deployment_wait()
+        except Exception as e:
+            pass
+
+        client.create_group(group())
+        deployment_wait()
+
+        group_apps = client.get_group('/test-group/sleep')
+        apps = group_apps['apps']
+        assert len(apps) == 2
+        tasks1 = client.get_tasks('/test-group/sleep/goodnight')
+        tasks2 = client.get_tasks('/test-group/sleep/goodnight2')
+        assert len(tasks1) == 1
+        assert len(tasks2) == 1
+
+        client.scale_app('/test-group/sleep/goodnight', 2)
+        deployment_wait()
+        tasks1 = client.get_tasks('/test-group/sleep/goodnight')
+        tasks2 = client.get_tasks('/test-group/sleep/goodnight2')
+        assert len(tasks1) == 2
+        assert len(tasks2) == 1
+
+        client.scale_group('/test-group/sleep', 3)
+        deployment_wait()
+        time.sleep(1)
+        tasks1 = client.get_tasks('/test-group/sleep/goodnight')
+        tasks2 = client.get_tasks('/test-group/sleep/goodnight2')
+        assert len(tasks1) == 6
+        assert len(tasks2) == 3
+
+
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
