@@ -1,6 +1,7 @@
 """ """
 from shakedown import *
 from utils import *
+from dcos.errors import DCOSException
 
 def app(id=1, instances=1):
     app_json = {
@@ -28,6 +29,42 @@ def constraints(name, operator, value):
         ]
     ]
     return constraints
+
+
+def group():
+
+    return {
+        "apps": [],
+        "dependencies": [],
+        "groups": [
+            {
+                "apps": [
+                    {
+                        "cmd": "sleep 1000",
+                        "cpus": 1.0,
+                        "dependencies": [],
+                        "disk": 0.0,
+                        "id": "/test-group/sleep/goodnight",
+                        "instances": 1,
+                        "mem": 128.0
+                    },
+                    {
+                        "cmd": "sleep 1000",
+                        "cpus": 1.0,
+                        "dependencies": [],
+                        "disk": 0.0,
+                        "id": "/test-group/sleep/goodnight2",
+                        "instances": 1,
+                        "mem": 128.0
+                    }
+                ],
+                "dependencies": [],
+                "groups": [],
+                "id": "/test-group/sleep",
+            }
+        ],
+        "id": "/test-group"
+    }
 
 
 def pin_to_host(app_def, host):
@@ -66,7 +103,7 @@ def delete_all_apps_wait():
     deployment_wait()
 
 
-def deployment_wait():
+def deployment_wait(timeout=120):
     client = marathon.create_client()
     start = time.time()
     deployment_count = 1
@@ -75,6 +112,10 @@ def deployment_wait():
         time.sleep(1)
         deployments = client.get_deployments()
         deployment_count = len(deployments)
+        end = time.time()
+        elapse = round(end - start, 3)
+        if elapse > timeout:
+            raise DCOSException("timeout on deployment wait: {}".format(elapse))
 
     end = time.time()
     elapse = round(end - start, 3)

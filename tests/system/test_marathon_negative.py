@@ -70,6 +70,25 @@ def test_pinned_task_does_not_scale_to_unpinned_host():
         assert len(tasks) == 1
 
 
+def test_pinned_task_does_not_find_unknown_host():
+    app_def = app('pinned')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, '10.255.255.254')
+    # only 1 can fit on the node
+    app_def['cpus'] = 3.5
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        time.sleep(3)
+
+        tasks = client.get_tasks('/pinned')
+        assert len(tasks)  == 0
+
+        appl = client.get_app(app_def['id'])
+        message = appl['lastTaskFailure']['message']
+        error = "Failed to get user information for 'bad'"
+        assert error in message
+
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
