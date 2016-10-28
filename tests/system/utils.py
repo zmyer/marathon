@@ -5,7 +5,7 @@ import re
 import subprocess
 from six.moves import urllib
 from dcos import http, util, config
-
+from dcos.errors import DCOSException
 
 def fixture_dir():
     """Gets the path to the shakedown dcos fixture directory"""
@@ -41,6 +41,10 @@ def get_resource(resource):
                 raise DCOSException(
                     "Can't read from resource: {0}.\n"
                     "Please check that it exists.".format(resource))
+
+
+def parse_json(response):
+    return response.json()
 
 
 @contextlib.contextmanager
