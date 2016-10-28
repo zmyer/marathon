@@ -258,12 +258,14 @@ case class AppDefinition(
     )
   }
 
-  private val portIndices: Range = container.flatMap(_.hostPorts.filter(_.nonEmpty)).getOrElse(portNumbers).indices
+  def mappedOrElseUnmappedPorts[T](mapped: Container => Seq[T])(unmapped: => Seq[T]): Seq[T] =
+    container.collect {
+      case c: Container if c.portMappings.nonEmpty => mapped(c)
+    }.getOrElse(unmapped)
 
-  val hostPorts: Seq[Option[Int]] =
-    container.flatMap(_.hostPorts.filter(_.nonEmpty)).getOrElse(portNumbers.map(Some(_)))
-
-  val servicePorts: Seq[Int] = container.flatMap(_.servicePorts.filter(_.nonEmpty)).getOrElse(portNumbers)
+  val hostPorts: Seq[Option[Int]] = mappedOrElseUnmappedPorts(_.hostPorts)(portNumbers.map(Some(_)))
+  val servicePorts: Seq[Int] = mappedOrElseUnmappedPorts(_.servicePorts)(portNumbers)
+  private val portIndices: Range = hostPorts.indices
 
   val hasDynamicServicePorts: Boolean = servicePorts.contains(AppDefinition.RandomPortValue)
 
@@ -368,17 +370,13 @@ case class AppDefinition(
               effectivePort = hostPort,
               hostPort = Some(hostPort))
         }.toList
-    }.getOrElse(Seq.empty)
+    }.getOrElse(Nil)
 
     @SuppressWarnings(Array("OptionGet", "TraversableHead"))
-    def fromPortMappings: Seq[PortAssignment] = {
-      for {
-        c <- container
-        pms <- c.portMappings
-        launched <- task.launched
-      } yield {
+    def fromPortMappings(container: Container): Seq[PortAssignment] =
+      task.launched.map { launched =>
         var hostPorts = launched.hostPorts
-        pms.map { portMapping =>
+        container.portMappings.map { portMapping =>
           val hostPort: Option[Int] =
             if (portMapping.hostPort.isEmpty) {
               None
@@ -402,8 +400,7 @@ case class AppDefinition(
             hostPort = hostPort,
             containerPort = Some(portMapping.containerPort))
         }
-      }.toList
-    }.getOrElse(Seq.empty)
+      }.getOrElse(Nil)
 
     def fromPortDefinitions: Seq[PortAssignment] = task.launched.map { launched =>
       portDefinitions.zip(launched.hostPorts).map {
@@ -414,16 +411,17 @@ case class AppDefinition(
             effectivePort = hostPort,
             hostPort = Some(hostPort))
       }
-    }.getOrElse(Seq.empty)
+    }.getOrElse(Nil)
 
-    if (networkModeBridge || networkModeUser) fromPortMappings
-    else if (ipAddress.isDefined) fromDiscoveryInfo
-    else fromPortDefinitions
+    container.collect {
+      // TODO(portMappings) support other container types (bridge and user modes are docker-specific)
+      case c: Container if networkModeBridge || networkModeUser => fromPortMappings(c)
+    }.getOrElse(if (ipAddress.isDefined) fromDiscoveryInfo else fromPortDefinitions)
   }
 
   val portNames: Seq[String] = {
     def fromDiscoveryInfo = ipAddress.map(_.discoveryInfo.ports.map(_.name).toList).getOrElse(Seq.empty)
-    def fromPortMappings = container.map(_.portMappings.getOrElse(Seq.empty).flatMap(_.name)).getOrElse(Seq.empty)
+    def fromPortMappings = container.map(_.portMappings.flatMap(_.name)).getOrElse(Seq.empty)
     def fromPortDefinitions = portDefinitions.flatMap(_.name)
 
     if (networkModeBridge || networkModeUser) fromPortMappings
