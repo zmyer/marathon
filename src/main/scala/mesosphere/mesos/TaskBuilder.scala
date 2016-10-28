@@ -315,9 +315,9 @@ object TaskBuilder {
     hostPorts: Seq[Option[Int]],
     envPrefix: Option[String]): CommandInfo.Builder = {
 
-    val declaredPorts: Seq[(Option[String], Int)] = runSpec.mappedOrElseUnmappedPorts(
-      _.portMappings.map(pm => pm.name -> pm.containerPort)
-    )(runSpec.portDefinitions.map(pd => pd.name -> pd.port))
+    val declaredPorts = runSpec.mappedOrElseUnmappedPorts(
+      _.portMappings.map(pm => EnvironmentHelper.PortRequest(pm.name, pm.containerPort))
+    )(runSpec.portDefinitions.map(pd => EnvironmentHelper.PortRequest(pd.name, pd.port)))
 
     val envMap: Map[String, String] =
       taskContextEnv(runSpec, taskId) ++

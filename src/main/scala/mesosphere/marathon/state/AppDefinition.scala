@@ -258,6 +258,10 @@ case class AppDefinition(
     )
   }
 
+  /**
+    * If non-empty port mappings are present for a container then yield the result of `mapped`;
+    * otherwise yield the result of unmapped.
+    */
   def mappedOrElseUnmappedPorts[T](mapped: Container => Seq[T])(unmapped: => Seq[T]): Seq[T] =
     container.collect {
       case c: Container if c.portMappings.nonEmpty => mapped(c)

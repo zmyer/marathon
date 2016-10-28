@@ -1190,6 +1190,8 @@ trait AppAndGroupFormats {
           "ports" -> runSpec.servicePorts,
           "portDefinitions" -> {
             if (runSpec.servicePorts.nonEmpty) {
+              // zip with defaults here to avoid the possibility of generating invalid JSON,
+              // for example where ports=[0] but portDefinition=[]
               runSpec.portDefinitions.zipAll(runSpec.servicePorts, PortDefinition(0), 0).map {
                 case (portDefinition, servicePort) => portDefinition.copy(port = servicePort)
               }
