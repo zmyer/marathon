@@ -279,6 +279,34 @@ def test_scale_app_in_group_then_group():
         assert len(tasks2) == 3
 
 
+def test_health_check():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        app_def = app_docker()
+        app_def['id'] = 'no-health'
+        client.add_app(app_def)
+        deployment_wait()
+
+        app = client.get_app('/no-health')
+
+        assert app['tasksRunning'] == 1
+        assert app['tasksHealthy'] == 0
+
+        client.remove_app('/no-health')
+        health_list = []
+        health_list.append(health_check())
+        app_def['id'] = 'healthy'
+        app_def['healthChecks'] = health_list
+
+        client.add_app(app_def)
+        deployment_wait()
+
+        app = client.get_app('/healthy')
+
+        assert app['tasksRunning'] == 1
+        assert app['tasksHealthy'] == 1
+
+
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
@@ -288,9 +316,9 @@ def setup_module(module):
     cluster_info()
 
 
-# def teardown_module(module):
-#     with marathon_on_marathon():
-#         delete_all_apps_wait()
+def teardown_module(module):
+    with marathon_on_marathon():
+        delete_all_apps_wait()
 
 
 def app_docker():

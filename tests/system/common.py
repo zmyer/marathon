@@ -71,6 +71,17 @@ def pin_to_host(app_def, host):
     app_def['constraints'] = constraints('hostname','LIKE',host)
 
 
+def health_check(path='/', port_index=0, failures=1, timeout=2):
+
+    return {
+          "protocol": "HTTP",
+          "path": path,
+          "timeoutSeconds": timeout,
+          "maxConsecutiveFailures": failures,
+          "portIndex": port_index
+        }
+
+
 def cluster_info(mom_name='marathon-user'):
     agents = get_private_agents()
     print("agents: {}".format(len(agents)))
