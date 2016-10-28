@@ -38,7 +38,6 @@ def get_resource(resource):
                 else:
                     raise Exception
             except Exception:
-                logger.exception('Cannot read from resource %s', resource)
                 raise DCOSException(
                     "Can't read from resource: {0}.\n"
                     "Please check that it exists.".format(resource))
