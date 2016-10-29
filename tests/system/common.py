@@ -3,6 +3,7 @@ from shakedown import *
 from utils import *
 from dcos.errors import DCOSException
 
+
 def app(id=1, instances=1):
     app_json = {
       "id": "",
@@ -77,8 +78,9 @@ def python_http_app():
         'instances': 1
         }
 
+
 def pin_to_host(app_def, host):
-    app_def['constraints'] = constraints('hostname','LIKE',host)
+    app_def['constraints'] = constraints('hostname', 'LIKE', host)
 
 
 def health_check(path='/', port_index=0, failures=1, timeout=2):
@@ -87,7 +89,7 @@ def health_check(path='/', port_index=0, failures=1, timeout=2):
           'protocol': 'HTTP',
           'path': path,
           'timeoutSeconds': timeout,
-          'intervalSeconds' : 2,
+          'intervalSeconds': 2,
           'maxConsecutiveFailures': failures,
           'portIndex': port_index
         }
@@ -145,7 +147,7 @@ def deployment_wait(timeout=120):
 
 
 def ip_other_than_mom():
-    mom_ip =  ip_of_mom()
+    mom_ip = ip_of_mom()
 
     agents = get_private_agents()
     for agent in agents:
@@ -197,7 +199,7 @@ def wait_for_service_url(service_name, timeout_sec=120):
         except Exception as e:
             pass
 
-        if response == None:
+        if response is None:
             time.sleep(5)
         elif response.status_code == 200:
             return True

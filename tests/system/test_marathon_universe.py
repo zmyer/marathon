@@ -33,7 +33,7 @@ def test_install_marathon():
 
     assert found, 'Service did not register with DCOS'
 
-    #Uninstall
+    # Uninstall
     uninstall_package_and_wait(PACKAGE_NAME)
     deployment_wait()
     assert not package_installed(PACKAGE_NAME), 'Package failed to uninstall'
@@ -55,7 +55,7 @@ def test_custom_service_name():
     cosmos = cosmospackage.Cosmos(get_cosmos_url())
     pkg = cosmos.get_package_version('marathon', None)
     options = {
-        'service' : { 'name' : "test-marathon"}
+        'service': {'name': "test-marathon"}
     }
     cosmos.install_app(pkg, options, 'test-marathon')
     deployment_wait()
@@ -64,8 +64,6 @@ def test_custom_service_name():
     cosmos.uninstall_app('marathon', True, 'test-marathon')
     deployment_wait()
     assert wait_for_service_url_removal('test-marathon')
-
-
 
 
 def setup_module(module):

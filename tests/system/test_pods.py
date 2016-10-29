@@ -9,7 +9,6 @@ from shakedown import *
 from utils import *
 
 
-
 PACKAGE_NAME = 'marathon'
 DCOS_SERVICE_URL = dcos_service_url(PACKAGE_NAME) + "/"
 WAIT_TIME_IN_SECS = 300

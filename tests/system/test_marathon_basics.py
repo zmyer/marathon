@@ -116,7 +116,7 @@ def test_task_failure_recovers():
         deployment_wait()
         tasks = client.get_tasks(app_id)
         host = tasks[0]['host']
-        kill_process_on_host(host,'[s]leep')
+        kill_process_on_host(host, '[s]leep')
         deployment_wait()
         time.sleep(1)
         new_tasks = client.get_tasks(app_id)
@@ -159,7 +159,7 @@ def test_bad_user():
 def test_bad_uri():
     app_def = app()
     app_id = app_def['id']
-    fetch = [ {
+    fetch = [{
       "uri": "http://mesosphere.io/missing-artifact"
     }]
 
@@ -391,20 +391,20 @@ def test_health_failed_check():
         assert new_tasks[0]['id'] != tasks[0]['id']
 
 
-
 def setup_function(function):
     with marathon_on_marathon():
         delete_all_apps_wait()
+
 
 def setup_module(module):
     ensure_mom()
     cluster_info()
 
 
-# def teardown_module(module):
-#     with marathon_on_marathon():
-#         delete_all_apps_wait()
-#         deployment_wait()
+def teardown_module(module):
+    with marathon_on_marathon():
+        delete_all_apps_wait()
+        deployment_wait()
 
 
 def app_docker():
@@ -420,7 +420,7 @@ def app_docker():
                 'image': 'python:3',
                 'network': 'BRIDGE',
                 'portMappings': [
-                    { 'containerPort': 8080, 'hostPort': 0 }
+                    {'containerPort': 8080, 'hostPort': 0}
                 ]
             }
         }

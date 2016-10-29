@@ -7,6 +7,7 @@ from six.moves import urllib
 from dcos import http, util, config
 from dcos.errors import DCOSException
 
+
 def fixture_dir():
     """Gets the path to the shakedown dcos fixture directory"""
 

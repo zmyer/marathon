@@ -30,6 +30,7 @@ def test_pinned_task_scales_on_host_only():
         for task in tasks:
             assert task['host'] == host
 
+
 def test_pinned_task_recovers_on_host():
     app_def = app('pinned')
     host = ip_other_than_mom()
@@ -41,7 +42,7 @@ def test_pinned_task_recovers_on_host():
         deployment_wait()
         tasks = client.get_tasks('/pinned')
 
-        kill_process_on_host(host,'[s]leep')
+        kill_process_on_host(host, '[s]leep')
         deployment_wait()
         new_tasks = client.get_tasks('/pinned')
 
@@ -84,9 +85,10 @@ def test_pinned_task_does_not_find_unknown_host():
         time.sleep(10)
 
         tasks = client.get_tasks('/pinned')
-        assert len(tasks)  == 0
+        assert len(tasks) == 0
 
         client.remove_app(app_def['id'])
+
 
 def setup_function(function):
     with marathon_on_marathon():
@@ -96,6 +98,7 @@ def setup_function(function):
 def setup_module(module):
     ensure_mom()
     cluster_info()
+
 
 def teardown_module(module):
     with marathon_on_marathon():
