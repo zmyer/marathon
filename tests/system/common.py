@@ -77,6 +77,7 @@ def health_check(path='/', port_index=0, failures=1, timeout=2):
           "protocol": "HTTP",
           "path": path,
           "timeoutSeconds": timeout,
+          "intervalSeconds" : 2,
           "maxConsecutiveFailures": failures,
           "portIndex": port_index
         }
@@ -134,9 +135,7 @@ def deployment_wait(timeout=120):
 
 
 def ip_other_than_mom():
-    service_ips = get_service_ips('marathon', 'marathon-user')
-    for mom_ip in service_ips:
-        break
+    mom_ip =  ip_of_mom()
 
     agents = get_private_agents()
     for agent in agents:
@@ -144,6 +143,12 @@ def ip_other_than_mom():
             return agent
 
     return None
+
+
+def ip_of_mom():
+    service_ips = get_service_ips('marathon', 'marathon-user')
+    for mom_ip in service_ips:
+        return mom_ip
 
 
 def ensure_mom():
@@ -161,8 +166,12 @@ def ensure_mom():
 
 
 def is_mom_installed():
-    mom_ips = get_service_ips('marathon', "marathon-user")
-    return len(mom_ips) != 0
+    try:
+        mom_ips = get_service_ips('marathon', "marathon-user")
+    except Exception as e:
+        return False
+    else:
+        return len(mom_ips) != 0
 
 
 def wait_for_service_url(service_name, timeout_sec=120):

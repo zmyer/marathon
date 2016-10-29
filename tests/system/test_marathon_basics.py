@@ -183,7 +183,8 @@ def test_launch_group():
         client.create_group(group())
         deployment_wait()
 
-        apps = client.get_group('/test-group/sleep')
+        group_apps = client.get_group('/test-group/sleep')
+        apps = group_apps['apps']
         assert len(apps) == 2
 
 
@@ -270,16 +271,16 @@ def test_scale_app_in_group_then_group():
         assert len(tasks1) == 2
         assert len(tasks2) == 1
 
-        client.scale_group('/test-group/sleep', 3)
+        client.scale_group('/test-group/sleep', 2)
         deployment_wait()
         time.sleep(1)
         tasks1 = client.get_tasks('/test-group/sleep/goodnight')
         tasks2 = client.get_tasks('/test-group/sleep/goodnight2')
-        assert len(tasks1) == 6
-        assert len(tasks2) == 3
+        assert len(tasks1) == 4
+        assert len(tasks2) == 2
 
 
-def test_health_check():
+def test_health_check_healthy():
     with marathon_on_marathon():
         client = marathon.create_client()
         app_def = app_docker()
@@ -305,6 +306,70 @@ def test_health_check():
 
         assert app['tasksRunning'] == 1
         assert app['tasksHealthy'] == 1
+
+
+def test_health_check_unhealthy():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        app_def = app_docker()
+        health_list = []
+        health_list.append(health_check('/bad-url', 0, 0))
+        app_def['id'] = 'unhealthy'
+        app_def['healthChecks'] = health_list
+
+        client.add_app(app_def)
+        try:
+            deployment_wait(60)
+        except Exception as e:
+            pass
+
+        app = client.get_app('/unhealthy')
+
+        assert app['tasksRunning'] == 1
+        assert app['tasksHealthy'] == 0
+        assert app['tasksUnhealthy'] == 1
+
+
+def test_health_failed_check():
+    agents = get_private_agents()
+    if len(agents) < 2:
+        raise DCOSException("At least 2 agents required for this test")
+
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        app_def = app_docker()
+        health_list = []
+        health_list.append(health_check())
+        app_def['id'] = 'healthy'
+        app_def['healthChecks'] = health_list
+
+        pin_to_host(app_def, ip_other_than_mom())
+
+        print(app_def)
+        client.add_app(app_def)
+        deployment_wait()
+
+        app = client.get_app('/healthy')
+
+        assert app['tasksRunning'] == 1
+        assert app['tasksHealthy'] == 1
+
+        tasks = client.get_tasks('/healthy')
+        host = tasks[0]['host']
+        port = tasks[0]['ports'][0]
+
+        # prefer to break at the agent (having issues)
+        mom_ip = ip_of_mom()
+        run_command_on_agent(mom_ip, 'if [ ! -e iptables.rules ] ; then sudo iptables -L > /dev/null && sudo iptables-save > iptables.rules ; fi')
+        run_command_on_agent(mom_ip, 'sudo iptables -I OUTPUT -p tcp --dport {} -j DROP'.format(port))
+        time.sleep(7)
+        run_command_on_agent(mom_ip, 'if [ -e iptables.rules ]; then sudo iptables-restore < iptables.rules && rm iptables.rules ; fi')
+        deployment_wait()
+
+        new_tasks = client.get_tasks('/healthy')
+        print(new_tasks)
+        assert new_tasks[0]['id'] != tasks[0]['id']
+
 
 
 def setup_function(function):
