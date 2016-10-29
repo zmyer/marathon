@@ -67,6 +67,16 @@ def group():
     }
 
 
+def python_http_app():
+    return {
+        'id': 'python-http',
+        'cmd': '/opt/mesosphere/bin/python -m http.server $PORT0',
+        'cpus': 1,
+        'mem': 128,
+        'disk': 0,
+        'instances': 1
+        }
+
 def pin_to_host(app_def, host):
     app_def['constraints'] = constraints('hostname','LIKE',host)
 
@@ -74,12 +84,12 @@ def pin_to_host(app_def, host):
 def health_check(path='/', port_index=0, failures=1, timeout=2):
 
     return {
-          "protocol": "HTTP",
-          "path": path,
-          "timeoutSeconds": timeout,
-          "intervalSeconds" : 2,
-          "maxConsecutiveFailures": failures,
-          "portIndex": port_index
+          'protocol': 'HTTP',
+          'path': path,
+          'timeoutSeconds': timeout,
+          'intervalSeconds' : 2,
+          'maxConsecutiveFailures': failures,
+          'portIndex': port_index
         }
 
 
@@ -213,6 +223,19 @@ def wait_for_service_url_removal(service_name, timeout_sec=120):
         time.sleep(5)
 
     return False
+
+
+def save_iptables(host):
+    run_command_on_agent(host, 'if [ ! -e iptables.rules ] ; then sudo iptables -L > /dev/null && sudo iptables-save > iptables.rules ; fi')
+
+
+def restore_iptables(host):
+    run_command_on_agent(host, 'if [ -e iptables.rules ]; then sudo iptables-restore < iptables.rules && rm iptables.rules ; fi')
+
+
+def block_port(host, port, direction='INPUT'):
+    run_command_on_agent(host, 'sudo iptables -I {} -p tcp --dport {} -j DROP'.format(direction, port))
+
 
 def wait_for_task(service, task, timeout_sec=120):
     """Waits for a task which was launched to be launched"""

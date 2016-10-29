@@ -168,7 +168,9 @@ def test_bad_uri():
     with marathon_on_marathon():
         client = marathon.create_client()
         client.add_app(app_def)
-        time.sleep(2)
+        # can't deployment_wait
+        # need time to fail at least once
+        time.sleep(4)
 
         appl = client.get_app(app_id)
         message = appl['lastTaskFailure']['message']
@@ -177,9 +179,27 @@ def test_bad_uri():
 
         client.remove_app(app_id)
 
+
 def test_launch_group():
     with marathon_on_marathon():
         client = marathon.create_client()
+        client.remove_group('/test-group/sleep')
+        time.sleep(4)
+        deployment_wait()
+        client.create_group(group())
+        deployment_wait()
+
+        group_apps = client.get_group('/test-group/sleep')
+        apps = group_apps['apps']
+        assert len(apps) == 2
+
+
+def test_launch_group():
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.remove_group('/test-group/sleep')
+        time.sleep(4)
+        deployment_wait()
         client.create_group(group())
         deployment_wait()
 
@@ -283,7 +303,7 @@ def test_scale_app_in_group_then_group():
 def test_health_check_healthy():
     with marathon_on_marathon():
         client = marathon.create_client()
-        app_def = app_docker()
+        app_def = python_http_app()
         app_def['id'] = 'no-health'
         client.add_app(app_def)
         deployment_wait()
@@ -311,7 +331,7 @@ def test_health_check_healthy():
 def test_health_check_unhealthy():
     with marathon_on_marathon():
         client = marathon.create_client()
-        app_def = app_docker()
+        app_def = python_http_app()
         health_list = []
         health_list.append(health_check('/bad-url', 0, 0))
         app_def['id'] = 'unhealthy'
@@ -319,7 +339,7 @@ def test_health_check_unhealthy():
 
         client.add_app(app_def)
         try:
-            deployment_wait(60)
+            deployment_wait(10)
         except Exception as e:
             pass
 
@@ -337,7 +357,7 @@ def test_health_failed_check():
 
     with marathon_on_marathon():
         client = marathon.create_client()
-        app_def = app_docker()
+        app_def = python_http_app()
         health_list = []
         health_list.append(health_check())
         app_def['id'] = 'healthy'
@@ -360,10 +380,10 @@ def test_health_failed_check():
 
         # prefer to break at the agent (having issues)
         mom_ip = ip_of_mom()
-        run_command_on_agent(mom_ip, 'if [ ! -e iptables.rules ] ; then sudo iptables -L > /dev/null && sudo iptables-save > iptables.rules ; fi')
-        run_command_on_agent(mom_ip, 'sudo iptables -I OUTPUT -p tcp --dport {} -j DROP'.format(port))
+        save_iptables(host)
+        block_port(host, port)
         time.sleep(7)
-        run_command_on_agent(mom_ip, 'if [ -e iptables.rules ]; then sudo iptables-restore < iptables.rules && rm iptables.rules ; fi')
+        restore_iptables(host)
         deployment_wait()
 
         new_tasks = client.get_tasks('/healthy')
@@ -381,9 +401,10 @@ def setup_module(module):
     cluster_info()
 
 
-def teardown_module(module):
-    with marathon_on_marathon():
-        delete_all_apps_wait()
+# def teardown_module(module):
+#     with marathon_on_marathon():
+#         delete_all_apps_wait()
+#         deployment_wait()
 
 
 def app_docker():
