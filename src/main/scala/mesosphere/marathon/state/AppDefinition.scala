@@ -258,17 +258,12 @@ case class AppDefinition(
     )
   }
 
-  /**
-    * If non-empty port mappings are present for a container then yield the result of `mapped`;
-    * otherwise yield the result of unmapped.
-    */
-  def mappedOrElseUnmappedPorts[T](mapped: Container => Seq[T])(unmapped: => Seq[T]): Seq[T] =
-    container.collect {
-      case c: Container if c.portMappings.nonEmpty => mapped(c)
-    }.getOrElse(unmapped)
+  val hostPorts: Seq[Option[Int]] =
+    container.withFilter(_.portMappings.nonEmpty).map(_.hostPorts).getOrElse(portNumbers.map(Some(_)))
 
-  val hostPorts: Seq[Option[Int]] = mappedOrElseUnmappedPorts(_.hostPorts)(portNumbers.map(Some(_)))
-  val servicePorts: Seq[Int] = mappedOrElseUnmappedPorts(_.servicePorts)(portNumbers)
+  val servicePorts: Seq[Int] =
+    container.withFilter(_.portMappings.nonEmpty).map(_.servicePorts).getOrElse(portNumbers)
+
   private val portIndices: Range = hostPorts.indices
 
   val hasDynamicServicePorts: Boolean = servicePorts.contains(AppDefinition.RandomPortValue)

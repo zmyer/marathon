@@ -32,7 +32,7 @@ class TaskBuilder(
 
     def logInsufficientResources(): Unit = {
       val runSpecHostPorts = if (runSpec.requirePorts) runSpec.portNumbers else runSpec.portNumbers.map(_ => 0)
-      val hostPorts = runSpec.mappedOrElseUnmappedPorts(_.hostPorts)(runSpecHostPorts.map(Some(_)))
+      val hostPorts = runSpec.container.withFilter(_.portMappings.nonEmpty).map(_.hostPorts).getOrElse(runSpecHostPorts.map(Some(_)))
       val staticHostPorts = hostPorts.filter(!_.contains(0))
       val numberDynamicHostPorts = hostPorts.count(!_.contains(0))
 
@@ -187,7 +187,7 @@ class TaskBuilder(
     val portProtos = runSpec.ipAddress match {
       case Some(IpAddress(_, _, DiscoveryInfo(ports), _)) if ports.nonEmpty => ports.map(_.toProto)
       case _ =>
-        runSpec.mappedOrElseUnmappedPorts { c =>
+        runSpec.container.withFilter(_.portMappings.nonEmpty).map { c =>
           // The run spec uses bridge and user modes with portMappings, use them to create the Port messages
           c.portMappings.zip(hostPorts).collect {
             case (portMapping, None) =>
@@ -199,14 +199,14 @@ class TaskBuilder(
               val updatedPortMapping = portMapping.copy(labels = portMapping.labels + ("network-scope" -> "host"))
               PortMappingSerializer.toMesosPort(updatedPortMapping, hostPort)
           }
-        } {
+        }.getOrElse(
           // Serialize runSpec.portDefinitions to protos. The port numbers are the service ports, we need to
           // overwrite them the port numbers assigned to this particular task.
           runSpec.portDefinitions.zip(hostPorts).collect {
-            case (portDefinition, Some(hostPort)) =>
-              PortDefinitionSerializer.toMesosProto(portDefinition).map(_.toBuilder.setNumber(hostPort).build)
-          }.flatten
-        }
+          case (portDefinition, Some(hostPort)) =>
+            PortDefinitionSerializer.toMesosProto(portDefinition).map(_.toBuilder.setNumber(hostPort).build)
+        }.flatten
+        )
     }
 
     val portsProto = org.apache.mesos.Protos.Ports.newBuilder
@@ -222,7 +222,7 @@ class TaskBuilder(
     } else {
       val builder = ContainerInfo.newBuilder
 
-      val boundPortMappings = runSpec.mappedOrElseUnmappedPorts { c =>
+      val boundPortMappings = runSpec.container.withFilter(_.portMappings.nonEmpty).map { c =>
         c.portMappings.zip(hostPorts).collect {
           case (mapping, Some(hport)) =>
             // Use case: containerPort = 0 and hostPort = 0
@@ -239,7 +239,7 @@ class TaskBuilder(
               mapping.copy(hostPort = Some(hport))
             }
         }
-      }(Nil)
+      }.getOrElse(Nil)
 
       // Fill in Docker container details if necessary
       runSpec.container.foreach { c =>
@@ -315,9 +315,11 @@ object TaskBuilder {
     hostPorts: Seq[Option[Int]],
     envPrefix: Option[String]): CommandInfo.Builder = {
 
-    val declaredPorts = runSpec.mappedOrElseUnmappedPorts(
+    val declaredPorts = runSpec.container.withFilter(_.portMappings.nonEmpty).map(
       _.portMappings.map(pm => EnvironmentHelper.PortRequest(pm.name, pm.containerPort))
-    )(runSpec.portDefinitions.map(pd => EnvironmentHelper.PortRequest(pd.name, pd.port)))
+    ).getOrElse(
+        runSpec.portDefinitions.map(pd => EnvironmentHelper.PortRequest(pd.name, pd.port))
+      )
 
     val envMap: Map[String, String] =
       taskContextEnv(runSpec, taskId) ++
