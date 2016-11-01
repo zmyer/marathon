@@ -128,6 +128,7 @@ def setup_module(module):
     client = marathon.create_client()
     about = client.get_about()
     print("marathon version: {}".format(about.get("version")))
+    prefetch_docker_images_on_all_nodes()
 
 
 def teardown_module(module):
@@ -146,3 +147,14 @@ def elapse_time(start, end=None):
     if end is None:
         end = time.time()
     return round(end-start, 3)
+
+
+def prefetch_docker_images_on_all_nodes():
+    agents = get_private_agents()
+    data = get_resource("pod-2-containers.json")
+    data['constraints'] = unique_host_constraint()
+    data['scaling']['instances'] = len(agents)
+    client = marathon.create_client()
+    client.add_pod(data)
+    time_deployment("undeploy")
+    delete_all_pods()

@@ -34,6 +34,32 @@ def group(gcount=1, instances=1):
     return group
 
 
+
+def constraints(name, operator, value=None):
+
+    if value is None:
+        constraints = [
+            [
+                name,
+                operator
+            ]
+        ]
+    else:
+        constraints = [
+            [
+                name,
+                operator,
+                value
+            ]
+        ]
+
+    return constraints
+
+
+def unique_host_constraint():
+    return constraints('hostname', 'UNIQUE')
+
+
 def delete_all_apps():
     client = marathon.create_client()
     client.remove_group("/")

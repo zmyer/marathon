@@ -21,15 +21,29 @@ def app(id=1, instances=1):
     return app_json
 
 
-def constraints(name, operator, value):
-    constraints = [
-        [
-            name,
-            operator,
-            value
+def constraints(name, operator, value=None):
+
+    if value is None:
+        constraints = [
+            [
+                name,
+                operator
+            ]
         ]
-    ]
+    else:
+        constraints = [
+            [
+                name,
+                operator,
+                value
+            ]
+        ]
+
     return constraints
+
+
+def unique_host_constraint():
+    return constraints('hostname', 'UNIQUE')
 
 
 def group():
