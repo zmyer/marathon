@@ -247,7 +247,7 @@ class MarathonSchedulerActor private (
   /**
     * Tries to acquire the lock for the given runSpecIds.
     * If it succeeds it executes the given function,
-    * otherwise the result will contain an AppLockedException.
+    * otherwise the result will contain an LockingFailedException.
     */
   def withLockFor[A](runSpecIds: Set[PathId])(f: => A): Try[A] = {
     // there's no need for synchronization here, because this is being
@@ -282,8 +282,8 @@ class MarathonSchedulerActor private (
     }
 
     res match {
-      case Success(_) =>
-        if (origSender != Actor.noSender) origSender ! cmd.answer
+      case Success(f) =>
+        f.map(_ => if (origSender != Actor.noSender) origSender ! cmd.answer)
       case Failure(e: LockingFailedException) if cmd.force =>
         deploymentManager ! CancelConflictingDeployments(plan)
         val cancellationHandler = context.system.scheduler.scheduleOnce(
@@ -308,8 +308,8 @@ class MarathonSchedulerActor private (
     }
   }
 
-  def deploy(driver: SchedulerDriver, plan: DeploymentPlan): Unit = {
-    deploymentRepository.store(plan).foreach { done =>
+  def deploy(driver: SchedulerDriver, plan: DeploymentPlan): Future[Unit] = {
+    deploymentRepository.store(plan).map { _ =>
       deploymentManager ! PerformDeployment(driver, plan)
     }
   }
