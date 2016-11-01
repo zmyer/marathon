@@ -315,13 +315,13 @@ class MarathonSchedulerActor private (
   }
 
   def deploymentSuccess(plan: DeploymentPlan): Future[Unit] = {
-    log.info(s"Deployment of ${plan.target.id} successful")
+    log.info(s"Deployment ${plan.id}:${plan.version} of ${plan.target.id} successful")
     eventBus.publish(DeploymentSuccess(plan.id, plan))
     deploymentRepository.delete(plan.id).map(_ => ())
   }
 
   def deploymentFailed(plan: DeploymentPlan, reason: Throwable): Future[Unit] = {
-    log.error(reason, s"Deployment of ${plan.target.id} failed")
+    log.error(reason, s"Deployment ${plan.id}:${plan.version} of ${plan.target.id} failed")
     plan.affectedRunSpecIds.foreach(runSpecId => launchQueue.purge(runSpecId))
     eventBus.publish(DeploymentFailed(plan.id, plan))
     reason match {
