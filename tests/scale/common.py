@@ -1,4 +1,5 @@
 import time
+
 from shakedown import *
 from utils import *
 
@@ -111,10 +112,12 @@ def delete_all_apps_wait():
 
 def scale_apps(count=1, instances=1):
     test = "scaling apps: " + str(count) + " instances " + str(instances)
+
+    start = time.time()
     launch_apps(count, instances)
-    time = time_deployment(test)
+    deploy_time = time_deployment(test)
     delete_all_apps_wait()
-    return time
+    return elapse_time(start)
 
 
 def scale_groups(instances=2):
@@ -123,6 +126,12 @@ def scale_groups(instances=2):
     time = time_deployment(test)
     delete_group_and_wait("test")
     return time
+
+
+def elapse_time(start, end=None):
+    if end is None:
+        end = time.time()
+    return round(end-start, 3)
 
 
 def cluster_info(mom_name='marathon-user'):

@@ -143,12 +143,6 @@ def teardown_module(module):
     print("count teardown: {}".format(count_teardown))
 
 
-def elapse_time(start, end=None):
-    if end is None:
-        end = time.time()
-    return round(end-start, 3)
-
-
 def prefetch_docker_images_on_all_nodes():
     agents = get_private_agents()
     data = get_resource("pod-2-containers.json")

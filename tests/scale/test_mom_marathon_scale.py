@@ -10,6 +10,7 @@ from common import *
 from utils import *
 
 instances_results = []
+count_results = []
 group_results = []
 
 
@@ -55,6 +56,36 @@ def test_apps_instances_1000():
         instances_results.append(time)
 
 
+def test_apps_count_1():
+    with marathon_on_marathon():
+        time = scale_apps(1, 1)
+        count_results.append(time)
+
+
+def test_apps_count_10():
+    with marathon_on_marathon():
+        time = scale_apps(10, 1)
+        count_results.append(time)
+
+
+def test_apps_count_100():
+    with marathon_on_marathon():
+        time = scale_apps(100, 1)
+        count_results.append(time)
+
+
+def test_apps_count_500():
+    with marathon_on_marathon():
+        time = scale_apps(500, 1)
+        count_results.append(time)
+
+
+def test_apps_count_1000():
+    with marathon_on_marathon():
+        time = scale_apps(1000, 1)
+        count_results.append(time)
+
+
 def test_groups_instances_1():
     with marathon_on_marathon():
         time = scale_groups(1)
@@ -95,4 +126,5 @@ def setup_module(module):
 
 def teardown_module(module):
     print("instance test: {}".format(instances_results))
+    print("count test: {}".format(count_results))
     print("group test: {}".format(group_results))

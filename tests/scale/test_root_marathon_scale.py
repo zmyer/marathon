@@ -10,6 +10,7 @@ from common import *
 
 instances_results = []
 group_results = []
+count_results = []
 
 """
 Scale tests root marathons on DCOS.
@@ -43,6 +44,31 @@ def test_apps_instances_500():
 def test_apps_instances_1000():
     time = scale_apps(1, 1000)
     instances_results.append(time)
+
+
+def test_apps_count_1():
+    time = scale_apps(1, 1)
+    count_results.append(time)
+
+
+def test_apps_count_10():
+    time = scale_apps(10, 1)
+    count_results.append(time)
+
+
+def test_apps_count_100():
+    time = scale_apps(100, 1)
+    count_results.append(time)
+
+
+def test_apps_count_500():
+    time = scale_apps(500, 1)
+    count_results.append(time)
+
+
+def test_apps_count_1000():
+    time = scale_apps(1000, 1)
+    count_results.append(time)
 
 
 def test_groups_instances_1():
@@ -80,4 +106,5 @@ def setup_module(module):
 
 def teardown_module(module):
     print("instance test: {}".format(instances_results))
+    print("count test: {}".format(count_results))
     print("group test: {}".format(group_results))
