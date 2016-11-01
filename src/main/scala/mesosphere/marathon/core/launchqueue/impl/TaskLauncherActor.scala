@@ -95,6 +95,8 @@ private class TaskLauncherActor(
   /** Decorator to use this actor as a [[OfferMatcher#TaskOpSource]] */
   private[this] val myselfAsLaunchSource = InstanceOpSourceDelegate(self)
 
+  private[this] val startedAt = clock.now()
+
   override def preStart(): Unit = {
     super.preStart()
 
@@ -341,7 +343,8 @@ private class TaskLauncherActor(
       instancesLeftToLaunch = instancesToLaunch,
       finalInstanceCount = instancesToLaunch + instancesLaunchesInFlight + instancesLaunched,
       unreachableInstances = instanceMap.values.count(instance => instance.isUnreachable),
-      backOffUntil.getOrElse(clock.now())
+      backOffUntil.getOrElse(clock.now()),
+      startedAt
     )
   }
 
