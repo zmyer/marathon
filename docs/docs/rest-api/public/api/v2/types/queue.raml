@@ -2,7 +2,33 @@
 uses:
   apps: app.raml
   pods: pod.raml
+  offer: offer.raml
+
 types:
+  UnusedOffer:
+    properties:
+      offer:
+        type: offer.Offer
+        description: The offer that could not be used.
+      reason:
+        type: string[]
+        description: The reasons why this offer can not be used.
+
+  OfferStatisticsSummary:
+    properties:
+      InsufficientMemory: number
+      InsufficientCpus: number
+      InsufficientDisk: number
+      UnmatchedConstraint: number
+
+  OfferStatistics:
+    properties:
+      summary:
+        type: OfferStatisticsSummary
+      lastUnusedOffers:
+        type: UnusedOffer[]
+        description: Last N unused offers, where N can be configured via xxx.
+
   QueueDelay:
     properties:
       timeLeftSeconds?:
@@ -12,6 +38,7 @@ types:
       overdue:
         type: boolean
         description: true, if this run spec is backed off. Otherwise false.
+
   QueueObject:
     properties:
       count:
@@ -24,6 +51,10 @@ types:
       since:
         type: datetime
         description: point in time since Marathon has started to launch tasks.
+      offerStatistics?:
+        type: OfferStatistics
+        description: Statistics for processed offers.
+
   QueueApp:
     type: QueueObject
     properties:

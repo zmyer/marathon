@@ -5,8 +5,8 @@ import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.instance.Instance.InstanceState
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
-import mesosphere.marathon.core.instance.{ LegacyAppInstance, Instance }
-import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory }
+import mesosphere.marathon.core.instance.{ Instance, LegacyAppInstance }
+import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory, OfferMatchResult }
 import mesosphere.marathon.core.plugin.PluginManager
 import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.core.task.Task
@@ -40,6 +40,8 @@ class InstanceOpFactoryImpl(
 
   private[this] lazy val runSpecTaskProc: RunSpecTaskProcessor = combine(
     pluginManager.plugins[RunSpecTaskProcessor].toIndexedSeq)
+
+  override def matchOfferRequest(request: InstanceOpFactory.Request): OfferMatchResult = ???
 
   override def buildTaskOp(request: InstanceOpFactory.Request): Option[InstanceOp] = {
     log.debug("buildTaskOp")

@@ -98,7 +98,41 @@
         "timeLeftSeconds": 0,
         "overdue": true
       },
-      "since": "2016-02-28T16:41:41.090Z"
+      "since": "2016-02-28T16:41:41.090Z",
+      "offerStatistics": {
+        "summary": {
+          "InsufficientMemory": 123,
+          "InsufficientCpus": 123,
+          "InsufficientDisk": 123,
+          "UnmatchedConstraint": 123
+        },
+        "lastUnusedOffers": [
+          {
+            "offer": {
+              "id": "offer_123",
+              "agentId": "slave_123",
+              "hostname": "1.2.3.4",
+              "resources": [
+                {
+                  "name": "cpus",
+                  "scalar": 23,
+                  "ranges": [ { "begin": 1, "end": 5 } ],
+                  "set": [ "a", "b" ]
+                }
+              ],
+              "attributes": [
+                {
+                  "name": "foo",
+                  "scalar": 23,
+                  "ranges": [ { "begin": 1, "end": 5 } ],
+                  "set": [ "a", "b" ]
+                }
+              ]
+            },
+            "reason": [ "INSUFFICIENT_MEMORY" ]
+          }
+        ]
+      }
     }
   ]
 }

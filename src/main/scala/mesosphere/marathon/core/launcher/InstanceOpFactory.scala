@@ -9,6 +9,16 @@ import org.apache.mesos.{ Protos => Mesos }
 
 /** Infers which TaskOps to create for given run spec and offers. */
 trait InstanceOpFactory {
+
+  /**
+    * Match an offer request.
+    *
+    * @param request the offer request.
+    * @return Either this request results in a Match with some InstanceOp or a NoMatch
+    *         which describes why this offer request could not be matched.
+    */
+  def matchOfferRequest(request: InstanceOpFactory.Request): OfferMatchResult
+
   /**
     * @return a TaskOp if and only if the offer matches the run spec.
     */
