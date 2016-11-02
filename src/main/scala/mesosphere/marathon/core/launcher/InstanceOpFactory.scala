@@ -19,10 +19,6 @@ trait InstanceOpFactory {
     */
   def matchOfferRequest(request: InstanceOpFactory.Request): OfferMatchResult
 
-  /**
-    * @return a TaskOp if and only if the offer matches the run spec.
-    */
-  def buildTaskOp(request: InstanceOpFactory.Request): Option[InstanceOp]
 }
 
 object InstanceOpFactory {

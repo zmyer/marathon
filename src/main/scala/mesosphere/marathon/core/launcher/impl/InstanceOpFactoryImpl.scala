@@ -41,9 +41,15 @@ class InstanceOpFactoryImpl(
   private[this] lazy val runSpecTaskProc: RunSpecTaskProcessor = combine(
     pluginManager.plugins[RunSpecTaskProcessor].toIndexedSeq)
 
-  override def matchOfferRequest(request: InstanceOpFactory.Request): OfferMatchResult = ???
+  override def matchOfferRequest(request: InstanceOpFactory.Request): OfferMatchResult = {
+    //TODO: the match result should be created by the calling method.
+    buildTaskOp(request) match {
+      case Some(instanceOp) => OfferMatchResult.Match(request.runSpec, request.offer, instanceOp)
+      case None => OfferMatchResult.NoMatch(request.runSpec, request.offer, Seq.empty)
+    }
+  }
 
-  override def buildTaskOp(request: InstanceOpFactory.Request): Option[InstanceOp] = {
+  private def buildTaskOp(request: InstanceOpFactory.Request): Option[InstanceOp] = {
     log.debug("buildTaskOp")
 
     request.runSpec match {
