@@ -210,14 +210,17 @@ class MarathonHealthCheckManagerTest extends AkkaFunTest with MarathonShutdownHo
         .setHealthy(true)
         .build
     val healthChecks = List(0, 1, 2).map { i =>
-      (0 until i).map { j => MesosCommandHealthCheck(gracePeriod = (i * 3 + j).seconds, command = Command("true")) }.toSet
+      (0 until i).map { j =>
+        val check: HealthCheck = MesosCommandHealthCheck(gracePeriod = (i * 3 + j).seconds, command = Command("true"))
+        check
+      }.to[Set]
     }
     val versions = List(0L, 1L, 2L).map { Timestamp(_) }.toArray
     val instances = List(0, 1, 2).map { i =>
       TestInstanceBuilder.newBuilder(appId, version = versions(i)).addTaskStaged(version = Some(versions(i))).getInstance()
     }
-    def startTask(appId: PathId, instance: Instance, version: Timestamp, healthChecks: Set[_ <: HealthCheck]): AppDefinition = {
-      val app = AppDefinition(
+    def startTask(appId: PathId, instance: Instance, version: Timestamp, healthChecks: Set[HealthCheck]): AppDefinition = {
+      val app = appRepository.store(AppDefinition(
         id = appId,
         versionInfo = VersionInfo.forNewConfig(version),
         healthChecks = healthChecks
@@ -234,7 +237,7 @@ class MarathonHealthCheckManagerTest extends AkkaFunTest with MarathonShutdownHo
     // one other task of another app
     val otherAppId = "other".toRootPath
     val otherInstance = TestInstanceBuilder.newBuilder(appId).addTaskStaged(version = Some(Timestamp.zero)).getInstance()
-    val otherHealthChecks = Set(MesosCommandHealthCheck(gracePeriod = 0.seconds, command = Command("true")))
+    val otherHealthChecks = Set[HealthCheck](MesosCommandHealthCheck(gracePeriod = 0.seconds, command = Command("true")))
     val otherApp = startTask(otherAppId, otherInstance, Timestamp(42), otherHealthChecks)
 
     hcManager.addAllFor(otherApp, Seq.empty)

@@ -2,7 +2,6 @@ package mesosphere.marathon
 package raml
 
 import mesosphere.marathon.core.pod
-import mesosphere.marathon.state
 
 trait NetworkConversion {
 
@@ -10,6 +9,7 @@ trait NetworkConversion {
     Reads { raml =>
       raml.mode match {
         case NetworkMode.Host => pod.HostNetwork
+        case NetworkMode.ContainerBridge => pod.BridgeNetwork(raml.labels)
         case NetworkMode.Container => pod.ContainerNetwork(
           // TODO(PODS): shouldn't this be caught by validation?
           raml.name.getOrElse(throw new IllegalArgumentException("container network must specify a name")),
@@ -25,6 +25,11 @@ trait NetworkConversion {
         mode = NetworkMode.Container,
         labels = cnet.labels
       )
+    case br: pod.BridgeNetwork =>
+      Network(
+        mode = NetworkMode.ContainerBridge,
+        labels = br.labels
+      )
     case pod.HostNetwork => Network(mode = NetworkMode.Host)
   }
 
@@ -38,8 +43,8 @@ trait NetworkConversion {
     PortDefinition(port.port, port.labels, port.name, port.protocol.toRaml[NetworkProtocol])
   }
 
-  implicit val portMappingWrites: Writes[state.Container.PortMapping, DockerPortMapping] = Writes { portMapping =>
-    DockerPortMapping(
+  implicit val portMappingWrites: Writes[state.Container.PortMapping, ContainerPortMapping] = Writes { portMapping =>
+    ContainerPortMapping(
       containerPort = portMapping.containerPort,
       hostPort = portMapping.hostPort,
       labels = portMapping.labels,
@@ -47,21 +52,6 @@ trait NetworkConversion {
       protocol = portMapping.protocol.toRaml[NetworkProtocol],
       servicePort = portMapping.servicePort
     )
-  }
-
-  implicit val discoveryInfoPortWrites: Writes[state.DiscoveryInfo.Port, IpDiscoveryPort] = Writes { port =>
-    IpDiscoveryPort(port.number, port.name, port.protocol.toRaml[NetworkProtocol])
-  }
-  implicit val discoveryInfoWrites: Writes[state.DiscoveryInfo, IpDiscovery] = Writes { discovery =>
-    IpDiscovery(discovery.ports.toRaml)
-  }
-
-  implicit val ipAddressWrites: Writes[state.IpAddress, IpAddress] = Writes { ip =>
-    val discovery =
-      if (ip.discoveryInfo.isEmpty) None
-      else Some(ip.discoveryInfo.toRaml)
-
-    IpAddress(discovery, ip.groups, ip.labels, ip.networkName)
   }
 }
 

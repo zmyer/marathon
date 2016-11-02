@@ -5,12 +5,12 @@ import com.wix.accord._
 import com.wix.accord.dsl._
 import mesosphere.FunTest
 import mesosphere.marathon.api.v2.Validation._
-import mesosphere.marathon.api.v2.json.GroupUpdate
+import mesosphere.marathon.api.v2.json.GroupUpdateHelper
+import mesosphere.marathon.raml.GroupUpdate
 import mesosphere.marathon.state.Container._
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.GroupCreation
-import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network
 import play.api.libs.json.{ JsObject, Json }
 
 import scala.collection.immutable.Seq
@@ -43,8 +43,10 @@ class ModelValidationTest
 
   import ModelValidationTest._
 
+  implicit val groupUpdateValidator = GroupUpdateHelper.groupUpdateValid(Set.empty[String])
+
   test("A group update should pass validation") {
-    val update = GroupUpdate(id = Some("/a/b/c".toPath))
+    val update = GroupUpdate(id = Some("/a/b/c"))
 
     validate(update).isSuccess should be(true)
   }
@@ -100,5 +102,4 @@ class ModelValidationTest
     val result = validate(rootGroup)(RootGroup.valid(Set()))
     result.isSuccess should be(true)
   }
-
 }

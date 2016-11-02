@@ -42,7 +42,7 @@ types:
 
   NetworkMode:
     type: string
-    enum: [container, host]
+    enum: [container, "container/bridge", host]
   Network:
     type: object
     properties:
@@ -65,7 +65,6 @@ types:
     properties:
       number?:
         type: numbers.AnyPort
-        format: int32
         description: The port number
         default: 0
       name:
@@ -104,6 +103,7 @@ types:
           The idea is that containers can only reach containers with which they
           share at least one network group.
         items: string
+        uniqueItems: true
       labels?:
         type: label.KVLabels
         (pragma.omitEmpty):
@@ -131,7 +131,7 @@ types:
         type: label.KVLabels
         (pragma.omitEmpty):
       name?:
-        type: string
+        type: strings.Name
         description: |
           Name of the service hosted on this port.
           If provided, it must be unique over all port definitions.

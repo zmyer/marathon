@@ -1,4 +1,5 @@
-package mesosphere.marathon.api.v2.json
+package mesosphere.marathon
+package api.v2.json
 
 import mesosphere.marathon.core.readiness.{ ReadinessCheckTestHelper, ReadinessCheck }
 import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }

@@ -1,4 +1,7 @@
-package mesosphere.marathon.core.readiness
+package mesosphere.marathon
+package core.readiness
+
+import mesosphere.marathon.raml.HttpScheme
 
 import scala.concurrent.duration._
 
@@ -14,5 +17,16 @@ object ReadinessCheckTestHelper {
     timeout = 2.seconds,
     httpStatusCodesForReady = Set(201),
     preserveLastResponse = true
+  )
+
+  val alternativeHttpsRaml = raml.ReadinessCheck(
+    name = "dcosMigrationApi",
+    protocol = HttpScheme.Https,
+    path = "/v1/plan",
+    portName = "dcos-migration-api",
+    intervalSeconds = 10,
+    timeoutSeconds = 2,
+    httpStatusCodesForReady = Seq(201),
+    preserveLastResponse = Some(true)
   )
 }

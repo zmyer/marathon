@@ -6,6 +6,7 @@ import mesosphere.marathon.Protos.HealthCheckDefinition.Protocol
 import mesosphere.marathon.api.JsonTestHelper
 import mesosphere.marathon.api.v2.ValidationHelper
 import mesosphere.marathon.api.v2.json.Formats.HealthCheckFormat
+import mesosphere.marathon.core.pod.{ BridgeNetwork, ContainerNetwork, HostNetwork }
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.state.NetworkInfo
 import mesosphere.marathon.state.Container.PortMapping
@@ -418,7 +419,7 @@ class MesosHealthCheckTest extends MarathonSpec {
     import MarathonTestHelper.Implicits._
 
     val app = MarathonTestHelper.makeBasicApp()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.HOST)
+      .withDockerNetworks(HostNetwork)
       .withHealthCheck(mesosHttpHealthCheckWithPortIndex)
 
     val task: Option[(MesosProtos.TaskInfo, NetworkInfo)] = buildIfMatches(app)
@@ -432,7 +433,7 @@ class MesosHealthCheckTest extends MarathonSpec {
     import MarathonTestHelper.Implicits._
 
     val app = MarathonTestHelper.makeBasicApp()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.HOST)
+      .withDockerNetworks(HostNetwork)
       .withHealthCheck(mesosHttpHealthCheckWithPort)
 
     val task: Option[(MesosProtos.TaskInfo, NetworkInfo)] = buildIfMatches(app)
@@ -447,7 +448,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.BRIDGE)
+      .withDockerNetworks(BridgeNetwork())
       .withPortMappings(Seq(
         PortMapping(containerPort = 80, hostPort = Some(0), servicePort = 0, protocol = "tcp",
           name = Some("http"))
@@ -466,7 +467,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.BRIDGE)
+      .withDockerNetworks(BridgeNetwork())
       .withPortMappings(Seq(
         PortMapping(containerPort = 8080, hostPort = Some(0), servicePort = 0, protocol = "tcp",
           name = Some("http"))
@@ -485,8 +486,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withIpAddress(IpAddress.empty)
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.USER)
+      .withDockerNetworks(ContainerNetwork("whatever"))
       .withPortMappings(Seq(PortMapping(containerPort = 80, hostPort = None)))
       .withHealthCheck(mesosHttpHealthCheckWithPortIndex)
 
@@ -501,8 +501,7 @@ class MesosHealthCheckTest extends MarathonSpec {
     import MarathonTestHelper.Implicits._
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withIpAddress(IpAddress.empty)
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.USER)
+      .withDockerNetworks(ContainerNetwork("whatever"))
       .withPortMappings(Seq(PortMapping(containerPort = 80, hostPort = Some(0))))
       .withHealthCheck(mesosHttpHealthCheckWithPortIndex)
 
@@ -518,8 +517,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withIpAddress(IpAddress.empty)
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.USER)
+      .withDockerNetworks(ContainerNetwork("whatever"))
       .withPortMappings(Seq(PortMapping(containerPort = 31337, hostPort = Some(0))))
       .withHealthCheck(mesosHttpHealthCheckWithPort)
 
@@ -602,7 +600,7 @@ class MesosHealthCheckTest extends MarathonSpec {
     import MarathonTestHelper.Implicits._
 
     val app = MarathonTestHelper.makeBasicApp()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.HOST)
+      .withDockerNetworks(HostNetwork)
       .withHealthCheck(mesosTcpHealthCheckWithPortIndex)
 
     val task: Option[(MesosProtos.TaskInfo, NetworkInfo)] = buildIfMatches(app)
@@ -616,7 +614,7 @@ class MesosHealthCheckTest extends MarathonSpec {
     import MarathonTestHelper.Implicits._
 
     val app = MarathonTestHelper.makeBasicApp()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.HOST)
+      .withDockerNetworks(HostNetwork)
       .withHealthCheck(mesosTcpHealthCheckWithPort)
 
     val task: Option[(MesosProtos.TaskInfo, NetworkInfo)] = buildIfMatches(app)
@@ -631,7 +629,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.BRIDGE)
+      .withDockerNetworks(BridgeNetwork())
       .withPortMappings(Seq(
         PortMapping(containerPort = 80, hostPort = Some(0), servicePort = 0, protocol = "tcp",
           name = Some("http"))
@@ -650,7 +648,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.BRIDGE)
+      .withDockerNetworks(BridgeNetwork())
       .withPortMappings(Seq(
         PortMapping(containerPort = 8080, hostPort = Some(0), servicePort = 0, protocol = "tcp",
           name = Some("http"))
@@ -669,8 +667,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withIpAddress(IpAddress.empty)
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.USER)
+      .withDockerNetworks(ContainerNetwork("whatever"))
       .withPortMappings(Seq(PortMapping(containerPort = 80, hostPort = None)))
       .withHealthCheck(mesosTcpHealthCheckWithPortIndex)
 
@@ -685,8 +682,7 @@ class MesosHealthCheckTest extends MarathonSpec {
     import MarathonTestHelper.Implicits._
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withIpAddress(IpAddress.empty)
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.USER)
+      .withDockerNetworks(ContainerNetwork("whatever"))
       .withPortMappings(Seq(PortMapping(containerPort = 80, hostPort = Some(0))))
       .withHealthCheck(mesosTcpHealthCheckWithPortIndex)
 
@@ -702,8 +698,7 @@ class MesosHealthCheckTest extends MarathonSpec {
 
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
-      .withIpAddress(IpAddress.empty)
-      .withDockerNetwork(MesosProtos.ContainerInfo.DockerInfo.Network.USER)
+      .withDockerNetworks(ContainerNetwork("whatever"))
       .withPortMappings(Seq(PortMapping(containerPort = 31337, hostPort = Some(0))))
       .withHealthCheck(mesosTcpHealthCheckWithPort)
 
@@ -836,10 +831,6 @@ class MesosHealthCheckTest extends MarathonSpec {
     maxConsecutiveFailures = 0)
   val mesosTcpHealthCheckWithPort = mesosTcpHealthCheckWithPortIndex.copy(portIndex = None, port = Some(80))
 
-  private[this] def toJson(healthCheck: HealthCheck): String = {
-    import mesosphere.marathon.api.v2.json.Formats._
-    Json.prettyPrint(Json.toJson(healthCheck))
-  }
   private[this] def fromJson(json: String): HealthCheck = {
     import mesosphere.marathon.api.v2.json.Formats._
     Json.fromJson[HealthCheck](Json.parse(json))(HealthCheckFormat).get
