@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+@IntegrationTest
 class AppDeployIntegrationTest
     extends IntegrationFunSuite
     with SingleMarathonIntegrationTest

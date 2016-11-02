@@ -9,7 +9,6 @@ import akka.util.Timeout
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.test.{ ExitDisabledTest, Mockito }
-import mesosphere.marathon.{ IntegrationTest => AnnotatedIntegrationTest }
 import org.scalatest.{ AppendedClues, BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach, FunSuite, FunSuiteLike, GivenWhenThen, Matchers, OptionValues, Suite, TryValues, WordSpec, WordSpecLike }
 
 /**
@@ -45,7 +44,6 @@ trait AkkaTest extends Suite with BeforeAndAfterAll with FutureTestSupport with 
   }
 }
 
-@AnnotatedIntegrationTest
 trait IntegrationTestLike extends UnitTestLike with IntegrationFutureTestSupport
 
 abstract class IntegrationTest extends UnitTest with IntegrationTestLike
@@ -74,7 +72,6 @@ trait FunTestLike extends FunSuiteLike
 
 abstract class FunTest extends FunSuite with FunTestLike
 
-@AnnotatedIntegrationTest
 trait IntegrationFunTestLike extends FunTestLike with IntegrationFutureTestSupport
 
 abstract class IntegrationFunTest extends FunTest with IntegrationFunTestLike
