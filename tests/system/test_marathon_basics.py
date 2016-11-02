@@ -88,8 +88,7 @@ def test_launch_app_timed():
 
 
 def test_ui_registration_requirement():
-    response = http.get("{}mesos/master/tasks.json".format(dcos_url()))
-    tasks = response.json()['tasks']
+    tasks = mesos.get_master().tasks()
     for task in tasks:
         if task['name'] == 'marathon-user':
             for label in task['labels']:
@@ -102,7 +101,7 @@ def test_ui_registration_requirement():
 
 
 def test_ui_available():
-    response = http.get("{}service/marathon-user/ui/".format(dcos_url()))
+    response = http.get("{}/ui/".format(dcos_service_url('marathon-user')))
     assert response.status_code == 200
 
 
@@ -183,23 +182,12 @@ def test_bad_uri():
 def test_launch_group():
     with marathon_on_marathon():
         client = marathon.create_client()
-        client.remove_group('/test-group/sleep')
-        time.sleep(4)
-        deployment_wait()
-        client.create_group(group())
-        deployment_wait()
+        try:
+            client.remove_group('/')
+            deployment_wait()
+        except Exception as e:
+            pass
 
-        group_apps = client.get_group('/test-group/sleep')
-        apps = group_apps['apps']
-        assert len(apps) == 2
-
-
-def test_launch_group():
-    with marathon_on_marathon():
-        client = marathon.create_client()
-        client.remove_group('/test-group/sleep')
-        time.sleep(4)
-        deployment_wait()
         client.create_group(group())
         deployment_wait()
 

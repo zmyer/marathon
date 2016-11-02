@@ -25,7 +25,7 @@ def constraints(name, operator, value=None):
     constraints = [name, operator]
     if value is not None:
       constraints.append(value)
-    return constraints
+    return [constraints]
 
 
 def unique_host_constraint():
