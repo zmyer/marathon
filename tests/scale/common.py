@@ -37,23 +37,9 @@ def group(gcount=1, instances=1):
 
 
 def constraints(name, operator, value=None):
-
-    if value is None:
-        constraints = [
-            [
-                name,
-                operator
-            ]
-        ]
-    else:
-        constraints = [
-            [
-                name,
-                operator,
-                value
-            ]
-        ]
-
+    constraints = [name, operator]
+    if value is not None:
+      constraints.append(value)
     return constraints
 
 

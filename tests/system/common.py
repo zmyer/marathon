@@ -22,23 +22,9 @@ def app(id=1, instances=1):
 
 
 def constraints(name, operator, value=None):
-
-    if value is None:
-        constraints = [
-            [
-                name,
-                operator
-            ]
-        ]
-    else:
-        constraints = [
-            [
-                name,
-                operator,
-                value
-            ]
-        ]
-
+    constraints = [name, operator]
+    if value is not None:
+      constraints.append(value)
     return constraints
 
 
@@ -147,7 +133,6 @@ def deployment_wait(timeout=120):
     deployment_count = 1
     # TODO: time limit with fail
     while deployment_count > 0:
-        time.sleep(1)
         deployments = client.get_deployments()
         deployment_count = len(deployments)
         end = time.time()
