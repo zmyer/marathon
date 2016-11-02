@@ -32,16 +32,18 @@ def test_install_marathon():
         time.sleep(1)
 
     assert found, 'Service did not register with DCOS'
+    deployment_wait()
 
     # Uninstall
-    uninstall_package_and_wait(PACKAGE_NAME)
+    cosmos = cosmospackage.Cosmos(get_cosmos_url())
+    uninstall('marathon-user')
     deployment_wait()
-    assert not package_installed(PACKAGE_NAME), 'Package failed to uninstall'
+    # assert wait_for_service_url_removal('marathon-user')
 
     # Reinstall
     install_package_and_wait(PACKAGE_NAME)
     assert package_installed(PACKAGE_NAME), 'Package failed to reinstall'
-
+    #
     try:
         install_package(PACKAGE_NAME)
     except Exception as e:
@@ -57,7 +59,7 @@ def test_custom_service_name():
     options = {
         'service': {'name': "test-marathon"}
     }
-    cosmos.install_app(pkg, options, 'test-marathon')
+    uninstall('test-marathon')
     deployment_wait()
 
     assert wait_for_service_url('test-marathon')
@@ -68,18 +70,22 @@ def test_custom_service_name():
 
 def setup_module(module):
     if is_mom_installed():
-        uninstall_package_and_wait(PACKAGE_NAME)
-        deployment_wait()
-
+        try:
+            uninstall_package_and_wait(PACKAGE_NAME)
+        except Exception as e:
+            pass
+    deployment_wait()
 
 def teardown_module(module):
     # pytest teardown do not seem to be working
+    uninstall('marathon-user')
+    uninstall('test-user')
+    run_command_on_master("docker run mesosphere/janitor /janitor.py -z universe/marathon-user")
+
+
+def uninstall(service, package='marathon'):
     try:
-        uninstall_package_and_wait(PACKAGE_NAME)
-        deployment_wait()
-        cosmos.uninstall_app('marathon', True, 'test-marathon')
+        cosmos.uninstall_app(package, True, service)
         deployment_wait()
     except Exception as e:
         pass
-
-    run_command_on_master("docker run mesosphere/janitor /janitor.py -z universe/marathon-user")
