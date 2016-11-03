@@ -44,8 +44,8 @@ class InstanceOpFactoryImpl(
   override def matchOfferRequest(request: InstanceOpFactory.Request): OfferMatchResult = {
     //TODO: the match result should be created by the calling method.
     buildTaskOp(request) match {
-      case Some(instanceOp) => OfferMatchResult.Match(request.runSpec, request.offer, instanceOp)
-      case None => OfferMatchResult.NoMatch(request.runSpec, request.offer, Seq.empty)
+      case Some(instanceOp) => OfferMatchResult.Match(request.runSpec, request.offer, instanceOp, clock.now())
+      case None => OfferMatchResult.NoMatch(request.runSpec, request.offer, Seq.empty, clock.now())
     }
   }
 

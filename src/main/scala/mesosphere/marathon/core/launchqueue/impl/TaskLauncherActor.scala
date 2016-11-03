@@ -358,7 +358,7 @@ private class TaskLauncherActor(
       val reachableInstances: Seq[Instance] = instanceMap.values.filterNotAs(_.state.condition.isLost)(collection.breakOut)
       val matchRequest = InstanceOpFactory.Request(runSpec, offer, reachableInstances, instancesToLaunch)
       instanceOpFactory.matchOfferRequest(matchRequest) match {
-        case OfferMatchResult.Match(_, _, instanceOp) => handleInstanceOp(instanceOp, offer)
+        case OfferMatchResult.Match(_, _, instanceOp, _) => handleInstanceOp(instanceOp, offer)
         case notMatched: OfferMatchResult.NoMatch =>
           //TODO(REJECTED): send accumulator an update
           sender() ! MatchedInstanceOps(offer.getId)

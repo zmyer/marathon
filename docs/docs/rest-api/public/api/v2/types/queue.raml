@@ -13,21 +13,36 @@ types:
       reason:
         type: string[]
         description: The reasons why this offer can not be used.
+      timestamp:
+        type: datetime
+        description: when this offer has been processed
 
-  OfferStatisticsSummary:
+  OfferRejectionSummary:
     properties:
       InsufficientMemory: number
       InsufficientCpus: number
       InsufficientDisk: number
       UnmatchedConstraint: number
 
-  OfferStatistics:
+  UnusedOfferSummary:
     properties:
-      summary:
-        type: OfferStatisticsSummary
-      lastUnusedOffers:
-        type: UnusedOffer[]
-        description: Last N unused offers, where N can be configured via xxx.
+      processedOfferCount:
+        type: number
+        format: int32
+        description: The number of processed offers for this launch attempt.
+      unusedOfferCount:
+        type: number
+        format: int32
+        description: The number of unused offers for this launch attempt.
+      lastUnusedOfferAt:
+        type: datetime
+        description: Point in time when the last unused offer has been processed.
+      lastUsedOfferAt:
+        type: datetime
+        description: Point in time when the last used offer has been processed.
+      rejectReason:
+        type: OfferRejectionSummary
+
 
   QueueDelay:
     properties:
@@ -51,9 +66,12 @@ types:
       since:
         type: datetime
         description: point in time since Marathon has started to launch tasks.
-      offerStatistics?:
-        type: OfferStatistics
+      unusedOfferSummary?:
+        type: UnusedOfferSummary
         description: Statistics for processed offers.
+      lastUnusedOffers?:
+        type: UnusedOffer[]
+        description: Last N unused offers, where N can be configured via xxx.
 
   QueueApp:
     type: QueueObject

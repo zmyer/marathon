@@ -461,8 +461,8 @@ class TaskLauncherActorTest extends MarathonSpec with GivenWhenThen {
     val opFactory = new InstanceOpFactoryHelper(Some("principal"), Some("role")).launchEphemeral(_: Mesos.TaskInfo, _: Task.LaunchedEphemeral, _: Instance)
     val launch = opFactory(task, marathonTask, marathonInstance)
     val offer = MarathonTestHelper.makeBasicOffer().build()
-    val noMatchResult = OfferMatchResult.NoMatch(app, offer, Seq.empty)
-    val launchResult = OfferMatchResult.Match(app, offer, launch)
+    val noMatchResult = OfferMatchResult.NoMatch(app, offer, Seq.empty, Timestamp.now())
+    val launchResult = OfferMatchResult.Match(app, offer, launch, Timestamp.now())
   }
 
   private[this] implicit val timeout: Timeout = 3.seconds

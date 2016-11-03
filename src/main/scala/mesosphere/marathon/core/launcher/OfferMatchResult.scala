@@ -1,6 +1,6 @@
 package mesosphere.marathon.core.launcher
 
-import mesosphere.marathon.state.RunSpec
+import mesosphere.marathon.state.{ RunSpec, Timestamp }
 import mesosphere.mesos.NoOfferMatchReason
 import org.apache.mesos.{ Protos => Mesos }
 
@@ -18,13 +18,18 @@ sealed trait OfferMatchResult {
     * Related Mesos Offer.
     */
   def offer: Mesos.Offer
+
+  /**
+    * Timestamp of this match result decision
+    */
+  def timestamp: Timestamp
 }
 
 object OfferMatchResult {
 
-  case class Match(runSpec: RunSpec, offer: Mesos.Offer, instanceOp: InstanceOp) extends OfferMatchResult
+  case class Match(runSpec: RunSpec, offer: Mesos.Offer, instanceOp: InstanceOp, timestamp: Timestamp) extends OfferMatchResult
 
-  case class NoMatch(runSpec: RunSpec, offer: Mesos.Offer, reasons: Seq[NoOfferMatchReason]) extends OfferMatchResult
+  case class NoMatch(runSpec: RunSpec, offer: Mesos.Offer, reasons: Seq[NoOfferMatchReason], timestamp: Timestamp) extends OfferMatchResult
 
 }
 

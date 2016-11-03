@@ -261,10 +261,10 @@ class LaunchQueueModuleTest
       operation = InstanceUpdateOperation.LaunchEphemeral(instance),
       effect = InstanceUpdateEffect.Update(instance = instance, oldState = None, events = Nil)).wrapped
 
-    val noMatchResult = OfferMatchResult.NoMatch(app, offer, Seq.empty)
-    val launchResult = OfferMatchResult.Match(app, offer, launch)
-
     lazy val clock: Clock = Clock()
+    val noMatchResult = OfferMatchResult.NoMatch(app, offer, Seq.empty, clock.now())
+    val launchResult = OfferMatchResult.Match(app, offer, launch, clock.now())
+
     lazy val taskBusModule: TaskBusModule = new TaskBusModule()
     lazy val offerMatcherManager: DummyOfferMatcherManager = new DummyOfferMatcherManager()
     lazy val instanceTracker: InstanceTracker = mock[InstanceTracker]

@@ -5,16 +5,22 @@ types:
     properties:
       begin:
         type: number
+        format: int32
       end:
         type: number
+        format: int32
 
   OfferResource:
     properties:
       name:
         type: string
         description: The name of the resource.
+      role:
+        type: string
+        description: The role this resource is assigned to.
       scalar?:
         type: number
+        format: int32
         description: The scalar value of the resource.
       ranges?:
         type: NumberRange[]
@@ -56,6 +62,4 @@ types:
       attributes:
         type: AgentAttribute[]
         description: all attributes of the agent
-      received:
-        type: datetime
-        description: when this offer has been received
+
