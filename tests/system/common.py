@@ -185,6 +185,18 @@ def is_mom_installed():
         return len(mom_ips) != 0
 
 
+def restart_master_node():
+    """ Restarts the master node
+    """
+
+    run_command_on_master("sudo /sbin/shutdown -r now")
+
+
+def systemctl_master(command='restart'):
+        run_command_on_master('sudo systemctl {} dcos-mesos-master'.format(command))
+
+
+
 def wait_for_service_url(service_name, timeout_sec=120):
     """Checks the service url if available it returns true, on expiration
     it returns false"""
@@ -243,7 +255,6 @@ def wait_for_task(service, task, timeout_sec=120):
 
     now = time.time()
     future = now + timeout_sec
-    time.sleep(5)
 
     while now < future:
         response = None
@@ -252,10 +263,14 @@ def wait_for_task(service, task, timeout_sec=120):
         except Exception as e:
             pass
 
-        if response is None:
+        if response is not None and response['state'] == 'TASK_RUNNING':
+            return response
+        else:
             time.sleep(5)
             now = time.time()
-        else:
-            return response
 
     return None
+
+def wait_for_task_health(service, task, timeout_sec=120):
+
+    task = wait_for_task(service, task, timeout_sec)

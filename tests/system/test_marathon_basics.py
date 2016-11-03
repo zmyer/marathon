@@ -474,7 +474,6 @@ def setup_module(module):
 def teardown_module(module):
     with marathon_on_marathon():
         delete_all_apps_wait()
-        deployment_wait()
 
 
 def app_docker():

@@ -23,6 +23,120 @@ def setup_module(module):
     if len(agents) < 2:
         assert False, "Network tests require at least 2 private agents"
 
+    ensure_mom()
+    wait_for_service_url(PACKAGE_APP_ID)
+    cluster_info()
+
+
+def setup_function(function):
+    with marathon_on_marathon():
+        delete_all_apps_wait()
+
+
+def test_mom_with_master_process_failure():
+    app_def = app('master-failure')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, host)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks('/master-failure')
+        original_task_id = tasks[0]['id']
+        systemctl_master()
+        time.sleep(5)
+        tasks = client.get_tasks('/master-failure')
+        tasks[0]['id'] == original_task_id
+
+
+def test_mom_with_master_node_failure():
+    app_def = app('master-failure')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, host)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks('/master-failure')
+        original_task_id = tasks[0]['id']
+        restart_master_node()
+        wait_for_task('marathon', 'marathon-user', 300)
+        tasks = client.get_tasks('/master-failure')
+        tasks[0]['id'] == original_task_id
+
+
+def test_mom_when_disconnected_from_zk():
+    app_def = app('zk-failure')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, host)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks('/zk-failure')
+        original_task_id = tasks[0]['id']
+
+        with iptable_rules(host):
+            block_port(host, 2181)
+            time.sleep(10)
+        time.sleep(5)
+        tasks = client.get_tasks('/zk-failure')
+        tasks[0]['id'] == original_task_id
+
+
+def test_mom_when_task_agent_bounced():
+    app_def = app('agent-failure')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, host)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks('/agent-failure')
+        original_task_id = tasks[0]['id']
+
+        restart_agent(host)
+        time.sleep(5)
+        tasks = client.get_tasks('/agent-failure')
+        tasks[0]['id'] == original_task_id
+
+
+def test_mom_when_mom_agent_bounced():
+    app_def = app('agent-failure')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, host)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks('/agent-failure')
+        original_task_id = tasks[0]['id']
+
+        restart_agent(ip_of_mom())
+        time.sleep(5)
+        tasks = client.get_tasks('/agent-failure')
+        tasks[0]['id'] == original_task_id
+
+
+def test_mom_when_mom_process_killed():
+    app_def = app('agent-failure')
+    host = ip_other_than_mom()
+    pin_to_host(app_def, host)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        deployment_wait()
+        tasks = client.get_tasks('/agent-failure')
+        original_task_id = tasks[0]['id']
+
+        kill_process_on_host(ip_of_mom(), 'marathon-assembly')
+        time.sleep(5)
+        wait_for_task('marathon', 'marathon-user', 300)
+    # print(wait_for_task('marathon', 'marathon-user')['state'] == 'TASK_RUNNING')
+        wait_for_service_url('marathon-user')
+        tasks = client.get_tasks('/agent-failure')
+        tasks[0]['id'] == original_task_id
+
 
 @pytest.mark.sanity
 def test_mom_with_network_failure():
@@ -30,41 +144,20 @@ def test_mom_with_network_failure():
     simulated by knocking out ports
     """
 
-    install_package_and_wait(PACKAGE_NAME)
-    assert package_installed(PACKAGE_NAME), 'Package failed to install'
-
-    wait_for_service_url(PACKAGE_APP_ID)
-
     # get MoM ip
-    service_ips = get_service_ips(PACKAGE_NAME, "marathon-user")
-    for mom_ip in service_ips:
-        break
-
+    mom_ip = ip_of_mom()
     print("MoM IP: " + mom_ip)
-    # copy files
-    # master
-    copy_file_to_master("{}/large-sleep.json".format(fixture_dir()))
-    copy_file_to_master("{}/net-services-master.sh".format(fixture_dir()))
 
-    # we have to wait until the admin router is mapped
-    wait_for_service_url(PACKAGE_APP_ID)
+    app_def = get_resource("{}/large-sleep.json".format(fixture_dir()))
 
-    # launch job on MoM
-    # TODO:  switch to using Marathon client to MoM
-    installAppCurlCommand = "curl -X POST -H 'Authorization: token=" + TOKEN + "' " + DCOS_SERVICE_URL + "/v2/apps -d @large-sleep.json --header 'Content-Type: application/json' "
-    run_command_on_master(installAppCurlCommand)
-
-    wait_for_task("marathon-user", "sleep")
-
-    # grab the sleep taskID
-    json = get_json(__marathon_url("apps/sleep", "marathon-user"))
-    original_sleep_task_id = json["app"]["tasks"][0]["id"]
-
-    mom_task_ips = get_service_ips("marathon-user", "sleep")
-    for task_ip in mom_task_ips:
-        break
-
-    print("\nTask IP: " + task_ip)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        wait_for_task("marathon-user", "sleep")
+        tasks = client.get_tasks('sleep')
+        original_sleep_task_id = tasks[0]["id"]
+        task_ip = tasks[0]['host']
+        print("\nTask IP: " + task_ip)
 
     # PR for network partitioning in shakedown makes this better
     # take out the net
@@ -82,11 +175,14 @@ def test_mom_with_network_failure():
     wait_for_service_url(PACKAGE_APP_ID)
     wait_for_task("marathon-user", "sleep")
 
-    json = get_json(__marathon_url("apps/sleep", "marathon-user"))
-    current_sleep_task_id = json["app"]["tasks"][0]["id"]
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        wait_for_task("marathon-user", "sleep")
+        tasks = client.get_tasks('sleep')
+        current_sleep_task_id = tasks[0]["id"]
 
     assert current_sleep_task_id == original_sleep_task_id, "Task ID shouldn't change"
-    teardown_marathon_sleep()
+
 
 
 @pytest.mark.sanity
@@ -94,42 +190,22 @@ def test_mom_with_network_failure_bounce_master():
     """Marathon on Marathon (MoM) tests for DC/OS with network failures simulated by
     knocking out ports
     """
-    # Install MoM
-    install_package_and_wait(PACKAGE_NAME)
-    assert package_installed(PACKAGE_NAME), 'Package failed to install'
-
-    wait_for_service_url(PACKAGE_APP_ID)
 
     # get MoM ip
-    service_ips = get_service_ips(PACKAGE_NAME, "marathon-user")
-    for mom_ip in service_ips:
-        break
-
+    mom_ip = ip_of_mom()
     print("MoM IP: " + mom_ip)
-    # copy files
-    # master
-    copy_file_to_master("{}/large-sleep.json".format(fixture_dir()))
-    copy_file_to_master("{}/net-services-master.sh".format(fixture_dir()))
 
-    # we have to wait until the admin router is mapped
-    wait_for_service_url(PACKAGE_APP_ID)
+    app_def = get_resource("{}/large-sleep.json".format(fixture_dir()))
 
-    # launch job on MoM
-    # TODO:  switch to using Marathon client to MoM
-    installAppCurlCommand = "curl -X POST -H 'Authorization: token=" + TOKEN + "' " + DCOS_SERVICE_URL + "/v2/apps -d @large-sleep.json --header 'Content-Type: application/json' "
-    run_command_on_master(installAppCurlCommand)
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        client.add_app(app_def)
+        wait_for_task("marathon-user", "sleep")
+        tasks = client.get_tasks('sleep')
+        original_sleep_task_id = tasks[0]["id"]
+        task_ip = tasks[0]['host']
+        print("\nTask IP: " + task_ip)
 
-    wait_for_task("marathon-user", "sleep")
-
-    # grab the sleep taskID
-    json = get_json(__marathon_url("apps/sleep", "marathon-user"))
-    original_sleep_task_id = json["app"]["tasks"][0]["id"]
-
-    mom_task_ips = get_service_ips("marathon-user", "sleep")
-    for task_ip in mom_task_ips:
-        break
-
-    print("\nTask IP: " + task_ip)
 
     # PR for network partitioning in shakedown makes this better
     # take out the net
@@ -150,62 +226,18 @@ def test_mom_with_network_failure_bounce_master():
     wait_for_service_url(PACKAGE_APP_ID)
     wait_for_task("marathon-user", "sleep")
 
-    json = get_json(__marathon_url("apps/sleep", "marathon-user"))
-    current_sleep_task_id = json["app"]["tasks"][0]["id"]
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        wait_for_task("marathon-user", "sleep")
+        tasks = client.get_tasks('sleep')
+        current_sleep_task_id = tasks[0]["id"]
 
     assert current_sleep_task_id == original_sleep_task_id, "Task ID shouldn't change"
-    teardown_marathon_sleep()
 
 
 def teardown_module(module):
-    # pytest teardown do not seem to be working
-    print("teardown...")
-    teardown_marathon_sleep()
-
-
-def teardown_marathon_sleep():
-    removeAppCurlCommand = "curl -X DELETE -H 'Authorization: token=" + TOKEN + "' " + DCOS_SERVICE_URL + "/v2/apps/sleep"
-    run_command_on_master(removeAppCurlCommand)
-    service_delay(15)
-    try:
-        uninstall_package_and_wait(PACKAGE_NAME)
-    except Exception as e:
-        pass
-
-    delete_zk_node("universe/marathon-user")
-
-
-# we need in shakedown!!
-def __marathon_url(command, marathon_id="marathon"):
-    return dcos_service_url(marathon_id) + '/v2/' + command
-
-
-def get_json(url, req_json=None, retry=False, print_response=True):
-    return print_json(get_raw(url, req_json, retry), print_response)
-
-
-def delete_raw(url, req_json=None, retry=False):
-    return request_raw("delete", url, req_json, retry)
-
-
-def get_raw(url, req_json=None, retry=False):
-    return request_raw("get", url, req_json, retry)
-
-
-def request_raw(method, url, req_json=None, retry=False, req_headers={}):
-    req_headers = {}
-    auth_token = TOKEN
-
-    # insert auth token, if any, into request headers
-    if auth_token:
-        req_headers["Authorization"] = "token={}".format(auth_token)
-
-    func = lambda: __handle_response(
-        method.upper(), url, requests.request(method, url, json=req_json, headers=req_headers))
-    if retry:
-        return __retry_func(func)
-    else:
-        return func()
+    with marathon_on_marathon():
+        delete_all_apps_wait()
 
 
 def service_delay(delay=120):
@@ -218,16 +250,6 @@ def print_json(response, print_response=True):
         print("Got response for %s %s:\n%s" % (
             response.request.method, response.request.url, response_json))
     return response_json
-
-
-def __handle_response(httpcmd, url, response):
-    # http code 200-299 or 503 => success!
-    if (response.status_code < 200 or response.status_code >= 300) and response.status_code != 503:
-        errmsg = "Error code in response to %s %s: %s/%s" % (
-            httpcmd, url, response.status_code, response.content)
-        print(errmsg)
-        response.raise_for_status()
-    return response
 
 
 def partition_agent(hostname):
