@@ -65,13 +65,13 @@ types:
         description: If a runspec has failed to often the launch will be delayed. See backoff to tune this behavior.
       since:
         type: datetime
-        description: point in time since Marathon has started to launch tasks.
+        description: point in time at Marathon has started to launch tasks.
       unusedOfferSummary?:
         type: UnusedOfferSummary
         description: Statistics for processed offers.
       lastUnusedOffers?:
         type: UnusedOffer[]
-        description: Last N unused offers, where N can be configured via xxx.
+        description: Last N unused offers per agent. Only one offer per agent is maintained.
 
   QueueApp:
     type: QueueObject
