@@ -6,6 +6,7 @@ import java.io.File
 import com.google.common.io.Files
 import mesosphere.AkkaIntegrationFunTest
 import mesosphere.marathon.integration.setup._
+import org.scalatest.ConfigMap
 
 @IntegrationTest
 class ArtifactsIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMarathonTest {
@@ -13,9 +14,9 @@ class ArtifactsIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMarat
 
   override val marathonArgs = Map("artifact_store" -> s"file://${artifactsDir.toString}")
 
-  override def afterAll(): Unit = {
+  override def afterAll(cm: ConfigMap): Unit = {
     artifactsDir.delete()
-    super.afterAll()
+    super.afterAll(cm)
   }
 
   test("upload and fetch an artifact") {

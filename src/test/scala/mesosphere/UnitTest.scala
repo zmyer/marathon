@@ -10,7 +10,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.test.{ ExitDisabledTest, Mockito }
 import org.scalactic.source.Position
-import org.scalatest.{ AppendedClues, BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach, FunSuite, FunSuiteLike, GivenWhenThen, Ignore, Matchers, OptionValues, Suite, Tag, TryValues, WordSpec, WordSpecLike }
+import org.scalatest._
 
 /**
   * Tests which are still unreliable should be marked with this tag until
@@ -53,7 +53,7 @@ trait UnitTestLike extends WordSpecLike
 
 abstract class UnitTest extends WordSpec with UnitTestLike
 
-trait AkkaTest extends Suite with BeforeAndAfterAll with FutureTestSupport with TestKitBase {
+trait AkkaTest extends Suite with BeforeAndAfterAllConfigMap with FutureTestSupport with TestKitBase {
   protected lazy val akkaConfig: Config = ConfigFactory.load
   implicit lazy val system = ActorSystem(suiteName, akkaConfig)
   implicit lazy val scheduler = system.scheduler
@@ -61,8 +61,8 @@ trait AkkaTest extends Suite with BeforeAndAfterAll with FutureTestSupport with 
   implicit lazy val ctx = system.dispatcher
   implicit val askTimeout = Timeout(patienceConfig.timeout.toMillis, TimeUnit.MILLISECONDS)
 
-  abstract override def afterAll(): Unit = {
-    super.afterAll()
+  abstract override def afterAll(cm: ConfigMap): Unit = {
+    super.afterAll(cm)
     // intentionally shutdown the actor system last.
     system.terminate().futureValue
   }

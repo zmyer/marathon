@@ -6,7 +6,7 @@ import java.security.Permission
 import akka.actor.{ ActorSystem, Scheduler }
 import mesosphere.marathon.core.base.RichRuntime
 import mesosphere.marathon.util.{ Lock, Retry, RichLock }
-import org.scalatest.{ BeforeAndAfterAll, Suite }
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, Suite }
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -16,21 +16,21 @@ import scala.util.control.NonFatal
 /**
   * Mixin that will disable System.exit while the suite is running.
   */
-trait ExitDisabledTest extends Suite with BeforeAndAfterAll {
+trait ExitDisabledTest extends Suite with BeforeAndAfterAllConfigMap {
   private var securityManager = Option.empty[SecurityManager]
   private var previousManager = Option.empty[SecurityManager]
 
-  override def beforeAll(): Unit = {
+  override def beforeAll(cm: ConfigMap): Unit = {
     // intentionally initialize...
     ExitDisabledTest.exitsCalled(_.size)
     ExitDisabledTest.install()
     // intentionally last so that we disable exit as soon as possible
-    super.beforeAll()
+    super.beforeAll(cm)
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(cm: ConfigMap): Unit = {
     // intentionally first
-    super.afterAll()
+    super.afterAll(cm)
     ExitDisabledTest.remove()
   }
 

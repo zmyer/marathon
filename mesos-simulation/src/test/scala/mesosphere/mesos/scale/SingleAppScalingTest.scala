@@ -4,9 +4,10 @@ import mesosphere.AkkaIntegrationFunTest
 import mesosphere.marathon.IntegrationTest
 import mesosphere.marathon.api.v2.json.AppUpdate
 import mesosphere.marathon.integration.facades.MarathonFacade._
-import mesosphere.marathon.integration.facades.{ITDeploymentResult, MarathonFacade}
+import mesosphere.marathon.integration.facades.{ ITDeploymentResult, MarathonFacade }
 import mesosphere.marathon.integration.setup._
-import mesosphere.marathon.state.{AppDefinition, PathId}
+import mesosphere.marathon.state.{ AppDefinition, PathId }
+import org.scalatest.ConfigMap
 import org.scalatest.concurrent.Eventually
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
@@ -36,14 +37,14 @@ class SingleAppScalingTest extends AkkaIntegrationFunTest with ZookeeperServerTe
   private[this] val log = LoggerFactory.getLogger(getClass)
 
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
+  override def beforeAll(cm: ConfigMap): Unit = {
+    super.beforeAll(cm)
     marathonServer.start().futureValue
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(cm: ConfigMap): Unit = {
     // intentionally cleaning up before we print out the stats.
-    super.afterAll()
+    super.afterAll(cm)
     marathonServer.close()
     println()
     DisplayAppScalingResults.displayMetrics(SingleAppScalingTest.metricsFile)

@@ -13,7 +13,7 @@ import mesosphere.marathon.util.Retry
 import mesosphere.util.PortAllocator
 import org.apache.commons.io.FileUtils
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Suite }
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, Suite }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
@@ -326,7 +326,7 @@ trait SimulatedMesosTest extends MesosTest {
   val mesosMasterUrl = ""
 }
 
-trait MesosLocalTest extends Suite with ScalaFutures with MesosTest with BeforeAndAfterAll {
+trait MesosLocalTest extends Suite with ScalaFutures with MesosTest with BeforeAndAfterAllConfigMap {
   implicit val system: ActorSystem
   implicit val mat: Materializer
   implicit val ctx: ExecutionContext
@@ -340,19 +340,18 @@ trait MesosLocalTest extends Suite with ScalaFutures with MesosTest with BeforeA
 
   override def cleanMesos(): Unit = mesosLocalServer.clean()
 
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
+  abstract override def beforeAll(cm: ConfigMap): Unit = {
+    super.beforeAll(cm)
     mesosLocalServer.start().futureValue
   }
 
-  abstract override def afterAll(): Unit = {
+  abstract override def afterAll(cm: ConfigMap): Unit = {
     mesosLocalServer.close()
-    super.afterAll()
+    super.afterAll(cm)
   }
 }
 
-trait MesosClusterTest extends Suite with ZookeeperServerTest with MesosTest with ScalaFutures
-    with BeforeAndAfterAll {
+trait MesosClusterTest extends Suite with ZookeeperServerTest with MesosTest with ScalaFutures {
   implicit val system: ActorSystem
   implicit val mat: Materializer
   implicit val ctx: ExecutionContext
@@ -370,13 +369,13 @@ trait MesosClusterTest extends Suite with ZookeeperServerTest with MesosTest wit
 
   override def cleanMesos(): Unit = mesosCluster.clean()
 
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
+  abstract override def beforeAll(cm: ConfigMap): Unit = {
+    super.beforeAll(cm)
     mesosCluster.start().futureValue
   }
 
-  abstract override def afterAll(): Unit = {
+  abstract override def afterAll(cm: ConfigMap): Unit = {
     mesosCluster.close()
-    super.afterAll()
+    super.afterAll(cm)
   }
 }

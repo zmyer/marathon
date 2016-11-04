@@ -14,6 +14,7 @@ import mesosphere.util.state.PersistentStoreTest
 import org.apache.mesos.state.ZooKeeperState
 import org.apache.zookeeper.KeeperException.NoNodeException
 import org.apache.zookeeper.ZooDefs.Ids
+import org.scalatest.ConfigMap
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{ Seconds, Span }
 
@@ -124,7 +125,7 @@ class ZKStoreTest extends PersistentStoreTest with ZookeeperServerTest {
   val root = s"/${UUID.randomUUID}"
   val conf = CompressionConf(false, 0)
 
-  override def afterAll(): Unit = {
+  override def afterAll(cm: ConfigMap): Unit = {
     Await.ready(persistentStore.client.release())
     system.terminate().futureValue
   }

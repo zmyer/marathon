@@ -10,7 +10,7 @@ import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.io.IO
 import mesosphere.util.PortAllocator
 import org.apache.commons.httpclient.HttpStatus
-import org.scalatest.{ BeforeAndAfter, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfter, ConfigMap }
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -19,7 +19,7 @@ import scala.concurrent.duration.Duration
   * Tests forwarding requests.
   */
 @IntegrationTest
-class ForwardToLeaderIntegrationTest extends IntegrationFunTest with BeforeAndAfter with BeforeAndAfterAll {
+class ForwardToLeaderIntegrationTest extends IntegrationFunTest with BeforeAndAfter {
   implicit var actorSystem: ActorSystem = _
   val forwarder = new ForwarderService
 
@@ -32,9 +32,9 @@ class ForwardToLeaderIntegrationTest extends IntegrationFunTest with BeforeAndAf
     forwarder.close()
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(cm: ConfigMap): Unit = {
     forwarder.close()
-    super.afterAll()
+    super.afterAll(cm)
   }
 
   test("direct ping") {

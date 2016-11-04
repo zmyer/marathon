@@ -10,7 +10,7 @@ import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.{ GroupCreation, MarathonSpec }
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network
-import org.scalatest.{ BeforeAndAfterAll, Matchers, OptionValues }
+import org.scalatest.{ Matchers, OptionValues }
 import play.api.libs.json.{ JsObject, Json }
 
 import scala.collection.immutable.Seq
@@ -18,7 +18,6 @@ import scala.collection.immutable.Seq
 class ModelValidationTest
     extends MarathonSpec
     with Matchers
-    with BeforeAndAfterAll
     with OptionValues
     with GroupCreation {
 

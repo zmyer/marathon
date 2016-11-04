@@ -7,6 +7,7 @@ import akka.testkit.TestProbe
 import mesosphere.AkkaFunTest
 import mesosphere.chaos.http.HttpConf
 import mesosphere.marathon.Protos.StorageVersion
+import mesosphere.marathon.core.base.RichRuntime
 import mesosphere.marathon.core.election.ElectionService
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.heartbeat._
@@ -14,6 +15,7 @@ import mesosphere.marathon.core.leadership.LeadershipCoordinator
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.storage.migration.Migration
 import mesosphere.marathon.storage.repository.{ AppRepository, FrameworkIdRepository }
+import mesosphere.marathon.test.ExitDisabledTest
 import org.apache.mesos.{ SchedulerDriver, Protos => mesos }
 import org.mockito.Matchers.{ eq => mockEq }
 import org.mockito.Mockito
@@ -57,7 +59,7 @@ object MarathonSchedulerServiceTest {
   }
 }
 
-class MarathonSchedulerServiceTest extends AkkaFunTest {
+class MarathonSchedulerServiceTest extends AkkaFunTest with ExitDisabledTest {
   import MarathonSchedulerServiceTest._
 
   private[this] var probe: TestProbe = _
@@ -150,7 +152,8 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
     assert(Heartbeat.MessageDeactivate(MesosHeartbeatMonitor.sessionOf(driver)) == hmsg)
   }
 
-  test("Re-enable timer when re-elected") {
+  test("Exit on loss of leadership") {
+
     val schedulerService = new MarathonSchedulerService(
       leadershipCoordinator,
       config,
@@ -173,14 +176,11 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
 
     schedulerService.stopLeadership()
 
-    schedulerService.startLeadership()
-
-    verify(mockTimer, times(2)).schedule(any, mockEq(ScaleAppsDelay), mockEq(ScaleAppsInterval))
-    verify(mockTimer, times(2)).schedule(any[TimerTask], mockEq(ReconciliationDelay), mockEq(ReconciliationInterval))
-    verify(mockTimer).cancel()
+    exitCalled(RichRuntime.FatalErrorSignal).futureValue should be(true)
   }
 
-  test("Abdicate leadership when migration fails and reoffer leadership") {
+  test("throw in start leadership when migration fails") {
+
     val schedulerService = new MarathonSchedulerService(
       leadershipCoordinator,
       config,
@@ -205,17 +205,12 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       }
     })
 
-    try {
+    intercept[TimeoutException] {
       schedulerService.startLeadership()
-    } catch {
-      case _: TimeoutException =>
-        schedulerService.stopLeadership()
     }
-
-    verify(electionService, Mockito.timeout(1000)).offerLeadership(candidate = schedulerService)
   }
 
-  test("Abdicate leadership when the driver creation fails by some exception") {
+  test("throw when the driver creation fails by some exception") {
     val driverFactory = mock[SchedulerDriverFactory]
 
     val schedulerService = new MarathonSchedulerService(
@@ -236,13 +231,9 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
     when(leadershipCoordinator.prepareForStart()).thenReturn(Future.successful(()))
     when(driverFactory.createDriver()).thenThrow(new Exception("Some weird exception"))
 
-    try {
+    intercept[Exception] {
       schedulerService.startLeadership()
-    } catch {
-      case e: Exception => schedulerService.stopLeadership()
     }
-
-    verify(electionService, Mockito.timeout(1000)).offerLeadership(candidate = schedulerService)
   }
 
   test("Abdicate leadership when driver ends with error") {
@@ -318,6 +309,6 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
     driverCompleted.countDown()
     awaitAssert(verify(cb).postDriverTerminates)
 
-    awaitAssert(verify(electionService).offerLeadership(candidate = schedulerService))
+    exitCalled(RichRuntime.FatalErrorSignal).futureValue should be(true)
   }
 }

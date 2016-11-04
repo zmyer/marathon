@@ -20,11 +20,13 @@ import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId.StringPathId
 import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.AppRepository
-import mesosphere.marathon.test.{ CaptureEvents, MarathonShutdownHookSupport, MarathonSpec, MarathonTestHelper }
+import mesosphere.marathon.test.{ CaptureEvents, MarathonShutdownHookSupport, MarathonTestHelper }
 import mesosphere.util.Logging
 import org.apache.mesos.{ Protos => mesos }
 import org.rogach.scallop.ScallopConf
+import org.scalatest.{ BeforeAndAfter, FunSuiteLike, OptionValues }
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{ Millis, Span }
 
 import scala.collection.immutable.Set
@@ -32,7 +34,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class MarathonHealthCheckManagerTest
-    extends MarathonSpec with ScalaFutures with Logging with MarathonShutdownHookSupport {
+    extends FunSuiteLike with BeforeAndAfter with MockitoSugar with OptionValues with ScalaFutures with Logging with MarathonShutdownHookSupport {
 
   var hcManager: MarathonHealthCheckManager = _
   var taskTracker: InstanceTracker = _
