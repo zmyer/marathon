@@ -6,12 +6,12 @@ import java.util.UUID
 import mesosphere.marathon.Protos.Constraint.Operator
 import mesosphere.marathon.Protos.HealthCheckDefinition.Protocol
 import mesosphere.marathon.api.v2.json.AppUpdate
-import mesosphere.marathon.core.health.{MarathonHttpHealthCheck, MesosCommandHealthCheck, PortReference}
+import mesosphere.marathon.core.health.{ MarathonHttpHealthCheck, MesosCommandHealthCheck, PortReference }
 import mesosphere.marathon.integration.facades.MarathonFacade._
-import mesosphere.marathon.integration.facades.{ITDeployment, ITEnrichedTask, ITQueueItem}
+import mesosphere.marathon.integration.facades.{ ITDeployment, ITEnrichedTask, ITQueueItem }
 import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.state._
-import org.scalatest.{AppendedClues, BeforeAndAfter, GivenWhenThen, Matchers}
+import org.scalatest.{ AppendedClues, BeforeAndAfter, GivenWhenThen, Matchers }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
