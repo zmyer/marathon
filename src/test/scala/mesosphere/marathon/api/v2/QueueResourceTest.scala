@@ -5,7 +5,7 @@ import mesosphere.marathon.api.TestAuthFixture
 import mesosphere.marathon.api.v2.json.Formats._
 import mesosphere.marathon.core.base.{ Clock, ConstantClock }
 import mesosphere.marathon.core.launchqueue.LaunchQueue
-import mesosphere.marathon.core.launchqueue.LaunchQueue.QueuedInstanceInfo
+import mesosphere.marathon.core.launchqueue.LaunchQueue.{ QueuedInstanceInfo, QueuedInstanceInfoWithStatistics }
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.test.{ MarathonSpec, Mockito }
@@ -19,16 +19,17 @@ class QueueResourceTest extends MarathonSpec with Matchers with Mockito with Giv
 
   test("return well formatted JSON") {
     //given
-    val app = AppDefinition(id = "app".toRootPath)
-    queue.list returns Seq(
-      QueuedInstanceInfo(
+    val app = AppDefinition(id = "app".toRootPath, acceptedResourceRoles = Set("*"))
+    queue.listWithStatistics returns Seq(
+      QueuedInstanceInfoWithStatistics(
         app, inProgress = true, instancesLeftToLaunch = 23, finalInstanceCount = 23, unreachableInstances = 0,
-        backOffUntil = clock.now() + 100.seconds, startedAt = clock.now()
+        backOffUntil = clock.now() + 100.seconds, startedAt = clock.now(), rejectSummary = Map.empty,
+        processedOfferCount = 3, unusedOfferCount = 1, lastMatch = None, lastNoMatch = None, lastNoMatches = Seq.empty
       )
     )
 
     //when
-    val response = queueResource.index(auth.request)
+    val response = queueResource.index(auth.request, new java.util.HashSet())
 
     //then
     response.getStatus should be(200)
@@ -45,14 +46,15 @@ class QueueResourceTest extends MarathonSpec with Matchers with Mockito with Giv
   test("the generated info from the queue contains 0 if there is no delay") {
     //given
     val app = AppDefinition(id = "app".toRootPath)
-    queue.list returns Seq(
-      QueuedInstanceInfo(
+    queue.listWithStatistics returns Seq(
+      QueuedInstanceInfoWithStatistics(
         app, inProgress = true, instancesLeftToLaunch = 23, finalInstanceCount = 23, unreachableInstances = 0,
-        backOffUntil = clock.now() - 100.seconds, startedAt = clock.now()
+        backOffUntil = clock.now() - 100.seconds, startedAt = clock.now(), rejectSummary = Map.empty,
+        processedOfferCount = 3, unusedOfferCount = 1, lastMatch = None, lastNoMatch = None, lastNoMatches = Seq.empty
       )
     )
     //when
-    val response = queueResource.index(auth.request)
+    val response = queueResource.index(auth.request, new java.util.HashSet())
 
     //then
     response.getStatus should be(200)
@@ -101,7 +103,7 @@ class QueueResourceTest extends MarathonSpec with Matchers with Mockito with Giv
     val req = auth.request
 
     When("the index is fetched")
-    val index = queueResource.index(req)
+    val index = queueResource.index(req, new java.util.HashSet())
     Then("we receive a NotAuthenticated response")
     index.getStatus should be(auth.NotAuthenticatedStatus)
 

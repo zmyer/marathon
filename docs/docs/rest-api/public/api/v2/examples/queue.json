@@ -44,7 +44,11 @@
         "timeLeftSeconds": 0,
         "overdue": true
       },
-      "since": "2016-02-28T16:41:41.090Z"
+      "since": "2016-02-28T16:41:41.090Z",
+      "processedOfferSummary": {
+        "processedOfferCount": 123,
+        "unusedOfferCount": 0
+      }
     },
     {
       "app": {
@@ -99,7 +103,7 @@
         "overdue": true
       },
       "since": "2016-02-28T16:41:41.090Z",
-      "unusedOfferSummary": {
+      "processedOfferSummary": {
         "rejectReason": {
           "InsufficientMemory": 123,
           "InsufficientCpus": 123,
