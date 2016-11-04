@@ -175,28 +175,24 @@ def test_launch_mesos_root_marathon_default_graceperiod():
     assert tasks is None
 
 
-def test_launch_docker_killer_graceperiod():
+def test_launch_docker_mom_graceperiod():
     app_def = app_docker()
     app_def['id'] = 'grace'
+    app_def['container']['docker']['image'] = 'kensipe/python-test'
     app_def['taskKillGracePeriodSeconds'] = 10
-    fetch = [{
-            "uri": "https://downloads.mesosphere.com/testing/test.py"
-    }]
-    app_def['fetch'] = fetch
-    app_def['cmd'] = 'python3 test.py'
+    app_def['cmd'] = 'python test.py'
 
     with marathon_on_marathon():
         client = marathon.create_client()
         client.add_app(app_def)
         deployment_wait()
 
-        tasks = get_service_task('marathon-user', 'grace')
         app = client.get_app('/grace')
 
-        assert len(tasks) == 1
         assert app['container']['type'] == 'DOCKER'
 
         tasks = get_service_task('marathon-user', 'grace')
+        assert tasks is not None
 
         client.scale_app('/grace', 0)
         tasks = get_service_task('marathon-user', 'grace')
