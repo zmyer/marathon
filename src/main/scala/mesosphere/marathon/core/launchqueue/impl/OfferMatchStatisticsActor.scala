@@ -19,8 +19,8 @@ import mesosphere.marathon.state.PathId
 class OfferMatchStatisticsActor extends Actor {
   import OfferMatchStatisticsActor._
 
-  private[this] val runSpecStatistics = mutable.HashMap.empty[PathId, RunSpecOfferStatistics].withDefaultValue(emptyStatistics)
-  private[this] val lastNoMatches = mutable.HashMap.empty[PathId, mutable.HashMap[String, NoMatch]]
+  private[impl] val runSpecStatistics = mutable.HashMap.empty[PathId, RunSpecOfferStatistics].withDefaultValue(emptyStatistics)
+  private[impl] val lastNoMatches = mutable.HashMap.empty[PathId, mutable.HashMap[String, NoMatch]]
 
   override def receive: Receive = {
     // send whenever an offer has been matched
@@ -107,12 +107,24 @@ object OfferMatchStatisticsActor {
       lastMatch = Some(withMatched)
     )
 
-    def incrementUnmatched(noMatch: NoMatch): RunSpecOfferStatistics = copy(
-      processedOfferCount = processedOfferCount + 1,
-      unusedOfferCount = unusedOfferCount + 1,
-      lastNoMatch = Some(noMatch),
-      rejectSummary = noMatch.reasons.foldLeft(rejectSummary) { (map, reason) => map.updated(reason, map(reason) + 1) }
-    )
+    def incrementUnmatched(noMatch: NoMatch): RunSpecOfferStatistics = {
+      import NoOfferMatchReason._
+      def updateSummary: Map[NoOfferMatchReason, Int] = {
+        // stage 1: if unmatched role, ignore everything else
+        val reasons = noMatch.reasons.find(_ == UnmatchedRole)
+          // stage 2: ig unmatched constraint, ignore everything else
+          .orElse(noMatch.reasons.find(_ == UnmatchedConstraint))
+          // stage 3: if both are not defined, use all noMatch reasons
+          .fold(noMatch.reasons)(Seq(_))
+        reasons.foldLeft(rejectSummary) { (map, reason) => map.updated(reason, map(reason) + 1) }
+      }
+      copy(
+        processedOfferCount = processedOfferCount + 1,
+        unusedOfferCount = unusedOfferCount + 1,
+        lastNoMatch = Some(noMatch),
+        rejectSummary = updateSummary
+      )
+    }
   }
 
   val emptyStatistics = RunSpecOfferStatistics(Map.empty.withDefaultValue(0), 0, 0, None, None)
