@@ -44,6 +44,13 @@ class RunSpecOfferStatisticsTest extends MarathonSpec {
     updated.rejectSummary.size should be(0)
   }
 
+  /**
+    * The set of reasons is applied to an empty statistics.
+    * It should increment the expectedIncrements.
+    * Please see [[OfferMatchStatisticsActor.RunSpecOfferStatistics.incrementUnmatched]] for this logic.
+    * @param reasons all reasons to not use the offer
+    * @param expectedIncrements the reasons that are expected in the summary
+    */
   def checkNoMatch(reasons: Seq[NoOfferMatchReason], expectedIncrements: Seq[NoOfferMatchReason]): Unit = {
     Given("Empty statistics")
     val f = new Fixture
