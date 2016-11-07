@@ -10,7 +10,6 @@ import mesosphere.marathon.MarathonConf
 import mesosphere.marathon.api.{ AuthResource, MarathonMediaType }
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.launchqueue.LaunchQueue
-import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.plugin.auth.{ Authenticator, Authorizer, UpdateRunSpec, ViewRunSpec }
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.raml.Raml
@@ -40,7 +39,7 @@ class QueueResource @Inject() (
       val queueItem = Json.toJson(Raml.toRaml((info, embedLastUnusedOffers, clock))).as[JsObject]
       info.runSpec match {
         case app: AppDefinition => queueItem ++ Json.obj("app" -> Json.toJson(app))
-        case pod: PodDefinition => queueItem ++ Json.obj("pod" -> Json.toJson(pod))
+        case _ => queueItem
       }
     }
     ok(Json.obj("queue" -> result))
