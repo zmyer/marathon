@@ -4,22 +4,21 @@ package upgrade
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.event.EventStream
-import mesosphere.marathon.MarathonSchedulerActor.{ RetrieveRunningDeployments, RunningDeployments }
+import mesosphere.marathon.MarathonSchedulerActor.{RetrieveRunningDeployments, RunningDeployments}
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.launchqueue.LaunchQueue
-import mesosphere.marathon.core.readiness.{ ReadinessCheckExecutor, ReadinessCheckResult }
+import mesosphere.marathon.core.readiness.{ReadinessCheckExecutor, ReadinessCheckResult}
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.termination.KillService
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
-import mesosphere.marathon.state.{ RootGroup, PathId, Timestamp }
+import mesosphere.marathon.state.{PathId, RootGroup, Timestamp}
 import mesosphere.marathon.upgrade.DeploymentActor.Cancel
-import mesosphere.marathon.{ ConcurrentTaskUpgradeException, DeploymentCanceledException, SchedulerActions }
 import org.apache.mesos.SchedulerDriver
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 
 class DeploymentManager(
@@ -30,7 +29,8 @@ class DeploymentManager(
     storage: StorageProvider,
     healthCheckManager: HealthCheckManager,
     eventBus: EventStream,
-    readinessCheckExecutor: ReadinessCheckExecutor) extends Actor with ActorLogging {
+    readinessCheckExecutor: ReadinessCheckExecutor,
+    marathonSchedulerDriverHolder: MarathonSchedulerDriverHolder) extends Actor with ActorLogging {
   import context.dispatcher
   import mesosphere.marathon.upgrade.DeploymentManager._
 
@@ -40,6 +40,9 @@ class DeploymentManager(
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
     case NonFatal(e) => Stop
   }
+
+  @SuppressWarnings(Array("OptionGet"))
+  def driver: SchedulerDriver = marathonSchedulerDriverHolder.driver.get
 
   def receive: Receive = {
     case CancelConflictingDeployments(plan) =>
@@ -84,7 +87,7 @@ class DeploymentManager(
       runningDeployments -= plan.id
       deploymentStatus -= plan.id
 
-    case PerformDeployment(driver, plan) if !runningDeployments.contains(plan.id) =>
+    case PerformDeployment(plan) if !runningDeployments.contains(plan.id) =>
       val ref = context.actorOf(
         DeploymentActor.props(
           self,
@@ -125,7 +128,7 @@ class DeploymentManager(
 }
 
 object DeploymentManager {
-  case class PerformDeployment(driver: SchedulerDriver, plan: DeploymentPlan)
+  case class PerformDeployment(plan: DeploymentPlan)
   case class CancelDeployment(id: String)
   case object StopAllDeployments
   case class CancelConflictingDeployments(plan: DeploymentPlan)
@@ -158,9 +161,10 @@ object DeploymentManager {
     storage: StorageProvider,
     healthCheckManager: HealthCheckManager,
     eventBus: EventStream,
-    readinessCheckExecutor: ReadinessCheckExecutor): Props = {
+    readinessCheckExecutor: ReadinessCheckExecutor,
+    marathonSchedulerDriverHolder: MarathonSchedulerDriverHolder): Props = {
     Props(new DeploymentManager(taskTracker, killService, launchQueue,
-      scheduler, storage, healthCheckManager, eventBus, readinessCheckExecutor))
+      scheduler, storage, healthCheckManager, eventBus, readinessCheckExecutor, marathonSchedulerDriverHolder))
   }
 
 }
