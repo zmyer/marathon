@@ -65,7 +65,7 @@ trait QueueInfoConversion extends DefaultConversions {
         Some(QueueDelay(math.max(0, timeLeft.toSeconds), overdue = overdue))
       }
 
-      def processedOfferSummary: ProcessedOfferSummary = ProcessedOfferSummary(
+      def processedOffersSummary: ProcessedOffersSummary = ProcessedOffersSummary(
         info.processedOfferCount,
         info.unusedOfferCount,
         info.lastNoMatch.map(_.timestamp.toOffsetDateTime),
@@ -73,12 +73,12 @@ trait QueueInfoConversion extends DefaultConversions {
         Raml.toRaml(info.rejectSummary)
       )
 
-      def queueItem[A](create: (Int, Option[QueueDelay], OffsetDateTime, ProcessedOfferSummary, Seq[UnusedOffer]) => A): A = {
+      def queueItem[A](create: (Int, Option[QueueDelay], OffsetDateTime, ProcessedOffersSummary, Seq[UnusedOffer]) => A): A = {
         create(
           info.instancesLeftToLaunch,
           delay,
           info.startedAt.toOffsetDateTime,
-          processedOfferSummary,
+          processedOffersSummary,
           if (withLastUnused) Raml.toRaml(info.lastNoMatches) else Seq.empty
         )
       }

@@ -46,9 +46,9 @@ class QueueResourceTest extends MarathonSpec with Matchers with Mockito with Giv
     (jsonApp1 \ "count").as[Int] should be(23)
     (jsonApp1 \ "delay" \ "overdue").as[Boolean] should be(false)
     (jsonApp1 \ "delay" \ "timeLeftSeconds").as[Int] should be(100) //the deadline holds the current time...
-    (jsonApp1 \ "processedOfferSummary" \ "processedOfferCount").as[Int] should be(3)
-    (jsonApp1 \ "processedOfferSummary" \ "unusedOfferCount").as[Int] should be(1)
-    (jsonApp1 \ "processedOfferSummary" \ "rejectReason" \ "InsufficientCpus").as[Int] should be(3)
+    (jsonApp1 \ "processedOffersSummary" \ "processedOffersCount").as[Int] should be(3)
+    (jsonApp1 \ "processedOffersSummary" \ "unusedOffersCount").as[Int] should be(1)
+    (jsonApp1 \ "processedOffersSummary" \ "rejectReason" \ "InsufficientCpus").as[Int] should be(3)
     (jsonApp1 \ "lastUnusedOffers" \\ "agentId").head.as[String] should be("slave0")
   }
 

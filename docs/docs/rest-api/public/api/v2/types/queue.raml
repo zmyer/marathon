@@ -23,13 +23,13 @@ types:
         type: number
         format: int32
 
-  ProcessedOfferSummary:
+  ProcessedOffersSummary:
     properties:
-      processedOfferCount:
+      processedOffersCount:
         type: number
         format: int32
         description: The number of processed offers for this launch attempt.
-      unusedOfferCount:
+      unusedOffersCount:
         type: number
         format: int32
         description: The number of unused offers for this launch attempt.
@@ -65,8 +65,8 @@ types:
       since:
         type: datetime
         description: point in time since Marathon has started to launch tasks.
-      processedOfferSummary:
-        type: ProcessedOfferSummary
+      processedOffersSummary:
+        type: ProcessedOffersSummary
         description: Statistics for processed offers.
       lastUnusedOffers?:
         type: UnusedOffer[]
