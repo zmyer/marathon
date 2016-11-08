@@ -48,7 +48,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     (result.entityJson \ "message").as[String] should be ("Leadership abdicated")
 
     And("the leader must have changed")
-    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { marathon.leader().value != leader }
+    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { nonLeaderClient(leader).leader().value != leader }
   }
 
   test("it survives a small burn-in reelection test - https://github.com/mesosphere/marathon/issues/4215", Unstable, IntegrationTag) {
@@ -108,14 +108,14 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     checkTombstone()
 
     When("calling DELETE /v2/leader")
-    val result = marathon.abdicate()
+    val result = leaderClient(leader).abdicate()
 
     Then("the request should be successful")
     result.code should be (200)
     (result.entityJson \ "message").as[String] should be ("Leadership abdicated")
 
     And("the leader must have changed")
-    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { marathon.leader().value != leader }
+    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { nonLeaderClient(leader).leader().value != leader }
 
     checkTombstone()
   }
