@@ -1,6 +1,9 @@
 package mesosphere.marathon
 package raml
 
+/**
+  * All conversions for standard scala types.
+  */
 trait DefaultConversions {
 
   def identityConversion[A]: Writes[A, A] = Writes{ a => a }

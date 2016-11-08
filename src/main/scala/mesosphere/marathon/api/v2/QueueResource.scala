@@ -29,7 +29,7 @@ class QueueResource @Inject() (
   @Timed
   @Produces(Array(MarathonMediaType.PREFERRED_APPLICATION_JSON))
   def index(@Context req: HttpServletRequest, @QueryParam("embed") embed: java.util.Set[String]): Response = authenticated(req) { implicit identity =>
-    val embedLastUnusedOffers = embed.contains("lastUnusedOffers")
+    val embedLastUnusedOffers = embed.contains(QueueResource.EmbedLastUnusedOffers)
     val infos = launchQueue.listWithStatistics.filter(t => t.inProgress && isAuthorized(ViewRunSpec, t.runSpec))
 
     // FIXME: replace the rest of this method with the following line, once AppConversion is implemented
@@ -57,4 +57,8 @@ class QueueResource @Inject() (
       noContent
     }
   }
+}
+
+object QueueResource {
+  val EmbedLastUnusedOffers = "lastUnusedOffers"
 }
