@@ -59,7 +59,7 @@ def test_custom_service_name():
     options = {
         'service': {'name': "test-marathon"}
     }
-    uninstall('test-marathon')
+    install_package('marathon', options_json=options)
     deployment_wait()
 
     assert wait_for_service_url('test-marathon')
@@ -90,9 +90,12 @@ def teardown_module(module):
 
 def uninstall(service, package='marathon'):
     try:
-        cosmos.uninstall_app(package, True, service)
-        deployment_wait()
-        delete_zk_node('/universe/{}'.format(service))
+      task = get_service_task(package, service)
+      if task is not None:
+          cosmos = cosmospackage.Cosmos(get_cosmos_url())
+          cosmos.uninstall_app(package, True, service)
+          deployment_wait()
+          delete_zk_node('/universe/{}'.format(service))
 
     except Exception as e:
         pass
