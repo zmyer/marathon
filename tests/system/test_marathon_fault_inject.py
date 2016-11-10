@@ -49,22 +49,6 @@ def test_mom_with_master_process_failure():
         tasks[0]['id'] == original_task_id
 
 
-def test_mom_with_master_node_failure():
-    app_def = app('master-failure')
-    host = ip_other_than_mom()
-    pin_to_host(app_def, host)
-    with marathon_on_marathon():
-        client = marathon.create_client()
-        client.add_app(app_def)
-        deployment_wait()
-        tasks = client.get_tasks('/master-failure')
-        original_task_id = tasks[0]['id']
-        restart_master_node()
-        wait_for_task('marathon', 'marathon-user', 300)
-        tasks = client.get_tasks('/master-failure')
-        tasks[0]['id'] == original_task_id
-
-
 def test_mom_when_disconnected_from_zk():
     app_def = app('zk-failure')
     host = ip_other_than_mom()
@@ -103,6 +87,8 @@ def test_mom_when_task_agent_bounced():
 
 def test_mom_when_mom_agent_bounced():
     app_def = app('agent-failure')
+    mom_ip = ip_of_mom()
+    print(mom_ip)
     host = ip_other_than_mom()
     pin_to_host(app_def, host)
     with marathon_on_marathon():
@@ -112,7 +98,7 @@ def test_mom_when_mom_agent_bounced():
         tasks = client.get_tasks('/agent-failure')
         original_task_id = tasks[0]['id']
 
-        restart_agent(ip_of_mom())
+        restart_agent(mom_ip)
         time.sleep(5)
         tasks = client.get_tasks('/agent-failure')
         tasks[0]['id'] == original_task_id
@@ -138,7 +124,6 @@ def test_mom_when_mom_process_killed():
         tasks[0]['id'] == original_task_id
 
 
-@pytest.mark.sanity
 def test_mom_with_network_failure():
     """Marathon on Marathon (MoM) tests for DC/OS with network failures
     simulated by knocking out ports
@@ -146,7 +131,7 @@ def test_mom_with_network_failure():
 
     # get MoM ip
     mom_ip = ip_of_mom()
-    print("MoM IP: " + mom_ip)
+    print("MoM IP: {}".format(mom_ip))
 
     app_def = get_resource("{}/large-sleep.json".format(fixture_dir()))
 
@@ -184,7 +169,6 @@ def test_mom_with_network_failure():
     assert current_sleep_task_id == original_sleep_task_id, "Task ID shouldn't change"
 
 
-@pytest.mark.sanity
 def test_mom_with_network_failure_bounce_master():
     """Marathon on Marathon (MoM) tests for DC/OS with network failures simulated by
     knocking out ports
@@ -192,7 +176,7 @@ def test_mom_with_network_failure_bounce_master():
 
     # get MoM ip
     mom_ip = ip_of_mom()
-    print("MoM IP: " + mom_ip)
+    print("MoM IP: {}".format(mom_ip))
 
     app_def = get_resource("{}/large-sleep.json".format(fixture_dir()))
 

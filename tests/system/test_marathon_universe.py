@@ -67,11 +67,15 @@ def test_custom_service_name():
     deployment_wait()
     assert wait_for_service_url_removal('test-marathon')
 
+    delete_zk_node('/universe/test-marathon')
+
 
 def setup_module(module):
     if is_mom_installed():
         try:
             uninstall_package_and_wait(PACKAGE_NAME)
+            delete_zk_node('/universe/marathon-user')
+
         except Exception as e:
             pass
     deployment_wait()
@@ -88,5 +92,7 @@ def uninstall(service, package='marathon'):
     try:
         cosmos.uninstall_app(package, True, service)
         deployment_wait()
+        delete_zk_node('/universe/{}'.format(service))
+
     except Exception as e:
         pass

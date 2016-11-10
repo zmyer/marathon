@@ -2,6 +2,7 @@
 from shakedown import *
 from utils import *
 from dcos.errors import DCOSException
+import uuid
 
 
 def app(id=1, instances=1):

@@ -166,7 +166,7 @@ def test_docker_dns_mapping():
         assert not status
 
         wait_for_dns('{}.marathon-user.mesos'.format(app_id))
-        time.sleep(4)
+        time.sleep(10)
         status, output = run_command_on_master(cmd)
         assert status
 
@@ -212,7 +212,7 @@ def test_task_failure_recovers():
         host = tasks[0]['host']
         kill_process_on_host(host, '[s]leep')
         deployment_wait()
-        time.sleep(1)
+        time.sleep(5)
         new_tasks = client.get_tasks(app_id)
 
         assert tasks[0]['id'] != new_tasks[0]['id']
