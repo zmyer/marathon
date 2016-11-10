@@ -24,7 +24,7 @@ def setup_module(module):
         assert False, "Network tests require at least 2 private agents"
 
     ensure_mom()
-    wait_for_service_url(PACKAGE_APP_ID)
+    wait_for_service_endpoint(PACKAGE_APP_ID)
     cluster_info()
 
 
@@ -119,7 +119,7 @@ def test_mom_when_mom_process_killed():
         time.sleep(5)
         wait_for_task('marathon', 'marathon-user', 300)
     # print(wait_for_task('marathon', 'marathon-user')['state'] == 'TASK_RUNNING')
-        wait_for_service_url('marathon-user')
+        wait_for_service_endpoint('marathon-user')
         tasks = client.get_tasks('/agent-failure')
         tasks[0]['id'] == original_task_id
 
@@ -157,7 +157,7 @@ def test_mom_with_network_failure():
     reconnect_agent(task_ip)
 
     service_delay()
-    wait_for_service_url(PACKAGE_APP_ID)
+    wait_for_service_endpoint(PACKAGE_APP_ID)
     wait_for_task("marathon-user", "sleep")
 
     with marathon_on_marathon():
@@ -205,7 +205,7 @@ def test_mom_with_network_failure_bounce_master():
     reconnect_agent(task_ip)
 
     service_delay()
-    wait_for_service_url(PACKAGE_APP_ID)
+    wait_for_service_endpoint(PACKAGE_APP_ID)
     wait_for_task("marathon-user", "sleep")
 
     with marathon_on_marathon():

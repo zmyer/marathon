@@ -38,7 +38,6 @@ def test_install_marathon():
     cosmos = cosmospackage.Cosmos(get_cosmos_url())
     uninstall('marathon-user')
     deployment_wait()
-    # assert wait_for_service_url_removal('marathon-user')
 
     # Reinstall
     install_package_and_wait(PACKAGE_NAME)
@@ -62,10 +61,10 @@ def test_custom_service_name():
     install_package('marathon', options_json=options)
     deployment_wait()
 
-    assert wait_for_service_url('test-marathon')
+    assert wait_for_service_endpoint('test-marathon')
     cosmos.uninstall_app('marathon', True, 'test-marathon')
     deployment_wait()
-    assert wait_for_service_url_removal('test-marathon')
+    assert wait_for_service_endpoint_removal('test-marathon')
 
     delete_zk_node('/universe/test-marathon')
 

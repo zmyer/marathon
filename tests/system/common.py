@@ -169,7 +169,7 @@ def ensure_mom():
         except:
             pass
 
-        if not wait_for_service_url('marathon-user'):
+        if not wait_for_service_endpoint('marathon-user'):
             print('ERROR: Timeout waiting for endpoint')
 
 
@@ -186,47 +186,6 @@ def restart_master_node():
 
 def systemctl_master(command='restart'):
         run_command_on_master('sudo systemctl {} dcos-mesos-master'.format(command))
-
-
-def wait_for_service_url(service_name, timeout_sec=120):
-    """Checks the service url if available it returns true, on expiration
-    it returns false"""
-
-    future = time.time() + timeout_sec
-    url = dcos_service_url(service_name)
-    while time.time() < future:
-        response = None
-        try:
-            response = http.get(url)
-        except Exception as e:
-            pass
-
-        if response is None:
-            time.sleep(5)
-        elif response.status_code == 200:
-            return True
-        else:
-            time.sleep(5)
-
-    return False
-
-
-def wait_for_service_url_removal(service_name, timeout_sec=120):
-    """Checks the service url if it is removed it returns true, on expiration
-    it returns false"""
-
-    future = time.time() + timeout_sec
-    url = dcos_service_url(service_name)
-    while time.time() < future:
-        response = None
-        try:
-            response = http.get(url)
-        except Exception as e:
-            return True
-
-        time.sleep(5)
-
-    return False
 
 
 def save_iptables(host):
