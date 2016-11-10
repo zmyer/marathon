@@ -76,6 +76,7 @@ def setup_module(module):
             pass
     deployment_wait()
 
+
 def teardown_module(module):
     # pytest teardown do not seem to be working
     uninstall('marathon-user')

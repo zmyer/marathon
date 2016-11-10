@@ -21,10 +21,25 @@ def app(id=1, instances=1):
     return app_json
 
 
+def app_mesos(app_id=None):
+    if app_id is None:
+        app_id = uuid.uuid4().hex
+
+    return {
+        'id': app_id,
+        'cmd': 'sleep 1000',
+        'cpus': 0.5,
+        'mem': 32.0,
+        'container': {
+            'type': 'MESOS'
+        }
+    }
+
+
 def constraints(name, operator, value=None):
     constraints = [name, operator]
     if value is not None:
-      constraints.append(value)
+        constraints.append(value)
     return [constraints]
 
 
@@ -127,24 +142,6 @@ def delete_all_apps_wait():
     deployment_wait()
 
 
-def deployment_wait(timeout=120):
-    client = marathon.create_client()
-    start = time.time()
-    deployment_count = 1
-    # TODO: time limit with fail
-    while deployment_count > 0:
-        deployments = client.get_deployments()
-        deployment_count = len(deployments)
-        end = time.time()
-        elapse = round(end - start, 3)
-        if elapse > timeout:
-            raise DCOSException("timeout on deployment wait: {}".format(elapse))
-
-    end = time.time()
-    elapse = round(end - start, 3)
-    return elapse
-
-
 def ip_other_than_mom():
     mom_ip = ip_of_mom()
 
@@ -164,25 +161,19 @@ def ip_of_mom():
 
 def ensure_mom():
     if not is_mom_installed():
-        install_package_and_wait('marathon')
-        deployment_wait()
-        end_time = time.time() + 120
-        while time.time() < end_time:
-            if service_healthy('marathon-user'):
-                break
-            time.sleep(1)
+
+        try:
+            install_package_and_wait('marathon')
+            deployment_wait()
+        except:
+            pass
 
         if not wait_for_service_url('marathon-user'):
             print('ERROR: Timeout waiting for endpoint')
 
 
 def is_mom_installed():
-    try:
-        mom_ips = get_service_ips('marathon', "marathon-user")
-    except Exception as e:
-        return False
-    else:
-        return len(mom_ips) != 0
+    return package_installed('marathon')
 
 
 def restart_master_node():
@@ -194,7 +185,6 @@ def restart_master_node():
 
 def systemctl_master(command='restart'):
         run_command_on_master('sudo systemctl {} dcos-mesos-master'.format(command))
-
 
 
 def wait_for_service_url(service_name, timeout_sec=120):
@@ -270,7 +260,3 @@ def wait_for_task(service, task, timeout_sec=120):
             now = time.time()
 
     return None
-
-def wait_for_task_health(service, task, timeout_sec=120):
-
-    task = wait_for_task(service, task, timeout_sec)

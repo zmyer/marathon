@@ -184,7 +184,6 @@ def test_mom_with_network_failure():
     assert current_sleep_task_id == original_sleep_task_id, "Task ID shouldn't change"
 
 
-
 @pytest.mark.sanity
 def test_mom_with_network_failure_bounce_master():
     """Marathon on Marathon (MoM) tests for DC/OS with network failures simulated by
@@ -205,7 +204,6 @@ def test_mom_with_network_failure_bounce_master():
         original_sleep_task_id = tasks[0]["id"]
         task_ip = tasks[0]['host']
         print("\nTask IP: " + task_ip)
-
 
     # PR for network partitioning in shakedown makes this better
     # take out the net
