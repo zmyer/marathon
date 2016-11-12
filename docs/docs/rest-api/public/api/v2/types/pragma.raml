@@ -18,3 +18,8 @@ annotationTypes:
     description: |
       Applies to enum types. Overrides the default scala-type name generated
       for the type to which it is applied.
+  omitEmpty:
+    type: nil
+    description: |
+      Applies to field declarations. Do not emit anything for this field if it is empty.
+      Should not be used with required fields.
