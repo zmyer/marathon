@@ -68,7 +68,6 @@ types:
       id: strings.PathId
       acceptedResourceRoles?:
         type: array
-        (pragma.omitEmpty):
         items: string
         example: [public-facing]
         description: |
@@ -87,7 +86,6 @@ types:
           See [the Mesos attribute and resources documentation](http://mesos.apache.org/documentation/latest/attributes-resources/) for details
       args?:
         type: array
-        (pragma.omitEmpty):
         items: string
         description: |
           An array of strings that represents an alternative mode of specifying the
@@ -100,7 +98,6 @@ types:
           It is invalid to supply both `cmd` and `args` in the same app.
       backoffFactor?:
         type: number
-        (pragma.omitEmpty):
         format: double
         minimum: 1.0
         description: |
@@ -113,7 +110,6 @@ types:
           many health checks.
       backoffSeconds?:
         type: integer
-        (pragma.omitEmpty):
         format: int64
         minimum: 0
         description: |
@@ -126,31 +122,22 @@ types:
           many health checks.
       cmd?:
         type: string
-        (pragma.omitEmpty):
         minLength: 1
         description: |
           The command that is executed.  This value is wrapped by Mesos via
           `/bin/sh -c ${app.cmd}`.
           Either `cmd` or `args` must be supplied.
           It is invalid to supply both `cmd` and `args` in the same app.
-      constraints?:
-        type: array
-        (pragma.omitEmpty):
-        items: constraints.AppConstraint
-      container?:
-        type: appContainer.Container
-        (pragma.omitEmpty):
+      constraints?: constraints.AppConstraint[]
+      container?: appContainer.Container
       cpus?:
         type: number
-        (pragma.omitEmpty):
         format: double
         description: |
           The number of CPU shares this application needs per instance. This number does not have to be integer, but can be a fraction.",
         minimum: 0.001
       dependencies?:
-        type: array
-        (pragma.omitEmpty):
-        items: strings.PathId
+        type: strings.PathId[]
         description: |
           A list of services upon which this application depends
           An order is derived from the dependencies for performing start/stop and
@@ -159,17 +146,13 @@ types:
           /c is started than /b than /a.
       disk?:
         type: number
-        (pragma.omitEmpty):
         description: |
           How much disk space is needed for this application.
           This number does not have to be an integer, but can be a fraction.
         format: double
-      env?:
-        type: env.EnvVars
-        (pragma.omitEmpty):
+      env?: env.EnvVars
       executor?:
         type: string
-        (pragma.omitEmpty):
         pattern: ^(|\/\/cmd|\/?[^\/]+(\/[^\/]+)*)$
         description: |
           The executor to use to launch this application.
@@ -178,26 +161,19 @@ types:
           which takes the cmd and executes that on the shell level.
       fetch?:
         type: artifact.Artifact[]
-        (pragma.omitEmpty):
         description: Provided URIs are passed to Mesos fetcher module and resolved in runtime.
-      healthChecks?:
-        type: health.AppHealthCheck[]
-        (pragma.omitEmpty):
+      healthChecks?: health.AppHealthCheck[]
       instances?:
         type: integer
-        (pragma.omitEmpty):
         format: int32
         minimum: 0
         description: |
           The number of instances of this application to start.
           Please note: this number can be changed any time as needed to
           scale the application.
-      labels?:
-        type: label.KVLabels
-        (pragma.omitEmpty):
+      labels?: label.KVLabels
       maxLaunchDelaySeconds?:
         type: integer
-        (pragma.omitEmpty):
         format: int64
         minimum: 0
         description: |
@@ -209,29 +185,19 @@ types:
           This applies also to tasks that are killed due to failing too many health checks.
       mem?:
         type: number
-        (pragma.omitEmpty):
         format: double
         minimum: 0
         description: |
           The amount of memory in MB that is needed for the application per instance.
       gpus?:
         type: integer
-        (pragma.omitEmpty):
         format: int32
         minimum: 0
         description: |
           The amount of GPU cores that is needed for the application per instance.
-      ipAddress?:
-        type: network.IpAddress
-        (pragma.omitEmpty):
-        description: deprecated in favor of App.networks
-      networks?:
-        type: array
-        (pragma.omitEmpty):
-        items: network.Network
+      ipAddress?: network.IpAddress
       ports?:
         type: array
-        (pragma.omitEmpty):
         items: number.EphemeralPort
         description: |
           An array of required port resources on the agent host.
@@ -242,22 +208,16 @@ types:
           balancing definitions.
       portDefinitions?:
         type: network.PortDefinition[]
-        (pragma.omitEmpty):
         description: |
           An array of required port resources on the agent host.
           The number of items in the array determines how many dynamic ports are
           allocated for every task. For every port definition with port number zero,
           a globally unique (cluster-wide) service port is assigned and provided as
           part of the app definition to be used in load balancing definitions.
-      readinessChecks?:
-        type: readiness.ReadinessCheck[]
-        (pragma.omitEmpty):
-      residency?:
-        type: AppResidency
-        (pragma.omitEmpty):
+      readinessChecks?: readiness.ReadinessCheck[]
+      residency?: AppResidency
       requirePorts?:
         type: boolean
-        (pragma.omitEmpty):
         description: |
           Normally, the host ports of your tasks are automatically assigned.
           This corresponds to the requirePorts value false which is the default.
@@ -265,12 +225,9 @@ types:
           you can set requirePorts to true. This way the ports you have specified
           are used as host ports. That also means that Marathon can schedule the
           associated tasks only on hosts that have the specified ports available.
-      secrets?:
-        type: secrets.Secrets
-        (pragma.omitEmpty):
+      secrets?: secrets.Secrets
       storeUrls?:
         type: array
-        (pragma.omitEmpty):
         description: |
           URL's that have to be resolved and put into the artifact store,
           before the task will be started.
@@ -279,7 +236,6 @@ types:
           minLength: 1
       taskKillGracePeriodSeconds?:
         type: integer
-        (pragma.omitEmpty):
         format: int64
         minimum: 0
         description: |
@@ -287,12 +243,9 @@ types:
           SIGKILL when signalling tasks to terminate.
           Using this grace period, tasks should perform orderly shut down
           immediately upon receiving SIGTERM.
-      upgradeStrategy?:
-        type: UpgradeStrategy
-        (pragma.omitEmpty):
+      upgradeStrategy?: UpgradeStrategy
       uris?:
         type: array
-        (pragma.omitEmpty):
         items:
           type: strings.Uri
         description: |
@@ -300,15 +253,11 @@ types:
           If the application has external dependencies, they should be defined here.
       user?:
         type: string
-        (pragma.omitEmpty):
         description: The user to use to run the tasks on the agent.
       version?:
         type: datetime
-        (pragma.omitEmpty):
         description: The version of this definition
-      versionInfo?:
-        type: versionInfo.VersionInfo
-        (pragma.omitEmpty):
+      versionInfo?: versionInfo.VersionInfo
   AppList:
     type: object
     properties:
