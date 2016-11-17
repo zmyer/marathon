@@ -201,7 +201,7 @@ class DeploymentManagerTest
     manager ! StartDeployment(DeploymentPlan(oldGroup, createRootGroup(Map(app2.id -> app2))), ActorRef.noSender)
     eventually(manager.underlyingActor.runningDeployments should have size 2)
 
-    manager ! StopAllDeployments
+    manager ! ShutdownDeployments
     eventually(manager.underlyingActor.runningDeployments should have size 0)
   }
 
