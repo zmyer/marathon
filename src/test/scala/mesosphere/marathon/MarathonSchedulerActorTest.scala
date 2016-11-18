@@ -457,7 +457,6 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
         schedulerActions,
         deploymentManagerProps,
         historyActorProps,
-        deploymentRepo,
         hcManager,
         killService,
         queue,
@@ -532,14 +531,12 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
         schedulerActions,
         dummyProps,
         historyActorProps,
-        deploymentRepo,
         hcManager,
         killService,
         queue,
         holder,
         electionService,
-        system.eventStream,
-        1.milliseconds
+        system.eventStream
       )
     )
 
@@ -654,7 +651,6 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
           actions,
           deploymentManagerProps,
           historyActorProps,
-          deploymentRepo,
           hcManager,
           killService,
           queue,
