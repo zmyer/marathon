@@ -8,6 +8,7 @@ import com.codahale.metrics.MetricRegistry
 import mesosphere.AkkaFunTest
 import mesosphere.chaos.http.HttpConf
 import mesosphere.marathon.Protos.StorageVersion
+import mesosphere.marathon.core.base.RichRuntime
 import mesosphere.marathon.core.election.ElectionService
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.heartbeat._
@@ -17,17 +18,14 @@ import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.storage.migration.Migration
 import mesosphere.marathon.storage.repository.{ AppRepository, FrameworkIdRepository }
-import mesosphere.marathon.test.{ MarathonActorSupport, MarathonSpec }
 import mesosphere.util.state.FrameworkId
 import org.apache.mesos.{ SchedulerDriver, Protos => mesos }
-import org.mockito.Matchers.{ any, eq => mockEq }
+import org.mockito.Matchers.{ eq => mockEq }
 import org.mockito.Mockito
-import org.mockito.Mockito.{ times, verify, when }
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.rogach.scallop.ScallopOption
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfter, Matchers }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -178,7 +176,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       migration,
       schedulerActor,
       heartbeatActor) {
-      override def newTimer() = mockTimer
+      override def newTimer = mockTimer
     }
 
     schedulerService.timer = mockTimer

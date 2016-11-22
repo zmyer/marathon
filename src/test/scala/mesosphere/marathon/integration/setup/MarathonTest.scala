@@ -571,7 +571,11 @@ trait MarathonClusterTest extends Suite with StrictLogging with ZookeeperServerT
     super.afterAll()
   }
 
-  def nonLeader(leader: ITLeaderResult): MarathonFacade = {
+  def leaderClient(leader: ITLeaderResult): MarathonFacade = {
+    marathonFacades.find(_.url.contains(leader.port)).get
+  }
+
+  def nonLeaderClient(leader: ITLeaderResult): MarathonFacade = {
     marathonFacades.find(!_.url.contains(leader.port)).get
   }
 }

@@ -62,8 +62,6 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
     }
   }
 
-  override protected def extraMarathonParameters: List[String] = List("--zk_timeout", "45000", "--zk_session_timeout", "45000")
-
   def matchEvent(status: String, task: ITEnrichedTask): CallbackEvent => Boolean = { event =>
     event.info.get("taskStatus").contains(status) &&
       event.info.get("taskId").contains(task.id)
@@ -74,6 +72,8 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
     "reconciliation_interval" -> "5000",
     "scale_apps_initial_delay" -> "5000",
     "scale_apps_interval" -> "5000",
-    "min_revive_offers_interval" -> "100"
+    "min_revive_offers_interval" -> "100",
+    "zk_timeout" -> "45000",
+    "zk_session_timeout" -> "45000"
   )
 }
