@@ -143,7 +143,7 @@ class DeploymentManagerTest
 
     val oldGroup = createRootGroup()
     val newGroup = createRootGroup(Map(app.id -> app))
-    val plan = DeploymentPlan(oldGroup, newGroup, id = Some("c1"))
+    val plan = DeploymentPlan(oldGroup, newGroup, id = Some("d1"))
 
     manager ! RecoverDeployments
     expectMsgType[DeploymentsRecovered]
