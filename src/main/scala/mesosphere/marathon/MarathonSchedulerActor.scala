@@ -191,13 +191,17 @@ class MarathonSchedulerActor private (
   def withLockFor[A](runSpecIds: Set[PathId])(f: => A): Try[A] = {
     // there's no need for synchronization here, because this is being
     // executed inside an actor, i.e. single threaded
-    val conflicts = lockedRunSpecs intersect runSpecIds
-    if (conflicts.isEmpty) {
+    if (noConflictsWith(runSpecIds)) {
       lockedRunSpecs ++= runSpecIds
       Try(f)
     } else {
       Failure(new LockingFailedException("Failed to acquire locks."))
     }
+  }
+
+  def noConflictsWith(runSpecIds: Set[PathId]): Boolean = {
+    val conflicts = lockedRunSpecs intersect runSpecIds
+    conflicts.isEmpty
   }
 
   /**
@@ -216,21 +220,16 @@ class MarathonSchedulerActor private (
     val plan = cmd.plan
     val runSpecIds = plan.affectedRunSpecIds
 
-    val res = withLockFor(runSpecIds) {
-      deploymentManager ! StartDeployment(plan, origSender, cmd.force)
+    // If there are no conflicting locks or the deployment is forced we lock passed runSpecIds.
+    // Afterwards the deployment plan is sent to DeploymentManager. It will take care of cancelling
+    // conflicting deployments, scheduling new one or (if there were conflicts but the deployment
+    // is not forced) send to the original sender and AppLockedException with conflicting deployments.
+    // Note: state(current deployments and their locks) is spread between this actor and
+    // DeploymentManager and should be moved to later in the future completely.
+    if (noConflictsWith(runSpecIds) || cmd.force) {
+      lockedRunSpecs ++= runSpecIds
     }
-
-    res match {
-      case Success(_) =>
-      // Not much to do here since the DeploymentManager will take care of the rest
-      case Failure(e: LockingFailedException) if cmd.force =>
-        // Lock the affected Ids and send the deployment anyway - DeploymentManager will take
-        // care of canceling the conflicting deployments etc.
-        lockedRunSpecs ++= runSpecIds
-        deploymentManager ! StartDeployment(plan, origSender, cmd.force)
-      case Failure(e: LockingFailedException) =>
-        deploymentManager ! StartDeployment(plan, origSender, cmd.force)
-    }
+    deploymentManager ! StartDeployment(plan, origSender, cmd.force)
   }
 
   def deploymentSuccess(plan: DeploymentPlan): Unit = {

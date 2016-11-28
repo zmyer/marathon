@@ -65,7 +65,7 @@ class DeploymentManagerTest
     manager ! StartDeployment(plan, ActorRef.noSender)
 
     awaitCond(manager.underlyingActor.runningDeployments.contains(plan.id), 5.seconds)
-    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Deploying)
   }
 
   test("Finished deployment") {
@@ -83,7 +83,7 @@ class DeploymentManagerTest
     manager ! StartDeployment(plan, ActorRef.noSender)
 
     awaitCond(manager.underlyingActor.runningDeployments.contains(plan.id), 5.seconds)
-    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Deploying)
 
     manager ! DeploymentFinished(plan)
     awaitCond(manager.underlyingActor.runningDeployments.isEmpty, 5.seconds)
@@ -104,12 +104,12 @@ class DeploymentManagerTest
     manager ! StartDeployment(plan, ActorRef.noSender)
 
     awaitCond(manager.underlyingActor.runningDeployments.contains(plan.id), 5.seconds)
-    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Deploying)
 
     manager ! StartDeployment(plan.copy(id = "d2"), self, force = false)
     expectMsgType[CommandFailed]
     manager.underlyingActor.runningDeployments.size should be (1)
-    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Deploying)
   }
 
   test("Conflicting forced deployment") {
@@ -128,12 +128,12 @@ class DeploymentManagerTest
     expectMsgType[DeploymentStarted]
 
     awaitCond(manager.underlyingActor.runningDeployments.contains(plan.id), 5.seconds)
-    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Deploying)
 
     manager ! StartDeployment(plan.copy(id = "d2"), self, force = true)
     expectMsgType[DeploymentStarted]
-    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Canceling)
-    eventually(manager.underlyingActor.runningDeployments("d2").status should be (DeploymentManager.Deploying))
+    manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Canceling)
+    eventually(manager.underlyingActor.runningDeployments("d2").status should be (DeploymentStatus.Deploying))
   }
 
   test("Multiple conflicting forced deployments") {
@@ -150,21 +150,21 @@ class DeploymentManagerTest
 
     manager ! StartDeployment(plan, self)
     expectMsgType[DeploymentStarted]
-    manager.underlyingActor.runningDeployments("d1").status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments("d1").status should be (DeploymentStatus.Deploying)
 
     manager ! StartDeployment(plan.copy(id = "d2"), self, force = true)
     expectMsgType[DeploymentStarted]
-    manager.underlyingActor.runningDeployments("d1").status should be (DeploymentManager.Canceling)
-    manager.underlyingActor.runningDeployments("d2").status should be (DeploymentManager.Deploying)
+    manager.underlyingActor.runningDeployments("d1").status should be (DeploymentStatus.Canceling)
+    manager.underlyingActor.runningDeployments("d2").status should be (DeploymentStatus.Deploying)
 
     manager ! StartDeployment(plan.copy(id = "d3"), self, force = true)
     expectMsgType[DeploymentStarted]
 
     // Since deployments are not really started (DeploymentActor is not spawned), DeploymentFinished event is not
     // sent and the deployments are staying in the list of runningDeployments
-    manager.underlyingActor.runningDeployments("d1").status should be (DeploymentManager.Canceling)
-    manager.underlyingActor.runningDeployments("d2").status should be (DeploymentManager.Canceling)
-    manager.underlyingActor.runningDeployments("d3").status should be (DeploymentManager.Scheduled)
+    manager.underlyingActor.runningDeployments("d1").status should be (DeploymentStatus.Canceling)
+    manager.underlyingActor.runningDeployments("d2").status should be (DeploymentStatus.Canceling)
+    manager.underlyingActor.runningDeployments("d3").status should be (DeploymentStatus.Scheduled)
   }
 
   test("StopActor") {
@@ -204,7 +204,7 @@ class DeploymentManagerTest
     expectMsgType[DeploymentStarted]
 
     manager ! CancelDeployment(plan.id)
-    eventually(manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentManager.Canceling))
+    eventually(manager.underlyingActor.runningDeployments(plan.id).status should be (DeploymentStatus.Canceling))
   }
 
   test("Shutdown deployments") {
