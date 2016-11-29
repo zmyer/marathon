@@ -3,14 +3,14 @@ package mesosphere.marathon.upgrade
 import java.util.concurrent.LinkedBlockingDeque
 
 import akka.Done
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ ActorRef, Props }
 import akka.event.EventStream
 import akka.stream.scaladsl.Source
-import akka.testkit.TestActor.{AutoPilot, NoAutoPilot}
-import akka.testkit.{ImplicitSender, TestActor, TestActorRef, TestProbe}
+import akka.testkit.TestActor.{ AutoPilot, NoAutoPilot }
+import akka.testkit.{ ImplicitSender, TestActor, TestActorRef, TestProbe }
 import akka.util.Timeout
 import com.codahale.metrics.MetricRegistry
-import mesosphere.marathon.MarathonSchedulerActor.{CommandFailed, DeploymentStarted, DeploymentsRecovered}
+import mesosphere.marathon.MarathonSchedulerActor.{ CommandFailed, DeploymentStarted, LoadedDeploymentsOnLeaderElection }
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.leadership.AlwaysElectedLeadershipModule
@@ -20,23 +20,23 @@ import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId._
-import mesosphere.marathon.state.{AppDefinition, PathId}
+import mesosphere.marathon.state.{ AppDefinition, PathId }
 import mesosphere.marathon.storage.repository.legacy.AppEntityRepository
-import mesosphere.marathon.storage.repository.legacy.store.{InMemoryStore, MarathonStore}
-import mesosphere.marathon.storage.repository.{AppRepository, DeploymentRepository}
-import mesosphere.marathon.test.{GroupCreation, MarathonActorSupport, MarathonTestHelper, Mockito}
+import mesosphere.marathon.storage.repository.legacy.store.{ InMemoryStore, MarathonStore }
+import mesosphere.marathon.storage.repository.{ AppRepository, DeploymentRepository }
+import mesosphere.marathon.test.{ GroupCreation, MarathonActorSupport, MarathonTestHelper, Mockito }
 import mesosphere.marathon.upgrade.DeploymentActor.Cancel
 import mesosphere.marathon.upgrade.DeploymentManager._
-import mesosphere.marathon.{MarathonConf, MarathonSchedulerDriverHolder, SchedulerActions}
+import mesosphere.marathon.{ MarathonConf, SchedulerActions }
 import org.apache.mesos.SchedulerDriver
 import org.rogach.scallop.ScallopConf
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{Seconds, Span}
-import org.scalatest.{BeforeAndAfter, FunSuiteLike, Matchers}
+import org.scalatest.time.{ Seconds, Span }
+import org.scalatest.{ BeforeAndAfter, FunSuiteLike, Matchers }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ Await, ExecutionContext, Future }
 
 class DeploymentManagerTest
     extends MarathonActorSupport
@@ -59,8 +59,8 @@ class DeploymentManagerTest
     val newGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(oldGroup, newGroup)
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(plan, ActorRef.noSender)
 
@@ -77,8 +77,8 @@ class DeploymentManagerTest
     val newGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(oldGroup, newGroup)
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(plan, ActorRef.noSender)
 
@@ -98,8 +98,8 @@ class DeploymentManagerTest
     val newGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(oldGroup, newGroup, id = Some("d1"))
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(plan, ActorRef.noSender)
 
@@ -121,8 +121,8 @@ class DeploymentManagerTest
     val newGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(oldGroup, newGroup, id = Some("b1"))
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(plan, self)
     expectMsgType[DeploymentStarted]
@@ -145,8 +145,8 @@ class DeploymentManagerTest
     val newGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(oldGroup, newGroup, id = Some("d1"))
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(plan, self)
     expectMsgType[DeploymentStarted]
@@ -197,8 +197,8 @@ class DeploymentManagerTest
     val newGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(oldGroup, newGroup)
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(plan, self)
     expectMsgType[DeploymentStarted]
@@ -216,8 +216,8 @@ class DeploymentManagerTest
     val app2 = AppDefinition("app2".toRootPath)
     val oldGroup = createRootGroup()
 
-    manager ! RecoverDeployments
-    expectMsgType[DeploymentsRecovered]
+    manager ! LoadDeploymentsOnLeaderElection
+    expectMsgType[LoadedDeploymentsOnLeaderElection]
 
     manager ! StartDeployment(DeploymentPlan(oldGroup, createRootGroup(Map(app1.id -> app1))), ActorRef.noSender)
     manager ! StartDeployment(DeploymentPlan(oldGroup, createRootGroup(Map(app2.id -> app2))), ActorRef.noSender)
@@ -232,8 +232,6 @@ class DeploymentManagerTest
   class Fixture {
 
     val driver: SchedulerDriver = mock[SchedulerDriver]
-    val holder: MarathonSchedulerDriverHolder = new MarathonSchedulerDriverHolder
-    holder.driver = Some(driver)
     val deploymentRepo = mock[DeploymentRepository]
     val eventBus: EventStream = mock[EventStream]
     val launchQueue: LaunchQueue = mock[LaunchQueue]
@@ -256,7 +254,7 @@ class DeploymentManagerTest
 
     // A method that returns dummy props. Used to control the deployments progress. Otherwise the tests become racy
     // and depending on when DeploymentActor sends DeploymentFinished message.
-    val deploymentActorProps: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any) => Props = (_, _, _, _, _, _, _, _, _, _, _, _) => TestActor.props(new LinkedBlockingDeque())
+    val deploymentActorProps: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any) => Props = (_, _, _, _, _, _, _, _, _, _, _) => TestActor.props(new LinkedBlockingDeque())
 
     def deploymentManager(): TestActorRef[DeploymentManager] = TestActorRef (
       DeploymentManager.props(
@@ -268,7 +266,6 @@ class DeploymentManagerTest
         hcManager,
         eventBus,
         readinessCheckExecutor,
-        holder,
         deploymentRepo,
         deploymentActorProps)
     )

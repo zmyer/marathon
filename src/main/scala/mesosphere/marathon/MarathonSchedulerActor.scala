@@ -45,7 +45,22 @@ class MarathonSchedulerActor private (
   import context.dispatcher
   import mesosphere.marathon.MarathonSchedulerActor._
 
-  var lockedRunSpecs = Set.empty[PathId]
+  /**
+    * About locks:
+    * - a lock is acquired if deployment is started
+    * - a lock is acquired if a kill operation is executed
+    * - a lock is acquired if a scale operation is executed
+    *
+    * This basically means:
+    * - a kill/scale operation should not be performed, while a deployment is in progress
+    * - a deployment should not be started, if a scale/kill operation is in progress
+    * Since multiple conflicting deployment can be handled at the same time lockedRunSpecs saves
+    * the lock count for each affected PathId. Lock is removed if lock count == 0.
+    */
+  // TODO (AD): DeploymentManager has already all the information about running deployments.
+  // MarathonSchedulerActor should only save the locks resulting from scale and kill operations,
+  // asking DeploymentManager for deployment locks.
+  val lockedRunSpecs = collection.mutable.Map[PathId, Int]().withDefaultValue(0)
   var schedulerActions: SchedulerActions = _
   var deploymentManager: ActorRef = _
   var historyActor: ActorRef = _
@@ -68,9 +83,9 @@ class MarathonSchedulerActor private (
   def suspended: Receive = LoggingReceive.withLabel("suspended"){
     case LocalLeadershipEvent.ElectedAsLeader =>
       log.info("Starting scheduler actor")
-      deploymentManager ! RecoverDeployments
+      deploymentManager ! LoadDeploymentsOnLeaderElection
 
-    case DeploymentsRecovered(deployments) =>
+    case LoadedDeploymentsOnLeaderElection(deployments) =>
       deployments.foreach { plan =>
         log.info(s"Recovering deployment:\n$plan")
         deploy(context.system.deadLetters, Deploy(plan, force = false))
@@ -94,7 +109,7 @@ class MarathonSchedulerActor private (
       log.info("Suspending scheduler actor")
       healthCheckManager.removeAll()
       deploymentManager ! ShutdownDeployments
-      lockedRunSpecs = Set.empty
+      lockedRunSpecs.clear()
       context.become(suspended)
 
     case LocalLeadershipEvent.ElectedAsLeader => // ignore
@@ -168,16 +183,16 @@ class MarathonSchedulerActor private (
       withLockFor(runSpecId) { killTasks() }
 
     case DeploymentFinished(plan) =>
-      lockedRunSpecs --= plan.affectedRunSpecIds
+      removeLocks(plan.affectedRunSpecIds)
       deploymentSuccess(plan)
 
     case DeploymentManager.DeploymentFailed(plan, reason) =>
-      lockedRunSpecs --= plan.affectedRunSpecIds
+      removeLocks(plan.affectedRunSpecIds)
       deploymentFailed(plan, reason)
 
-    case RunSpecScaled(id) => lockedRunSpecs -= id
+    case RunSpecScaled(id) => removeLock(id)
 
-    case TasksKilled(runSpecId, _) => lockedRunSpecs -= runSpecId
+    case TasksKilled(runSpecId, _) => removeLock(runSpecId)
 
     case RetrieveRunningDeployments =>
       deploymentManager forward RetrieveRunningDeployments
@@ -192,7 +207,7 @@ class MarathonSchedulerActor private (
     // there's no need for synchronization here, because this is being
     // executed inside an actor, i.e. single threaded
     if (noConflictsWith(runSpecIds)) {
-      lockedRunSpecs ++= runSpecIds
+      addLocks(runSpecIds)
       Try(f)
     } else {
       Failure(new LockingFailedException("Failed to acquire locks."))
@@ -200,9 +215,20 @@ class MarathonSchedulerActor private (
   }
 
   def noConflictsWith(runSpecIds: Set[PathId]): Boolean = {
-    val conflicts = lockedRunSpecs intersect runSpecIds
+    val conflicts = lockedRunSpecs.keySet intersect runSpecIds
     conflicts.isEmpty
   }
+
+  def removeLocks(runSpecIds: Set[PathId]): Unit = runSpecIds.foreach(removeLock)
+  def removeLock(runSpecId: PathId): Unit = {
+    if (lockedRunSpecs.contains(runSpecId)) {
+      val locks = lockedRunSpecs(runSpecId) - 1
+      if (locks <= 0) lockedRunSpecs -= runSpecId else lockedRunSpecs(runSpecId) -= 1
+    }
+  }
+
+  def addLocks(runSpecIds: Set[PathId]): Unit = runSpecIds.foreach(addLock)
+  def addLock(runSpecId: PathId): Unit = lockedRunSpecs(runSpecId) += 1
 
   /**
     * Tries to acquire the lock for the given runSpecId.
@@ -224,10 +250,13 @@ class MarathonSchedulerActor private (
     // Afterwards the deployment plan is sent to DeploymentManager. It will take care of cancelling
     // conflicting deployments, scheduling new one or (if there were conflicts but the deployment
     // is not forced) send to the original sender and AppLockedException with conflicting deployments.
-    // Note: state(current deployments and their locks) is spread between this actor and
-    // DeploymentManager and should be moved to later in the future completely.
+    //
+    // If a deployment is forced (and there exists an old one):
+    // - the new deployment will be started
+    // - the old deployment will be cancelled and release all claimed locks
+    // - only in this case, one RunSpec can have 2 locks
     if (noConflictsWith(runSpecIds) || cmd.force) {
-      lockedRunSpecs ++= runSpecIds
+      addLocks(runSpecIds)
     }
     deploymentManager ! StartDeployment(plan, origSender, cmd.force)
   }
@@ -269,7 +298,7 @@ object MarathonSchedulerActor {
     ))
   }
 
-  case class DeploymentsRecovered(deployments: Seq[DeploymentPlan])
+  case class LoadedDeploymentsOnLeaderElection(deployments: Seq[DeploymentPlan])
 
   sealed trait Command {
     def answer: Event

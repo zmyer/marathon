@@ -1,7 +1,5 @@
 package mesosphere.marathon
 
-import java.util.concurrent.TimeoutException
-
 import akka.Done
 import akka.actor.{ ActorRef, Props }
 import akka.event.EventStream
@@ -485,7 +483,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val app = AppDefinition(id = PathId("app1"), cmd = Some("cmd"), instances = 2, upgradeStrategy = UpgradeStrategy(0.5))
     val rootGroup = createRootGroup(groups = Set(createGroup(PathId("/foo/bar"), Map(app.id -> app))))
 
-    val plan = DeploymentPlan(createRootGroup(), rootGroup)
+    val plan = DeploymentPlan(createRootGroup(), rootGroup, id = Some("d1"))
 
     appRepo.store(any) returns Future.successful(Done)
     appRepo.get(app.id) returns Future.successful(None)
@@ -500,57 +498,10 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
 
       expectMsgType[DeploymentStarted](10.seconds)
 
-      schedulerActor ! Deploy(plan, force = true)
+      schedulerActor ! Deploy(plan.copy(id = "d2"), force = true)
 
       expectMsgType[DeploymentStarted]
 
-    } finally {
-      stopActor(schedulerActor)
-    }
-  }
-
-  // TODO (AD) : since there is no cancellation exception anymore - should we remove the test completely?
-  ignore("Cancellation timeout") {
-    val f = new Fixture
-    import f._
-    val app = AppDefinition(id = PathId("app1"), cmd = Some("cmd"), instances = 2, upgradeStrategy = UpgradeStrategy(0.5))
-    val rootGroup = createRootGroup(Map(app.id -> app), groups = Set(createGroup(PathId("/foo/bar"))))
-
-    val plan = DeploymentPlan(createRootGroup(), rootGroup)
-
-    appRepo.store(any) returns Future.successful(Done)
-    appRepo.get(app.id) returns Future.successful(None)
-    instanceTracker.specInstancesLaunchedSync(app.id) returns Seq.empty[Instance]
-    appRepo.delete(app.id) returns Future.successful(Done)
-
-    // Dummy deployment manager to make sure, that it will not cancel the deployment.
-    val dummyProps: SchedulerActions => Props = schedulerActions => Props.empty
-
-    val schedulerActor = system.actorOf(
-      MarathonSchedulerActor.props(
-        schedulerActions,
-        dummyProps,
-        historyActorProps,
-        hcManager,
-        killService,
-        queue,
-        holder,
-        electionService,
-        system.eventStream
-      )
-    )
-
-    try {
-      schedulerActor ! LocalLeadershipEvent.ElectedAsLeader
-      schedulerActor ! Deploy(plan)
-
-      expectMsgType[DeploymentStarted]
-
-      schedulerActor ! Deploy(plan, force = true)
-
-      val answer = expectMsgType[CommandFailed]
-      answer.reason.isInstanceOf[TimeoutException] should be(true)
-      answer.reason.getMessage should be
     } finally {
       stopActor(schedulerActor)
     }
@@ -638,7 +589,6 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
       hcManager,
       system.eventStream,
       readinessCheckExecutor,
-      holder,
       deploymentRepo
     ))
 
