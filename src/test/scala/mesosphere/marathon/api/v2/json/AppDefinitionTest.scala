@@ -2,9 +2,6 @@ package mesosphere.marathon
 package api.v2.json
 
 import com.wix.accord._
-import mesosphere.marathon.Protos
-import mesosphere.marathon.Protos.Constraint
-import mesosphere.Unstable
 import mesosphere.marathon.api.JsonTestHelper
 import mesosphere.marathon.api.v2.{ AppNormalization, ValidationHelper }
 import mesosphere.marathon.api.v2.Validation.validateOrThrow
@@ -137,7 +134,7 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
       "Port names must be unique."
     )
 
-    val correct = AppDefinition(id = "test".toPath)
+    val correct = AppDefinition(id = "test".toRootPath)
 
     app = correct.copy(
       container = Some(Docker(
@@ -169,20 +166,18 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
       "hostPort is required for BRIDGE mode."
     )
 
-    app = correct.copy(
-      networks = Seq(BridgeNetwork()),
-      container = Some(Docker(
-        image = "mesosphere/marathon",
-        portMappings = Seq(
-          PortMapping(8080, None, 0, "tcp", Some("foo"))
-        )
-      )),
-      portDefinitions = Nil)
-    shouldViolate(
-      app,
-      "/container/portMappings(0)",
-      "hostPort is required for BRIDGE mode."
-    )
+    val caught = intercept[IllegalArgumentException] {
+      correct.copy(
+        networks = Seq(BridgeNetwork()),
+        container = Some(Docker(
+          image = "mesosphere/marathon",
+          portMappings = Seq(
+            PortMapping(8080, None, 0, "tcp", Some("foo"))
+          )
+        )),
+        portDefinitions = Nil)
+    }
+    caught.getMessage should include("bridge networking requires that every host-port in a port-mapping is non-empty (but may be zero)")
 
     app = correct.copy(
       networks = Seq(ContainerNetwork("whatever")),
@@ -921,18 +916,6 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
     appAgain.residency should not be empty
     appAgain.residency.get.relaunchEscalationTimeoutSeconds shouldBe 3600
     appAgain.residency.get.taskLostBehavior shouldBe Protos.ResidencyDefinition.TaskLostBehavior.WAIT_FOREVER
-  }
-
-  test("app with readinessCheck passes validation") {
-    val app = AppDefinition(
-      id = "/test".toRootPath,
-      cmd = Some("sleep 1234"),
-      readinessChecks = Seq(
-        ReadinessCheckTestHelper.alternativeHttps
-      )
-    )
-
-    MarathonTestHelper.validateJsonSchema(app)
   }
 
   test("SerializationRoundtrip preserves secret references in environment variables") {

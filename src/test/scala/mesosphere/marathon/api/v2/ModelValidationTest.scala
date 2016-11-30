@@ -16,7 +16,7 @@ import scala.collection.immutable.Seq
 
 object ModelValidationTest {
 
-  implicit val groupUpdateValidator: Validator[GroupUpdate] = GroupUpdate.groupUpdateValid(Set.empty[String])
+  implicit val groupUpdateValidator: Validator[GroupUpdate] = Group.groupUpdateValid(Set.empty[String])
 
   case class ImportantTitle(name: String)
 
@@ -28,9 +28,9 @@ object ModelValidationTest {
   def createServicePortApp(id: PathId, servicePort: Int) =
     AppDefinition(
       id,
+      networks = Seq(core.pod.BridgeNetwork()),
       container = Some(Docker(
         image = "demothing",
-        network = Some(Network.BRIDGE),
         portMappings = Seq(PortMapping(2000, Some(0), servicePort = servicePort))
       ))
     )
@@ -41,8 +41,6 @@ class ModelValidationTest
     with GroupCreation {
 
   import ModelValidationTest._
-
-  implicit val groupUpdateValidator = Group.groupUpdateValid(Set.empty[String])
 
   test("A group update should pass validation") {
     val update = GroupUpdate(id = Some("/a/b/c"))

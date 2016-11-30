@@ -60,7 +60,7 @@ class TaskLostIntegrationWithoutGCTest extends AkkaIntegrationFunTest with Embed
     waitForDeployment(update)
 
     And("The lost task is expunged")
-    val tasks2 = marathon.tasks(app.id).value
+    val tasks2 = marathon.tasks(app.id.toPath).value
     tasks2 should have size 1
     tasks2.exists(_.state == "TASK_RUNNING") shouldBe true
   }

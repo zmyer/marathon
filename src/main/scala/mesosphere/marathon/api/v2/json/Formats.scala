@@ -75,21 +75,39 @@ trait Formats
     JsString(protocol.name)
   }
 
-  implicit lazy val ipAddressWrites: Writes[mesos.NetworkInfo.IPAddress] = {
+  private[this] val allowedProtocolString =
+    mesos.NetworkInfo.Protocol.values().toSeq.map(_.getDescriptorForType.getName).mkString(", ")
+
+  implicit lazy val networkInfoProtocolReads = Reads[mesos.NetworkInfo.Protocol] { json =>
+    json.validate[String].flatMap { protocolString: String =>
+
+      Option(mesos.NetworkInfo.Protocol.valueOf(protocolString)) match {
+        case Some(protocol) => JsSuccess(protocol)
+        case None =>
+          JsError(s"'$protocolString' is not a valid protocol. Allowed values: $allowedProtocolString")
+      }
+
+    }
+  }
+
+  implicit lazy val ipAddressFormat: Format[mesos.NetworkInfo.IPAddress] = {
+    def toIpAddress(ipAddress: String, protocol: mesos.NetworkInfo.Protocol): mesos.NetworkInfo.IPAddress =
+      mesos.NetworkInfo.IPAddress.newBuilder().setIpAddress(ipAddress).setProtocol(protocol).build()
+
     def toTuple(ipAddress: mesos.NetworkInfo.IPAddress): (String, mesos.NetworkInfo.Protocol) =
       (ipAddress.getIpAddress, ipAddress.getProtocol)
 
     (
-      (__ \ "ipAddress").write[String] ~
-      (__ \ "protocol").write[mesos.NetworkInfo.Protocol]
-    )(toTuple _)
+      (__ \ "ipAddress").format[String] ~
+      (__ \ "protocol").format[mesos.NetworkInfo.Protocol]
+    )(toIpAddress, toTuple)
   }
 
   implicit lazy val InstanceIdWrite: Writes[Instance.Id] = Writes { id => JsString(id.idString) }
   implicit lazy val TaskStateFormat: Format[mesos.TaskState] =
     enumFormat(mesos.TaskState.valueOf, str => s"$str is not a valid TaskState type")
 
-  implicit val TaskStatusNetworkInfoWrites: Format[NetworkInfo] = (
+  implicit val TaskStatusNetworkInfoFormat: Format[NetworkInfo] = (
     (__ \ "hasConfiguredIpAddress").format[Boolean] ~
     (__ \ "hostPorts").format[Seq[Int]] ~
     (__ \ "effectiveIpAddress").formatNullable[String] ~
@@ -289,7 +307,7 @@ trait EventFormats {
       "appId" -> check.appId,
       "eventType" -> check.eventType,
       "healthCheck" -> Raml.toRaml(check.healthCheck),
-      "taskId" -> check.taskId,
+      "taskId" -> check.instanceId,
       "timestamp" -> check.timestamp
     )
   }

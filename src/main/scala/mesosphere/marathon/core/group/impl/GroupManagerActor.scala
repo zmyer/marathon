@@ -245,15 +245,11 @@ private[impl] class GroupManagerActor(
         if (port == 0) nextFreeServicePort else port
       }
 
-      // TODO(portMappings) this should apply for multiple container types
-      // defined only if there are port mappings
-      val newContainer = app.container.flatMap { container =>
-        container.docker.map { docker =>
-          val newMappings = docker.portMappings.zip(servicePorts).map {
-            case (portMapping, servicePort) => portMapping.copy(servicePort = servicePort)
-          }
-          docker.copy(portMappings = newMappings)
+      val newContainer = app.container.map { container =>
+        val newMappings = container.portMappings.zip(servicePorts).map {
+          case (portMapping, servicePort) => portMapping.copy(servicePort = servicePort)
         }
+        container.copyWith(portMappings = newMappings)
       }
 
       app.copy(

@@ -43,10 +43,10 @@ class ReadinessCheckIntegrationTest extends AkkaIntegrationFunTest with Embedded
     deploy(serviceDef, continue = true)
 
     When("The service is upgraded")
-    val oldTask = marathon.tasks(serviceDef.id).value.head
-    marathon.updateApp(serviceDef.id, AppUpdate(env = Some(sys.env.mapValues(v => EnvVarValue(v)))), force = false)
+    val oldTask = marathon.tasks(serviceDef.id.toPath).value.head
+    val update = marathon.updateApp(serviceDef.id, AppUpdate(env = Some(sys.env.mapValues(v => EnvVarValue(v)))), force = false)
     val newTask = eventually {
-      marathon.tasks(serviceDef.id).value.find(_.id != oldTask.id).get
+      marathon.tasks(serviceDef.id.toPath).value.find(_.id != oldTask.id).get
     }
 
     Then("The deployment does not succeed until the readiness checks succeed")

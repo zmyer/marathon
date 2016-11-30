@@ -260,12 +260,10 @@ class GroupsResourceTest extends MarathonSpec with Matchers with Mockito with Gi
 
   before {
     auth = new TestAuthFixture
-    config = AllConf.withTestConfig("--zk_timeout", "1000")
+    config = AllConf.withTestConfig("--zk_timeout", patienceConfig.timeout.toMillis.toString)
     groupManager = mock[GroupManager]
     groupInfo = mock[GroupInfoService]
     groupsResource = new GroupsResource(groupManager, groupInfo, config)(auth.auth, auth.auth)
-
-    config.zkTimeoutDuration returns patienceConfig.timeout.toMillis.millis
   }
 
   private[this] def useRealGroupManager(): Unit = {

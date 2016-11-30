@@ -60,7 +60,7 @@ class AppDefinitionPortAssignmentsTest extends FunSuiteLike with GivenWhenThen w
       PortAssignment(
         portName = Some("http"),
         effectiveIpAddress = None,
-        effectivePort = 80,
+        effectivePort = PortAssignment.NoPort,
         hostPort = None,
         containerPort = Some(80))
     ))
@@ -93,7 +93,7 @@ class AppDefinitionPortAssignmentsTest extends FunSuiteLike with GivenWhenThen w
     task.status.networkInfo.portAssignments(app) should be(empty)
   }
 
-  test("portAssignments without IP-per-task and Docker BRIDGE mode with a port mapping") {
+  test("portAssignments, without IP-allocation and BRIDGE mode with a port mapping") {
     Given("An app without IP-per-task, using BRIDGE networking with one port mapping requesting a dynamic port")
     val app = MarathonTestHelper.makeBasicApp()
       .withNoPortDefinitions()
@@ -121,7 +121,7 @@ class AppDefinitionPortAssignmentsTest extends FunSuiteLike with GivenWhenThen w
     ))
   }
 
-  test("portAssignments without IP-per-task using Docker BRIDGE network and no port mappings") {
+  test("portAssignments without IP-allocation Docker BRIDGE network and no port mappings") {
     Given("An app using bridge network with no port mappings nor ports")
     val app = MarathonTestHelper.makeBasicApp().copy(
       container = Some(Container.Docker(

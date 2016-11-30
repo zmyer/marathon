@@ -2,12 +2,10 @@ package mesosphere.marathon
 package integration
 
 import mesosphere.{ AkkaIntegrationFunTest, Unstable }
-import mesosphere.marathon.Protos.Constraint.Operator
-import mesosphere.marathon.api.v2.json.AppUpdate
 import mesosphere.marathon.integration.facades.ITEnrichedTask
 import mesosphere.marathon.integration.setup._
+import mesosphere.marathon.raml.{ AppUpdate, UnreachableStrategy }
 import mesosphere.marathon.state.PathId._
-import mesosphere.marathon.state.UnreachableStrategy
 
 import scala.concurrent.duration._
 
@@ -48,7 +46,7 @@ class TaskUnreachableIntegrationTest extends AkkaIntegrationFunTest with Embedde
 
   test("A task unreachable update will trigger a replacement task", Unstable) {
     Given("a new app with proper timeouts")
-    val strategy = UnreachableStrategy(10.seconds, 5.minutes)
+    val strategy = Option(raml.UnreachableStrategy(10, 300))
     val app = appProxy(testBasePath / "app", "v1", instances = 1).copy(unreachableStrategy = strategy)
     waitForDeployment(marathon.createAppV2(app))
     val task = waitForTasks(app.id.toPath, 1).head
@@ -65,7 +63,7 @@ class TaskUnreachableIntegrationTest extends AkkaIntegrationFunTest with Embedde
     And("a replacement task is started on a different slave")
     mesosCluster.agents(1).start() // Start an alternative slave
     waitForEventWith("status_update_event", _.info("taskStatus") == "TASK_RUNNING")
-    val tasks = marathon.tasks(app.id).value
+    val tasks = marathon.tasks(app.id.toPath).value
     tasks should have size 2
     tasks.groupBy(_.state).keySet should be(Set("TASK_RUNNING", "TASK_UNREACHABLE"))
     val replacement = tasks.find(_.state == "TASK_RUNNING").get
@@ -80,29 +78,24 @@ class TaskUnreachableIntegrationTest extends AkkaIntegrationFunTest with Embedde
     waitForEventMatching("Replacement task is killed") { matchEvent("TASK_KILLED", replacement) }
 
     And("there is only one running task left")
-    marathon.tasks(app.id).value should have size 1
-    marathon.tasks(app.id).value.head.state should be("TASK_RUNNING")
+    marathon.tasks(app.id.toPath).value should have size 1
+    marathon.tasks(app.id.toPath).value.head.state should be("TASK_RUNNING")
   }
 
   // regression test for https://github.com/mesosphere/marathon/issues/4059
   test("Scaling down an app with constraints and unreachable task will succeed", Unstable) {
-    import mesosphere.marathon.Protos.Constraint
     Given("an app that is constrained to a unique hostname")
-    val constraint: Constraint = Constraint.newBuilder
-      .setField("hostname")
-      .setOperator(Operator.UNIQUE)
-      .setValue("")
-      .build
+    val constraint = Seq("hostname", "UNIQUE")
 
     // start both slaves
     mesosCluster.agents.foreach(_.start())
 
-    val strategy = UnreachableStrategy(5.minutes, 10.minutes)
+    val strategy = UnreachableStrategy(5.minutes.toSeconds, 10.minutes.toSeconds)
     val app = appProxy(testBasePath / "app", "v1", instances = 2, healthCheck = None)
-      .copy(constraints = Set(constraint), unreachableStrategy = strategy)
+      .copy(constraints = Seq(constraint), unreachableStrategy = Some(strategy))
 
     waitForDeployment(marathon.createAppV2(app))
-    val enrichedTasks = waitForTasks(app.id, 2)
+    val enrichedTasks = waitForTasks(app.id.toPath, 2)
     val task = enrichedTasks.find(t => t.host == "0").getOrElse(throw new RuntimeException("No matching task found on slave1"))
 
     When("agent1 is stopped")
@@ -111,11 +104,11 @@ class TaskUnreachableIntegrationTest extends AkkaIntegrationFunTest with Embedde
     waitForEventMatching("Task is declared lost") { matchEvent("TASK_UNREACHABLE", task) }
 
     When("We try to scale down to one instance")
-    marathon.updateApp(app.id, AppUpdate(instances = Some(1)))
-    waitForEventMatching("deployment to scale down should be triggered") { matchDeploymentStart(app.id.toString) }
+    marathon.updateApp(app.id.toPath, AppUpdate(instances = Some(1)))
+    waitForEventMatching("deployment to scale down should be triggered") { matchDeploymentStart(app.id) }
 
     Then("the deployment will eventually finish")
-    waitForEventMatching("app should be scaled and deployment should be finished") { matchDeploymentSuccess(1, app.id.toString) }
+    waitForEventMatching("app should be scaled and deployment should be finished") { matchDeploymentSuccess(1, app.id) }
     marathon.listDeploymentsForBaseGroup().value should have size 0
   }
 
@@ -166,17 +159,17 @@ class TaskUnreachableWithMasterFailOverIntegrationTest extends AkkaIntegrationFu
 
   test("A task lost with mesos master failover will not kill the task - https://github.com/mesosphere/marathon/issues/4214", Unstable) {
     Given("a new app")
-    val strategy = UnreachableStrategy(5.minutes, 10.minutes)
-    val app = appProxy(testBasePath / "app", "v1", instances = 1).copy(unreachableStrategy = strategy)
+    val strategy = UnreachableStrategy(5.minutes.toSeconds, 10.minutes.toSeconds)
+    val app = appProxy(testBasePath / "app", "v1", instances = 1).copy(unreachableStrategy = Some(strategy))
     waitForDeployment(marathon.createAppV2(app))
-    val task = waitForTasks(app.id, 1).head
+    val task = waitForTasks(app.id.toPath, 1).head
 
     When("We stop the slave, the task is declared unreachable")
     mesosCluster.agents.head.stop()
     waitForEventMatching("Task is declared unreachable") { matchEvent("TASK_UNREACHABLE", task) }
 
     And("The task is not removed from the task list")
-    val lost = waitForTasks(app.id, 1).head
+    val lost = waitForTasks(app.id.toPath, 1).head
     lost.state should be("TASK_UNREACHABLE")
 
     When("We do a Mesos Master failover and start the slave again")

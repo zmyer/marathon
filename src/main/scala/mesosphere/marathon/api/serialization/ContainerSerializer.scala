@@ -2,6 +2,7 @@ package mesosphere.marathon
 package api.serialization
 
 import mesosphere.marathon.core.externalvolume.ExternalVolumes
+import mesosphere.marathon.core.pod.{ BridgeNetwork, ContainerNetwork, HostNetwork, Network }
 import mesosphere.marathon.state.Container.PortMapping
 import mesosphere.marathon.state._
 import mesosphere.marathon.stream._
@@ -47,7 +48,7 @@ object ContainerSerializer {
     builder.build
   }
 
-  def toMesos(container: Container): mesos.Protos.ContainerInfo = {
+  def toMesos(networks: Seq[Network], container: Container): mesos.Protos.ContainerInfo = {
     val builder = mesos.Protos.ContainerInfo.newBuilder
 
     // First set type-specific values (for Docker) because the external volume provider
@@ -72,18 +73,32 @@ object ContainerSerializer {
       case dv: DockerVolume => builder.addVolumes(VolumeSerializer.toMesos(dv))
     }
 
-    val networkInfos = container.portMappings.withFilter(_.hostPort.nonEmpty).map { mapping =>
-      val builder = mesos.Protos.NetworkInfo.newBuilder
-      builder.setLabels(mapping.labels.toMesosLabels)
-      val portBuilder = builder.addPortMappingsBuilder().setContainerPort(mapping.containerPort)
-        .setProtocol(mapping.protocol)
-      mapping.hostPort.foreach(portBuilder.setHostPort)
-      builder.build()
+    val networkInfos = networks.withFilter(_ != HostNetwork).map { network =>
+      val (networkName, networkLabels) = network match {
+        case cnet: ContainerNetwork => cnet.name -> cnet.labels.toMesosLabels
+        case bnet: BridgeNetwork => MesosBridgeName -> bnet.labels.toMesosLabels
+        case unsupported => throw new IllegalStateException(s"unsupported networking mode ${unsupported}")
+      }
+
+      mesos.Protos.NetworkInfo.newBuilder()
+        .addIpAddresses(mesos.Protos.NetworkInfo.IPAddress.getDefaultInstance)
+        .setLabels(networkLabels)
+        .setName(networkName)
+        .addAllPortMappings(container.portMappings.withFilter(_.hostPort.nonEmpty).map { mapping =>
+          // for now, all port mappings are bound to all non-host networks; this will likely change in the future.
+          val portBuilder = mesos.Protos.NetworkInfo.PortMapping.newBuilder()
+            .setContainerPort(mapping.containerPort)
+            .setProtocol(mapping.protocol)
+          mapping.hostPort.foreach(portBuilder.setHostPort)
+          portBuilder.build
+        })
+        .build
     }
     builder.addAllNetworkInfos(networkInfos)
-
     builder.build
   }
+
+  val MesosBridgeName = "mesos-bridge"
 }
 
 object VolumeSerializer {

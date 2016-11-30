@@ -7,7 +7,6 @@ import com.wix.accord._
 import com.wix.accord.dsl._
 import mesosphere.marathon.api.v2.Validation._
 import mesosphere.marathon.api.v2.validation.AppValidation
-import mesosphere.marathon.core.externalvolume.ExternalVolumes
 import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.plugin.{ Group => IGroup }
 import mesosphere.marathon.state.Group._
@@ -94,7 +93,7 @@ object Group {
   def defaultDependencies: Set[PathId] = Set.empty
   def defaultVersion: Timestamp = Timestamp.now()
 
-  def valid(base: PathId, enabledFeatures: Set[String]): Validator[Group] =
+  def validGroup(base: PathId, enabledFeatures: Set[String]): Validator[Group] =
     validator[Group] { group =>
       group.id is validPathWithBase(base)
       group.apps.values as "apps" is every(
@@ -102,7 +101,7 @@ object Group {
       group is noAppsAndPodsWithSameId
       group is noAppsAndGroupsWithSameName
       group is noPodsAndGroupsWithSameName
-      group.groupsById.values as "groups" is every(valid(group.id.canonicalPath(base), enabledFeatures))
+      group.groupsById.values as "groups" is every(validGroup(group.id.canonicalPath(base), enabledFeatures))
     }
 
   private def noAppsAndPodsWithSameId: Validator[Group] =
@@ -136,7 +135,7 @@ object Group {
       group.version is theOnlyDefinedOptionIn(group)
       group.scaleBy is theOnlyDefinedOptionIn(group)
 
-      group.id.map(PathId(_)) as "id" is optional(valid)
+      group.id.map(_.toPath) as "id" is optional(valid)
       group.apps is optional(every(
         AppValidation.validNestedApp(group.id.fold(base)(PathId(_).canonicalPath(base)), enabledFeatures)))
       group.groups is optional(every(

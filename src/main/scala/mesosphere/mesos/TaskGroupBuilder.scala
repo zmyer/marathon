@@ -377,7 +377,7 @@ object TaskGroupBuilder {
         // we don't need these for health checks proto generation, presumably because we can't definitively know,
         // in all cases, the full network address of the health check until the task is actually launched.
         effectiveIpAddress = None,
-        effectivePort = 0
+        effectivePort = PortAssignment.NoPort
       )
     }
   }

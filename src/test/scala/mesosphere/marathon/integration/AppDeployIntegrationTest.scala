@@ -3,12 +3,12 @@ package integration
 
 import java.util.UUID
 
-import mesosphere.{ AkkaIntegrationFunTest, IntegrationTag, Unstable }
+import mesosphere.{ AkkaIntegrationFunTest, Unstable }
 import mesosphere.marathon.integration.facades.MarathonFacade._
 import mesosphere.marathon.integration.facades.{ ITDeployment, ITEnrichedTask, ITQueueItem }
 import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.raml.{ App, AppHealthCheck, AppHealthCheckProtocol, AppUpdate, CommandCheck, Container, ContainerPortMapping, DockerContainer, EngineType, Network, NetworkMode, NetworkProtocol, PortDefinitions }
-import mesosphere.marathon.state.PathId
+import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.state.PathId._
 import org.slf4j.LoggerFactory
 
@@ -49,7 +49,7 @@ class AppDeployIntegrationTest
     val taskBeforeRedeployment = waitForTasks(app.id.toPath, 1) //make sure, the app has really started
 
     When("redeploying the app without changes")
-    marathon.updateApp(app.id, AppUpdate(id = Some(app.id), cmd = app.cmd), force = false)
+    val update = marathon.updateApp(app.id, AppUpdate(id = Some(app.id), cmd = app.cmd), force = false)
     waitForDeployment(update)
     val tasksAfterRedeployment = waitForTasks(app.id.toPath, 1) //make sure, the app has really started
 
@@ -168,7 +168,7 @@ class AppDeployIntegrationTest
   test("create a simple app with a Marathon HTTP health check") {
     Given("a new app")
     val app = appProxy(testBasePath / "http-app", "v1", instances = 1, healthCheck = None).
-      copy(healthChecks = Set(ramlHttpHealthCheck))
+      copy(healthChecks = Seq(ramlHealthCheck))
     val check = appProxyCheck(PathId(app.id), "v1", state = true)
 
     When("The app is deployed")
@@ -203,7 +203,7 @@ class AppDeployIntegrationTest
       copy(
         portDefinitions = Some(PortDefinitions(31000)),
         requirePorts = Some(true),
-        healthChecks = Seq(ramlHealthCheck.copy(port = Some(31000)))
+        healthChecks = Seq(ramlHealthCheck.copy(port = Some(31000), portIndex = None))
       )
     val check = appProxyCheck(app.id.toPath, "v1", state = true)
 
@@ -392,7 +392,7 @@ class AppDeployIntegrationTest
     Then("The response should contain all the versions")
     list.code should be (200)
     list.value.versions should have size 1
-    list.value.versions.head should be (createResponse.value.version)
+    list.value.versions.headOption should be (createResponse.value.version.map(Timestamp(_)))
   }
 
   test("correctly version apps") {
@@ -418,7 +418,7 @@ class AppDeployIntegrationTest
     val updatedVersion = updateResponse.value.version
     val responseUpdatedVersion = marathon.appVersion(PathId(v1.id), updatedVersion)
     responseUpdatedVersion.code should be (200)
-    responseUpdatedVersion.value.disk should be (Some(updatedDisk))
+    responseUpdatedVersion.value.disk should be (updatedDisk)
   }
 
   test("kill a task of an App") {
@@ -427,7 +427,7 @@ class AppDeployIntegrationTest
     val create = marathon.createAppV2(app)
     create.code should be (201)
     waitForDeployment(create)
-    val taskId = marathon.tasks(app.id).value.head.id
+    val taskId = marathon.tasks(app.id.toPath).value.head.id
 
     When("a task of an app is killed")
     val response = marathon.killTask(PathId(app.id), taskId)
@@ -437,7 +437,7 @@ class AppDeployIntegrationTest
 
     Then("All instances of the app get restarted")
     waitForTasks(app.id.toPath, 1)
-    marathon.tasks(app.id).value.head should not be taskId
+    marathon.tasks(app.id.toPath).value.head should not be taskId
   }
 
   test("kill a task of an App with scaling") {
@@ -446,7 +446,7 @@ class AppDeployIntegrationTest
     val create = marathon.createAppV2(app)
     create.code should be (201)
     waitForDeployment(create)
-    val taskId = marathon.tasks(app.id).value.head.id
+    val taskId = marathon.tasks(app.id.toPath).value.head.id
 
     When("a task of an app is killed and scaled")
     marathon.killTask(app.id, taskId, scale = true).code should be (200)
@@ -599,7 +599,7 @@ class AppDeployIntegrationTest
     WaitTestSupport.validFor("deployment visible", 5.second)(marathon.listDeploymentsForBaseGroup().value.size == 1)
 
     When("the deployment is rolled back")
-    val delete = marathon.deleteDeployment(deploymentId, force = false)
+    val delete = marathon.deleteDeployment(deploymentId)
     delete.code should be (200)
 
     Then("the deployment should be gone")
@@ -720,6 +720,7 @@ class AppDeployIntegrationTest
     gracePeriodSeconds = 20,
     intervalSeconds = 1,
     maxConsecutiveFailures = 10,
-    portIndex = Some(0)
+    portIndex = Some(0),
+    delaySeconds = 2
   )
 }

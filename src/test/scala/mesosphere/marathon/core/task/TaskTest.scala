@@ -9,7 +9,7 @@ import mesosphere.marathon.core.task.state.NetworkInfo
 import mesosphere.marathon.core.task.bus.MesosTaskStatusTestHelper
 import mesosphere.marathon.core.task.update.{ TaskUpdateEffect, TaskUpdateOperation }
 import mesosphere.marathon.core.condition.Condition
-import mesosphere.marathon.state.{ AppDefinition, PathId }
+import mesosphere.marathon.state.{ AppDefinition, PathId, PortDefinition }
 import mesosphere.marathon.stream._
 import mesosphere.marathon.test.Mockito
 import org.apache.mesos.{ Protos => MesosProtos }
@@ -25,7 +25,7 @@ class TaskTest extends FunSuite with Mockito with GivenWhenThen with Matchers {
 
     val clock = ConstantClock()
 
-    val appWithoutIpAddress = AppDefinition(id = PathId("/foo/bar"), networks = Seq(HostNetwork))
+    val appWithoutIpAddress = AppDefinition(id = PathId("/foo/bar"), networks = Seq(HostNetwork), portDefinitions = Seq(PortDefinition(0)))
     val appVirtualNetworks = Seq(ContainerNetwork("whatever"))
     val appWithIpAddress = AppDefinition(
       id = PathId("/foo/bar"),
@@ -54,31 +54,31 @@ class TaskTest extends FunSuite with Mockito with GivenWhenThen with Matchers {
 
     def taskWithOneIp(app: AppDefinition) = {
       val ipAddresses: Seq[MesosProtos.NetworkInfo.IPAddress] = Seq(networkWithOneIp1).flatMap(_.getIpAddressesList)
-      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithoutIpAddress.id)
+      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithIpAddress.id)
       t.copy(status = t.status.copy(networkInfo = NetworkInfo(app, hostName = host, hostPorts = Nil, ipAddresses = ipAddresses)))
     }
 
     def taskWithMultipleNetworksAndOneIp(app: AppDefinition) = {
       val ipAddresses: Seq[MesosProtos.NetworkInfo.IPAddress] = Seq(networkWithoutIp, networkWithOneIp1).flatMap(_.getIpAddressesList)
-      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithoutIpAddress.id)
+      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithIpAddress.id)
       t.copy(status = t.status.copy(networkInfo = NetworkInfo(app, hostName = host, hostPorts = Nil, ipAddresses = ipAddresses)))
     }
 
     def taskWithMultipleNetworkAndNoIp(app: AppDefinition) = {
       val ipAddresses: Seq[MesosProtos.NetworkInfo.IPAddress] = Seq(networkWithoutIp, networkWithoutIp).flatMap(_.getIpAddressesList)
-      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithoutIpAddress.id)
+      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithIpAddress.id)
       t.copy(status = t.status.copy(networkInfo = NetworkInfo(app, hostName = host, hostPorts = Nil, ipAddresses = ipAddresses)))
     }
 
     def taskWithOneNetworkAndMultipleIPs(app: AppDefinition) = {
       val ipAddresses: Seq[MesosProtos.NetworkInfo.IPAddress] = Seq(networkWithMultipleIps).flatMap(_.getIpAddressesList)
-      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithoutIpAddress.id)
+      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithIpAddress.id)
       t.copy(status = t.status.copy(networkInfo = NetworkInfo(app, hostName = host, hostPorts = Nil, ipAddresses = ipAddresses)))
     }
 
     def taskWithMultipleNetworkAndMultipleIPs(app: AppDefinition) = {
       val ipAddresses: Seq[MesosProtos.NetworkInfo.IPAddress] = Seq(networkWithOneIp1, networkWithOneIp2).flatMap(_.getIpAddressesList)
-      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithoutIpAddress.id)
+      val t = TestTaskBuilder.Helper.runningTaskForApp(appWithIpAddress.id)
       t.copy(status = t.status.copy(networkInfo = NetworkInfo(app, hostName = host, hostPorts = Nil, ipAddresses = ipAddresses)))
     }
   }

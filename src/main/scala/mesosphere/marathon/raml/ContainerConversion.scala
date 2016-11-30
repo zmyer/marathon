@@ -2,9 +2,10 @@ package mesosphere.marathon
 package raml
 
 import mesosphere.marathon.core.pod.MesosContainer
+import mesosphere.marathon.state.Parameter
 import org.apache.mesos.{ Protos => Mesos }
 
-trait ContainerConversion extends HealthCheckConversion {
+trait ContainerConversion extends HealthCheckConversion with VolumeConversion {
 
   implicit val containerRamlWrites: Writes[MesosContainer, PodContainer] = Writes { c =>
     PodContainer(
@@ -38,6 +39,10 @@ trait ContainerConversion extends HealthCheckConversion {
       labels = c.labels,
       lifecycle = c.lifecycle
     )
+  }
+
+  implicit val parameterWrites: Writes[state.Parameter, DockerParameter] = Writes { param =>
+    DockerParameter(param.key, param.value)
   }
 
   implicit val containerWrites: Writes[state.Container, Container] = Writes { container =>
@@ -83,6 +88,65 @@ trait ContainerConversion extends HealthCheckConversion {
       case mesos: state.Container.MesosAppC => create(EngineType.Mesos, appc = Some(mesos.toRaml[AppCContainer]))
       case mesos: state.Container.Mesos => create(EngineType.Mesos)
     }
+  }
+
+  implicit val portMappingRamlReader = Reads[ContainerPortMapping, state.Container.PortMapping] {
+    case ContainerPortMapping(containerPort, hostPort, labels, name, protocol, servicePort) =>
+      import state.Container.PortMapping._
+      val decodedProto = protocol match {
+        case NetworkProtocol.Tcp => TCP
+        case NetworkProtocol.Udp => UDP
+        case NetworkProtocol.UdpTcp => UDP_TCP
+      }
+      state.Container.PortMapping(
+        containerPort = containerPort,
+        hostPort = hostPort.orElse(defaultInstance.hostPort),
+        servicePort = servicePort,
+        protocol = decodedProto,
+        name = name,
+        labels = labels
+      )
+  }
+
+  implicit val appContainerRamlReader: Reads[Container, state.Container] = Reads { container =>
+    val volumes = container.volumes.map(Raml.fromRaml(_))
+    val portMappings = container.portMappings.map(Raml.fromRaml(_))
+
+    val result: state.Container = (container.`type`, container.docker, container.appc) match {
+      case (EngineType.Docker, Some(docker), None) =>
+        state.Container.Docker(
+          volumes = volumes,
+          image = docker.image,
+          portMappings = portMappings, // assumed already normalized, see AppNormalization
+          privileged = docker.privileged,
+          parameters = docker.parameters.map(p => Parameter(p.key, p.value)),
+          forcePullImage = docker.forcePullImage
+        )
+      case (EngineType.Mesos, Some(docker), None) =>
+        state.Container.MesosDocker(
+          volumes = volumes,
+          image = docker.image,
+          portMappings = portMappings, // assumed already normalized, see AppNormalization
+          credential = docker.credential.map(c => state.Container.Credential(principal = c.principal, secret = c.secret)),
+          forcePullImage = docker.forcePullImage
+        )
+      case (EngineType.Mesos, None, Some(appc)) =>
+        state.Container.MesosAppC(
+          volumes = volumes,
+          image = appc.image,
+          portMappings = portMappings,
+          id = appc.id,
+          labels = appc.labels,
+          forcePullImage = appc.forcePullImage
+        )
+      case (EngineType.Mesos, None, None) =>
+        state.Container.Mesos(
+          volumes = volumes,
+          portMappings = portMappings
+        )
+      case ct => throw SerializationFailedException(s"illegal container specification $ct")
+    }
+    result
   }
 }
 

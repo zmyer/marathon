@@ -143,7 +143,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
         "foo" -> "bar",
         "baz" -> "buzz"
       )))),
-      unreachableStrategy = Some(UnreachableStrategy(998.seconds, 999.seconds))
+      unreachableStrategy = Some(raml.UnreachableStrategy(998, 999))
     )
     JsonTestHelper.assertSerializationRoundtripWorks(update1)
   }
@@ -227,19 +227,6 @@ class AppUpdateTest extends MarathonSpec with Matchers {
 
     val changed = Raml.fromRaml(Raml.fromRaml((AppUpdate(acceptedResourceRoles = Some(Set("b"))), app))).copy(versionInfo = app.versionInfo)
     assert(changed == app.copy(acceptedResourceRoles = Set("b")))
-  }
-
-  test("AppUpdate does not change existing versionInfo", Unstable) {
-    // TODO(jdef) marked unstable but it really needs moving to AppsResourceTest, and should test that code for
-    // preserving the version (see updateOrCreate)
-    val app = AppDefinition(
-      id = PathId("test"),
-      cmd = Some("sleep 1"),
-      versionInfo = VersionInfo.forNewConfig(Timestamp(1))
-    )
-
-    val updateCmd = AppUpdate(cmd = Some("sleep 2"))
-    assert(Raml.fromRaml(Raml.fromRaml((updateCmd, app))).versionInfo == app.versionInfo)
   }
 
   test("AppUpdate with a version and other changes are not allowed") {

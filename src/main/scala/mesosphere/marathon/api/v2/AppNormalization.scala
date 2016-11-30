@@ -1,9 +1,9 @@
 package mesosphere.marathon
 package api.v2
 
+import mesosphere.marathon.api.serialization.ContainerSerializer
 import mesosphere.marathon.raml._
 import mesosphere.marathon.state.FetchUri
-import mesosphere.mesos.TaskBuilder
 
 trait AppNormalization {
 
@@ -313,7 +313,7 @@ object AppNormalization extends AppNormalization {
         // wants ip/ct with some network mode.
         // if the user gave us a name try to figure out what they want.
         ipAddress.networkName match {
-          case Some(name) if name == TaskBuilder.MesosBridgeName => // users shouldn't do this, but we're tolerant
+          case Some(name) if name == ContainerSerializer.MesosBridgeName => // users shouldn't do this, but we're tolerant
             Some(Seq(Network(mode = NetworkMode.ContainerBridge, labels = ipAddress.labels)))
           case name =>
             Some(Seq(Network(mode = NetworkMode.Container, name = name, labels = ipAddress.labels)))

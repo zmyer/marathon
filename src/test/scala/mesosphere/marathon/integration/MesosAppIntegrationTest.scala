@@ -7,6 +7,7 @@ import mesosphere.marathon.core.pod.{ HostNetwork, HostVolume, MesosContainer, P
 import mesosphere.marathon.integration.facades.MarathonFacade._
 import mesosphere.marathon.integration.setup.{ EmbeddedMarathonTest, MesosConfig, WaitTestSupport }
 import mesosphere.marathon.raml.{ App, Container, DockerContainer, EngineType }
+import mesosphere.marathon.state.PathId
 import mesosphere.marathon.state.PathId._
 
 import scala.collection.immutable.Seq
@@ -24,7 +25,6 @@ class MesosAppIntegrationTest
   // Configure Mesos to provide the Mesos containerizer with Docker image support.
   override lazy val mesosConfig = MesosConfig(
     launcher = "linux",
-    containerizers = "mesos",
     isolation = Some("filesystem/linux,docker/runtime"),
     imageProviders = Some("docker"))
 
@@ -51,8 +51,7 @@ class MesosAppIntegrationTest
       cmd = Some("sleep 600"),
       container = Some(Container(`type` = EngineType.Mesos, docker = Some(DockerContainer(image = "busybox")))),
       cpus = 0.2,
-      mem = 16.0,
-      instances = 1
+      mem = 16.0
     )
 
     When("The app is deployed")
@@ -67,11 +66,11 @@ class MesosAppIntegrationTest
 
   test("deploy a simple Docker app that uses Entrypoint/Cmd using the Mesos containerizer") {
     Given("a new Docker app the uses 'Cmd' in its Dockerfile")
-    val app = AppDefinition(
-      id = testBasePath / "mesosdockerapp",
-      container = Some(Container.MesosDocker(image = "hello-world")),
-      resources = raml.Resources(cpus = 0.1, mem = 32.0),
-      instances = 1
+    val app = App(
+      id = (testBasePath / "mesosdockerapp").toString,
+      container = Some(Container(EngineType.Mesos, docker = Some(DockerContainer(image = "hello-world")))),
+      cpus = 0.1,
+      mem = 32.0
     )
 
     When("The app is deployed")
@@ -81,7 +80,7 @@ class MesosAppIntegrationTest
     result.code should be(201) // Created
     extractDeploymentIds(result) should have size 1
     waitForDeployment(result)
-    waitForTasks(app.id, 1) // The app has really started
+    waitForTasks(PathId(app.id), 1) // The app has really started
   }
 
   test("deploy a simple pod") {
@@ -329,7 +328,7 @@ class MesosAppIntegrationTest
     WaitTestSupport.validFor("deployment visible", 5.second)(marathon.listDeploymentsForBaseGroup().value.size == 1)
 
     When("the deployment is rolled back")
-    val deleteResult = marathon.deleteDeployment(deploymentId.get, force = false)
+    val deleteResult = marathon.deleteDeployment(deploymentId.get)
     deleteResult.code should be (200)
 
     Then("the deployment should be gone")

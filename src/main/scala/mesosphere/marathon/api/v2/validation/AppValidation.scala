@@ -279,7 +279,7 @@ trait AppValidation {
     update.env is optional(envValidator(update.secrets.getOrElse(Map.empty), enabledFeatures))
     update.secrets is optional(conditional[Map[String, SecretDef]](_.nonEmpty)(featureEnabled(enabledFeatures, Features.SECRETS)))
     update.secrets is optional(implied[Map[String, SecretDef]](enabledFeatures.contains(Features.SECRETS))(every(secretEntryValidator)))
-    update.storeUrls is optional(every(urlCanBeResolvedValidator))
+    update.storeUrls is optional(every(urlIsValid))
     update.fetch is optional(every(valid))
     update.upgradeStrategy is optional(valid)
     update.residency is optional(valid)
@@ -358,7 +358,7 @@ trait AppValidation {
   private def validBasicAppDefinition(enabledFeatures: Set[String]): Validator[App] = validator[App] { app =>
     app.upgradeStrategy is valid
     app.container is optional(validContainer(enabledFeatures))
-    app.storeUrls is every(urlCanBeResolvedValidator)
+    app.storeUrls is every(urlIsValid)
     app.portDefinitions is optional(portDefinitionsValidator)
     app.executor should valid(matchRegexFully(executorPattern))
     app is containsCmdArgsOrContainer

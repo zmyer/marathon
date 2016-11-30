@@ -100,6 +100,10 @@ case class AppDefinition(
     "portDefinitions and container.portMappings are not allowed at the same time"
   )
 
+  require(
+    !(networks.hasBridgeNetworking && container.fold(false)(c => c.portMappings.exists(_.hostPort.isEmpty))),
+    "bridge networking requires that every host-port in a port-mapping is non-empty (but may be zero)")
+
   val portNumbers: Seq[Int] = portDefinitions.map(_.port)
 
   val isResident: Boolean = residency.isDefined
@@ -219,7 +223,7 @@ case class AppDefinition(
       else
         OnlyVersion(Timestamp(proto.getVersion))
 
-    // TODO(portMapping) instead of flattening, handle deser problems some other way?
+    // TODO(jdef) instead of flattening, handle deser problems some other way?
     val networks: Seq[Network] = proto.getNetworksList.flatMap(Network.fromProto)(collection.breakOut)
 
     val residencyOption = if (proto.hasResidency) Some(ResidencySerializer.fromProto(proto.getResidency)) else None
@@ -362,7 +366,7 @@ case class AppDefinition(
     def fromPortMappings = container.map(_.portMappings.flatMap(_.name)).getOrElse(Seq.empty)
     def fromPortDefinitions = portDefinitions.flatMap(_.name)
 
-    if (usesNonHostNetworking) fromPortMappings else fromPortDefinitions
+    if (networks.hasNonHostNetworking) fromPortMappings else fromPortDefinitions
   }
 }
 
@@ -622,11 +626,11 @@ object AppDefinition extends GeneralPurposeCombinators {
 
   private def validBasicAppDefinition(enabledFeatures: Set[String]) = validator[AppDefinition] { appDef =>
     appDef.upgradeStrategy is valid
-    appDef.container.each is valid(Container.validContainer(enabledFeatures))
+    appDef.container.each is valid(Container.validContainer(appDef.networks, enabledFeatures))
     appDef.storeUrls is every(urlIsValid)
     appDef.portDefinitions is PortDefinitions.portDefinitionsValidator
     appDef.executor should matchRegexFully("^(//cmd)|(/?[^/]+(/[^/]+)*)|$")
-    appDef is containsCmdArgsOrContainer
+    appDef must containsCmdArgsOrContainer
     appDef.healthChecks is every(portIndexIsValid(appDef.portIndices))
     appDef must haveAtMostOneMesosHealthCheck
     appDef.instances should be >= 0

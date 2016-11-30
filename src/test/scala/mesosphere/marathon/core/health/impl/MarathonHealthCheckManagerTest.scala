@@ -220,7 +220,7 @@ class MarathonHealthCheckManagerTest extends AkkaFunTest with MarathonShutdownHo
       TestInstanceBuilder.newBuilder(appId, version = versions(i)).addTaskStaged(version = Some(versions(i))).getInstance()
     }
     def startTask(appId: PathId, instance: Instance, version: Timestamp, healthChecks: Set[HealthCheck]): AppDefinition = {
-      val app = appRepository.store(AppDefinition(
+      val app = AppDefinition(
         id = appId,
         versionInfo = VersionInfo.forNewConfig(version),
         healthChecks = healthChecks
