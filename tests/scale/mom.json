@@ -67,6 +67,6 @@
       "labels": {}
     }
   ],
-  "acceptedResourceRoles": [ "slave_public", "*" ],
+  "acceptedResourceRoles": [ "slave_public" ],
   "requirePorts": false
 }

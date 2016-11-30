@@ -49,7 +49,7 @@ def unique_host_constraint():
 
 def delete_all_apps():
     client = marathon.create_client()
-    client.remove_group("/")
+    client.remove_group("/", True)
     time_deployment("undeploy")
 
 
@@ -102,16 +102,19 @@ def scale_apps(count=1, instances=1):
     start = time.time()
     launch_apps(count, instances)
     deploy_time = time_deployment(test)
+    launch_time = elapse_time(start)
     delete_all_apps_wait()
-    return elapse_time(start)
+    return launch_time
 
 
 def scale_groups(instances=2):
     test = "group test count: " + str(instances)
+    start = time.time()
     launch_group(instances)
-    time = time_deployment(test)
+    deploy_time = time_deployment(test)
+    launch_time = elapse_time(start)
     delete_group_and_wait("test")
-    return time
+    return launch_time
 
 
 def elapse_time(start, end=None):

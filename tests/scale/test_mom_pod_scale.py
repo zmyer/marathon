@@ -135,18 +135,20 @@ def setup_module(module):
     # verify test system requirements are met (number of nodes needed)
     agents = get_private_agents()
     print("agents: {}".format(len(agents)))
-    client = marathon.create_client()
-    about = client.get_about()
-    print("marathon version: {}".format(about.get("version")))
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        about = client.get_about()
+        print("marathon version: {}".format(about.get("version")))
     prefetch_docker_images_on_all_nodes()
 
 
 def teardown_module(module):
     agents = get_private_agents()
     print("agents: {}".format(len(agents)))
-    client = marathon.create_client()
-    about = client.get_about()
-    print("marathon version: {}".format(about.get("version")))
+    with marathon_on_marathon():
+        client = marathon.create_client()
+        about = client.get_about()
+        print("marathon version: {}".format(about.get("version")))
     print("instance test: {}".format(instances_results))
     print("instance teardown: {}".format(instances_teardown))
     print("count test: {}".format(count_results))
