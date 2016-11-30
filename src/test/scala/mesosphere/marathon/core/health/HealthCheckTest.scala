@@ -8,6 +8,7 @@ import mesosphere.marathon.core.instance.Instance.AgentInfo
 import mesosphere.marathon.core.instance.{ LegacyAppInstance, TestInstanceBuilder, TestTaskBuilder }
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.state.NetworkInfo
+import mesosphere.marathon.raml.{ AppHealthCheck, Raml }
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.{ MarathonSpec, MarathonTestHelper }
 import play.api.libs.json.Json
@@ -222,12 +223,12 @@ class HealthCheckTest extends MarathonSpec {
   }
 
   private[this] def toJson(healthCheck: HealthCheck): String = {
-    import mesosphere.marathon.api.v2.json.Formats._
-    Json.prettyPrint(Json.toJson(healthCheck))
+    val ramlObj: AppHealthCheck = Raml.toRaml(healthCheck)
+    Json.prettyPrint(AppHealthCheck.playJsonWriter.writes(ramlObj))
   }
   private[this] def fromJson(json: String): HealthCheck = {
-    import mesosphere.marathon.api.v2.json.Formats._
-    Json.fromJson[HealthCheck](Json.parse(json))(HealthCheckFormat).get
+    val parsed: AppHealthCheck = Json.parse(json).as[AppHealthCheck]
+    Raml.fromRaml(parsed)
   }
 
   test("SerializationRoundtrip empty") {

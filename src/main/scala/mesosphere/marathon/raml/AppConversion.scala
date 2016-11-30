@@ -2,9 +2,7 @@ package mesosphere.marathon
 package raml
 
 import mesosphere.marathon.Protos.ResidencyDefinition
-import mesosphere.marathon.core.readiness.{ ReadinessCheck => CoreReadinessCheck }
 import mesosphere.marathon.state._
-import java.time.OffsetDateTime
 
 import scala.concurrent.duration._
 
@@ -27,10 +25,10 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
     AppResidency(residency.relaunchEscalationTimeoutSeconds.toInt, residency.taskLostBehavior.toRaml)
   }
 
-  implicit val versionInfoWrites: Writes[state.VersionInfo, VersionInfo] = Writes {
-    case state.VersionInfo.FullVersionInfo(_, scale, config) => VersionInfo(scale.toOffsetDateTime, config.toOffsetDateTime)
-    case state.VersionInfo.OnlyVersion(version) => VersionInfo(version.toOffsetDateTime, version.toOffsetDateTime)
-    case state.VersionInfo.NoVersion => VersionInfo(OffsetDateTime.now(), OffsetDateTime.now())
+  implicit val versionInfoWrites: Writes[state.VersionInfo, Option[VersionInfo]] = Writes {
+    case state.VersionInfo.FullVersionInfo(_, scale, config) => Some(VersionInfo(scale.toOffsetDateTime, config.toOffsetDateTime))
+    case state.VersionInfo.OnlyVersion(version) => None
+    case state.VersionInfo.NoVersion => None
   }
 
   implicit val parameterWrites: Writes[state.Parameter, DockerParameter] = Writes { param =>
@@ -183,24 +181,6 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
     result
   }
 
-  implicit val appReadinessRamlReader = Reads[ReadinessCheck, CoreReadinessCheck] { check =>
-    val protocol = check.protocol match {
-      case HttpScheme.Http => CoreReadinessCheck.Protocol.HTTP
-      case HttpScheme.Https => CoreReadinessCheck.Protocol.HTTPS
-    }
-    val result: CoreReadinessCheck = CoreReadinessCheck(
-      name = check.name,
-      protocol = protocol,
-      path = check.path,
-      portName = check.portName,
-      interval = check.intervalSeconds.seconds,
-      timeout = check.timeoutSeconds.seconds,
-      httpStatusCodesForReady = check.httpStatusCodesForReady.toSet,
-      preserveLastResponse = check.preserveLastResponse.getOrElse(CoreReadinessCheck.DefaultPreserveLastResponse)
-    )
-    result
-  }
-
   implicit val upgradeStrategyRamlReader = Reads[UpgradeStrategy, state.UpgradeStrategy] { us =>
     state.UpgradeStrategy(
       maximumOverCapacity = us.maximumOverCapacity,
@@ -245,7 +225,7 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
       container = app.container.map(Raml.fromRaml(_)),
       healthChecks = app.healthChecks.map(Raml.fromRaml(_)).toSet,
       readinessChecks = app.readinessChecks.map(Raml.fromRaml(_)),
-      taskKillGracePeriod = app.taskKillGracePeriodSeconds.map(_.second).orElse(AppDefinition.DefaultTaskKillGracePeriod),
+      taskKillGracePeriod = app.taskKillGracePeriodSeconds.map(_.second),
       dependencies = app.dependencies.map(PathId(_))(collection.breakOut),
       upgradeStrategy = selectedStrategy.upgradeStrategy,
       labels = app.labels,
@@ -260,48 +240,48 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
     result
   }
 
-  implicit val appUpdateRamlReader: Reads[(AppUpdate, AppDefinition), AppDefinition] = Reads { src =>
-    val (update: AppUpdate, app: AppDefinition) = src
+  implicit val appUpdateRamlReader: Reads[(AppUpdate, AppDefinition), App] = Reads { src =>
+    val (update: AppUpdate, appDef: AppDefinition) = src
+    // for validating and converting the returned App API object
+    val app: App = appDef.toRaml
     app.copy(
       // id stays the same
       cmd = update.cmd.orElse(app.cmd),
       args = update.args.getOrElse(app.args),
       user = update.user.orElse(app.user),
-      env = update.env.fold(app.env)(Raml.fromRaml(_)),
+      env = update.env.getOrElse(app.env),
       instances = update.instances.getOrElse(app.instances),
-      resources = Resources(
-        cpus = update.cpus.getOrElse(app.resources.cpus),
-        mem = update.mem.getOrElse(app.resources.mem),
-        disk = update.disk.getOrElse(app.resources.disk),
-        gpus = update.gpus.getOrElse(app.resources.gpus)
-      ),
+      cpus = update.cpus.getOrElse(app.cpus),
+      mem = update.mem.getOrElse(app.mem),
+      disk = update.disk.getOrElse(app.disk),
+      gpus = update.gpus.getOrElse(app.gpus),
       executor = update.executor.getOrElse(app.executor),
-      constraints = update.constraints.fold(app.constraints)(c => c.map(Raml.fromRaml(_))(collection.breakOut)),
-      fetch = update.fetch.fold(app.fetch)(f => f.map(Raml.fromRaml(_))),
+      constraints = update.constraints.getOrElse(app.constraints),
+      fetch = update.fetch.getOrElse(app.fetch),
       storeUrls = update.storeUrls.getOrElse(app.storeUrls),
-      portDefinitions = update.portDefinitions.fold(app.portDefinitions)(p => p.map(Raml.fromRaml(_))),
-      requirePorts = update.requirePorts.getOrElse(app.requirePorts),
-      backoffStrategy = BackoffStrategy(
-        backoff = update.backoffSeconds.fold(app.backoffStrategy.backoff)(_.seconds),
-        factor = update.backoffFactor.getOrElse(app.backoffStrategy.factor),
-        maxLaunchDelay = update.maxLaunchDelaySeconds.fold(app.backoffStrategy.maxLaunchDelay)(_.seconds)
-      ),
-      container = update.container.map(Raml.fromRaml(_)).orElse(app.container),
-      healthChecks = update.healthChecks.fold(app.healthChecks)(h => h.map(Raml.fromRaml(_)).toSet),
-      readinessChecks = update.readinessChecks.fold(app.readinessChecks)(r => r.map(Raml.fromRaml(_))),
-      dependencies = update.dependencies.fold(app.dependencies)(deps => deps.map(PathId(_).canonicalPath(app.id))(collection.breakOut)),
-      upgradeStrategy = update.upgradeStrategy.fold(app.upgradeStrategy)(Raml.fromRaml(_)),
+      portDefinitions = update.portDefinitions.orElse(app.portDefinitions),
+      requirePorts = update.requirePorts.orElse(app.requirePorts),
+      backoffFactor = update.backoffFactor.getOrElse(app.backoffFactor),
+      backoffSeconds = update.backoffSeconds.getOrElse(app.backoffSeconds),
+      maxLaunchDelaySeconds = update.maxLaunchDelaySeconds.getOrElse(app.maxLaunchDelaySeconds),
+      container = update.container.orElse(app.container),
+      healthChecks = update.healthChecks.getOrElse(app.healthChecks),
+      readinessChecks = update.readinessChecks.getOrElse(app.readinessChecks),
+      dependencies = update.dependencies.getOrElse(app.dependencies),
+      upgradeStrategy = update.upgradeStrategy.orElse(app.upgradeStrategy),
       labels = update.labels.getOrElse(app.labels),
-      acceptedResourceRoles = update.acceptedResourceRoles.getOrElse(app.acceptedResourceRoles),
-      networks = update.networks.fold(app.networks)(nets => nets.map(Raml.fromRaml(_))),
-      // versionInfo doesn't change - it's never overridden by an AppUpdate
+      acceptedResourceRoles = update.acceptedResourceRoles.orElse(app.acceptedResourceRoles),
+      networks = update.networks.getOrElse(app.networks),
+      // versionInfo doesn't change - it's never overridden by an AppUpdate.
       // Setting the version in AppUpdate means that the user wants to revert to that version. In that
       // case, we do not update the current AppDefinition but revert completely to the specified version.
       // For all other updates, the GroupVersioningUtil will determine a new version if the AppDefinition
       // has really changed.
-      residency = update.residency.map(Raml.fromRaml(_)).orElse(app.residency),
-      secrets = update.secrets.fold(app.secrets)(Raml.fromRaml(_)),
-      taskKillGracePeriod = update.taskKillGracePeriodSeconds.map(_.seconds).orElse(app.taskKillGracePeriod),
+      // Since we return an App, and conversion from App to AppDefinition loses versionInfo, we don't take
+      // any special steps here to preserve it; that's the caller's responsibility.
+      residency = update.residency.orElse(app.residency),
+      secrets = update.secrets.getOrElse(app.secrets),
+      taskKillGracePeriodSeconds = update.taskKillGracePeriodSeconds.orElse(app.taskKillGracePeriodSeconds),
       unreachableStrategy = update.unreachableStrategy.map(_.fromRaml).orElse(app.unreachableStrategy),
       killSelection = update.killSelection.orElse(app.killSelection)
     )
