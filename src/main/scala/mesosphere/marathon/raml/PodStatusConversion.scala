@@ -42,7 +42,7 @@ trait PodStatusConversion {
     // TODO(jdef) message
     ContainerStatus(
       name = displayName,
-      status = task.status.condition.toReadableName,
+      status = task.status.state.toString,
       statusSince = since,
       containerId = task.launchedMesosId.map(_.getValue),
       endpoints = endpointStatus,

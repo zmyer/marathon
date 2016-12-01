@@ -6,13 +6,13 @@ import mesosphere.marathon.core.event.InstanceChanged
 // TODO(PODS): There are various similar Terminal extractors, Sets and functions – the NEED to be aligned
 private[impl] object Terminal {
 
-  private[this] val terminalStatus = Set(
+  private[this] val terminalStatus = Set[Condition](
     Condition.Error,
     Condition.Failed,
     Condition.Killed,
     Condition.Finished,
-    Condition.Unreachable,
-    Condition.UnreachableInactive,
+    Condition.Unreachable, // not necessarily terminal
+    Condition.UnreachableInactive, // not necessarily terminal
     Condition.Unknown,
     Condition.Gone,
     Condition.Dropped

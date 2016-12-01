@@ -433,7 +433,10 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
 
   def waitForStatusUpdates(kinds: String*) = kinds.foreach { kind =>
     logger.info(s"Wait for status update event with kind: $kind")
-    waitForEventWith("status_update_event", _.taskStatus == kind)
+    waitForEventWith("status_update_event", { evt =>
+      println(s"??? ${evt.taskStatus} == ${kind} ???")
+      evt.taskStatus == kind
+    })
   }
 
   def waitForEvent(

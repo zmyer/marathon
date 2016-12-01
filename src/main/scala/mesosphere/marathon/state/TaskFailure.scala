@@ -115,27 +115,30 @@ object TaskFailure {
       apply(instanceChange)
 
     def apply(instanceChange: InstanceChanged): Option[TaskFailure] = {
-      val InstanceChanged(_, runSpecVersion, runSpecId, status, instance) = instanceChange
+      val InstanceChanged(_, runSpecVersion, runSpecId, condition, instance) = instanceChange
 
-      val state = taskState(status.toReadableName)
+      // val state = status.mesosTaskState.getOrElse(
       val (taskId, task) = instance.tasksMap.headOption.getOrElse(throw new RuntimeException("no task in instance"))
       val mesosTaskId = taskId.mesosTaskId
       val message = task.status.mesosStatus.fold("") { status =>
         if (status.hasMessage) status.getMessage else ""
       }
 
-      if (isFailureState(state))
-        Some(TaskFailure(
-          runSpecId,
-          mesosTaskId,
-          state,
-          message,
-          instance.agentInfo.host,
-          version = runSpecVersion,
-          instance.state.since,
-          instance.agentInfo.agentId.map(SlaveID(_))
-        ))
-      else None
+      condition.mesosTaskState match {
+        case Some(state) if isFailureState(state) =>
+          Some(TaskFailure(
+            runSpecId,
+            mesosTaskId,
+            state,
+            message,
+            instance.agentInfo.host,
+            version = runSpecVersion,
+            instance.state.since,
+            instance.agentInfo.agentId.map(SlaveID(_))
+          ))
+        case _ =>
+          None
+      }
     }
   }
 

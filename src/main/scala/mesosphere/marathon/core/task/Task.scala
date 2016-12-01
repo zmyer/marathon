@@ -269,6 +269,15 @@ object Task {
     def healthy: Option[Boolean] = mesosStatus.withFilter(_.hasHealthy).map(_.getHealthy)
 
     def ipAddresses: Option[Seq[MesosProtos.NetworkInfo.IPAddress]] = mesosStatus.flatMap(MesosStatus.ipAddresses)
+
+    /**
+      * Returns the Marathon Task status, which, for resident tasks, describes a few states before first mesos task launch report
+      */
+    def state: mesos.Protos.TaskState =
+      mesosStatus.
+        map(_.getState).
+        orElse(condition.mesosTaskState).
+        getOrElse(mesos.Protos.TaskState.TASK_STAGING)
   }
 
   object Status {
