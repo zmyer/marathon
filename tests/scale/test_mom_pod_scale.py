@@ -74,6 +74,11 @@ def test_pod_instances_1000():
         _test_pod_scale(1, 1000, instances_results, instances_teardown)
 
 
+def test_pod_instances_5000():
+    with marathon_on_marathon():
+        _test_pod_scale(1, 5000, instances_results, instances_teardown)
+
+
 def test_pod_count_1():
     with marathon_on_marathon():
         _test_pod_scale(1, 1, count_results, count_teardown)
@@ -97,6 +102,11 @@ def test_pod_count_500():
 def test_pod_count_1000():
     with marathon_on_marathon():
         _test_pod_scale(1000, 1, count_results, count_teardown)
+
+
+def test_pod_count_5000():
+    with marathon_on_marathon():
+        _test_pod_scale(5000, 1, count_results, count_teardown)
 
 
 def _test_pod_scale(pod_count, instances, test_results, teardown_results):
@@ -149,6 +159,7 @@ def teardown_module(module):
         client = marathon.create_client()
         about = client.get_about()
         print("marathon version: {}".format(about.get("version")))
+        delete_all_pods()
     print("instance test: {}".format(instances_results))
     print("instance teardown: {}".format(instances_teardown))
     print("count test: {}".format(count_results))
