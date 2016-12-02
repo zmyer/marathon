@@ -22,6 +22,7 @@ that the name is 'marathon-user'.
 
 
 def setup_function(function):
+    wait_for_service_endpoint('marathon-user')
     with marathon_on_marathon():
         delete_all_apps_wait()
 
@@ -55,6 +56,23 @@ def test_apps_instances_1000():
         time = scale_apps(1, 1000)
         instances_results.append(time)
 
+def test_apps_instances_5000():
+    with marathon_on_marathon():
+        time = scale_apps(1, 5000)
+        instances_results.append(time)
+
+
+# def test_apps_instances_25000():
+#     with marathon_on_marathon():
+#         time = scale_apps(1, 25000)
+#         instances_results.append(time)
+#
+#
+# def test_apps_instances_100000():
+#     with marathon_on_marathon():
+#         time = scale_apps(1, 100000)
+#         instances_results.append(time)
+
 
 def test_apps_count_1():
     with marathon_on_marathon():
@@ -83,6 +101,12 @@ def test_apps_count_500():
 def test_apps_count_1000():
     with marathon_on_marathon():
         time = scale_apps(1000, 1)
+        count_results.append(time)
+
+
+def test_apps_count_5000():
+    with marathon_on_marathon():
+        time = scale_apps(5000, 1)
         count_results.append(time)
 
 
@@ -115,6 +139,11 @@ def test_groups_instances_1000():
         time = scale_groups(1000)
         group_results.append(time)
 
+def test_groups_instances_5000():
+    with marathon_on_marathon():
+        time = scale_groups(5000)
+        group_results.append(time)
+
 
 def setup_module(module):
     # verify test system requirements are met (number of nodes needed)
@@ -122,7 +151,6 @@ def setup_module(module):
     agents = get_private_agents()
     if len(agents) < 1:
         assert False, "Incorrect Agent count"
-
 
 def teardown_module(module):
     print("instance test: {}".format(instances_results))

@@ -8,7 +8,7 @@ def app(id=1, instances=1):
     app_json = {
       "id": "",
       "instances":  1,
-      "cmd": "sleep 100000000",
+      "cmd": "for (( ; ; )); do sleep 100000000; done",
       "cpus": 0.01,
       "mem": 1,
       "disk": 0
@@ -59,14 +59,13 @@ def time_deployment(test=""):
     deployment_count = 1
     while deployment_count > 0:
         time.sleep(1)
+        # troubling that we need this
+        wait_for_service_endpoint('marathon-user')
         deployments = client.get_deployments()
         deployment_count = len(deployments)
 
     end = time.time()
     elapse = round(end - start, 3)
-    if "undeploy" not in test:
-        print("Test (" + test + ") time: " +
-              str(elapse) + " secs")
     return elapse
 
 
@@ -79,10 +78,21 @@ def delete_group_and_wait(group="test"):
     delete_group(group)
     time_deployment("undeploy")
 
+def deployment_less_than_predicate(count=10):
+    client = marathon.create_client()
+    return len(client.get_deployments()) < count
 
 def launch_apps(count=1, instances=1):
     client = marathon.create_client()
     for num in range(1, count + 1):
+        # after 400 and every 50 check to see if we need to wait
+        if num > 400 and num % 50 == 0:
+            client = marathon.create_client()
+            count = len(client.get_deployments())
+            if count > 30:
+                # wait for deployment count to be less than 10
+                wait_for(deployment_less_than_predicate)
+                time.sleep(10)
         client.add_app(app(num, instances))
 
 
@@ -101,8 +111,8 @@ def scale_apps(count=1, instances=1):
 
     start = time.time()
     launch_apps(count, instances)
-    deploy_time = time_deployment(test)
-    launch_time = elapse_time(start)
+    time_deployment(test)
+    launch_time = elapse_time(start, time.time())
     delete_all_apps_wait()
     return launch_time
 
@@ -110,9 +120,15 @@ def scale_apps(count=1, instances=1):
 def scale_groups(instances=2):
     test = "group test count: " + str(instances)
     start = time.time()
-    launch_group(instances)
-    deploy_time = time_deployment(test)
-    launch_time = elapse_time(start)
+    try:
+        launch_group(instances)
+    except:
+        # at high scale this will timeout but we still
+        # want the deployment time
+        pass
+
+    time_deployment(test)
+    launch_time = elapse_time(start, time.time())
     delete_group_and_wait("test")
     return launch_time
 
