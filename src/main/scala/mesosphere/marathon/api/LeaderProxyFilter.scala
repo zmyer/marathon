@@ -250,28 +250,19 @@ class JavaUrlConnectionRequestForwarder @Inject() (
             }
         }
       }
+      response.addHeader(HEADER_VIA, viaValue)
       Done
     }
 
-    def copyConnectionResponse(leaderConnection: HttpURLConnection, response: HttpServletResponse): Unit = {
-      cloneResponseStatusAndHeader(leaderConnection, response) match {
-        case Failure(e) =>
-          // early detection of proxy failure, before we commit the status code to the response stream
-          log.warn("failed to proxy response headers from leader", e)
-          response.sendError(HttpStatus.SC_BAD_GATEWAY, ERROR_STATUS_BAD_CONNECTION)
-
-        case Success(_) =>
-          response.addHeader(HEADER_VIA, viaValue)
-
-          IO.using(response.getOutputStream) { output =>
-            try {
-              IO.using(leaderConnection.getInputStream) { connectionInput => copy(connectionInput, output) }
-            } catch {
-              case e: IOException =>
-                log.debug("got exception response, this is maybe an error code", e)
-                IO.using(leaderConnection.getErrorStream) { connectionError => copy(connectionError, output) }
-            }
-          }
+    def cloneResponseEntity(remote: HttpURLConnection, response: HttpServletResponse): Unit = {
+      IO.using(response.getOutputStream) { output =>
+        try {
+          IO.using(remote.getInputStream) { connectionInput => copy(connectionInput, output) }
+        } catch {
+          case e: IOException =>
+            log.debug("got exception response, this is maybe an error code", e)
+            IO.using(remote.getErrorStream) { connectionError => copy(connectionError, output) }
+        }
       }
     }
 
@@ -285,7 +276,12 @@ class JavaUrlConnectionRequestForwarder @Inject() (
         val leaderConnection: HttpURLConnection = createAndConfigureConnection(url)
         try {
           copyRequestToConnection(leaderConnection, request)
-          copyConnectionResponse(leaderConnection, response)
+          copyConnectionResponse(
+            response
+          )(
+            () => cloneResponseStatusAndHeader(leaderConnection, response),
+            () => cloneResponseEntity(leaderConnection, response)
+          )
         } catch {
           case connException: ConnectException =>
             response.sendError(HttpStatus.SC_BAD_GATEWAY, ERROR_STATUS_CONNECTION_REFUSED)
@@ -325,4 +321,18 @@ object JavaUrlConnectionRequestForwarder {
 
   val HEADER_FORWARDED_FOR: String = "X-Forwarded-For"
   final val NAMED_LEADER_PROXY_SSL_CONTEXT = "JavaUrlConnectionRequestForwarder.SSLContext"
+
+  def copyConnectionResponse(response: HttpServletResponse)(
+    forwardHeaders: () => Try[Done], forwardEntity: () => Unit): Unit = {
+
+    forwardHeaders() match {
+      case Failure(e) =>
+        // early detection of proxy failure, before we commit the status code to the response stream
+        log.warn("failed to proxy response headers from leader", e)
+        response.sendError(HttpStatus.SC_BAD_GATEWAY, ERROR_STATUS_BAD_CONNECTION)
+
+      case Success(_) =>
+        forwardEntity()
+    }
+  }
 }
