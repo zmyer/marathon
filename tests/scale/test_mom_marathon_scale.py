@@ -61,16 +61,21 @@ def test_apps_instances_5000():
         time = scale_apps(1, 5000)
         instances_results.append(time)
 
+def test_apps_instances_10000():
+    with marathon_on_marathon():
+        time = scale_apps(1, 10000)
+        instances_results.append(time)
+
 
 # def test_apps_instances_25000():
 #     with marathon_on_marathon():
 #         time = scale_apps(1, 25000)
 #         instances_results.append(time)
-#
-#
-# def test_apps_instances_100000():
+
+
+# def test_apps_instances_50000():
 #     with marathon_on_marathon():
-#         time = scale_apps(1, 100000)
+#         time = scale_apps(1, 50000)
 #         instances_results.append(time)
 
 
