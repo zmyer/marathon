@@ -59,10 +59,13 @@ def time_deployment(test=""):
     deployment_count = 1
     while deployment_count > 0:
         time.sleep(1)
-        # troubling that we need this
-        wait_for_service_endpoint('marathon-user')
-        deployments = client.get_deployments()
-        deployment_count = len(deployments)
+        # need protection when tearing down
+        try:
+            deployments = client.get_deployments()
+            deployment_count = len(deployments)
+        except:
+            wait_for_service_endpoint('marathon-user')
+            pass
 
     end = time.time()
     elapse = round(end - start, 3)
@@ -87,12 +90,11 @@ def launch_apps(count=1, instances=1):
     for num in range(1, count + 1):
         # after 400 and every 50 check to see if we need to wait
         if num > 400 and num % 50 == 0:
-            client = marathon.create_client()
-            count = len(client.get_deployments())
-            if count > 30:
-                # wait for deployment count to be less than 10
+            deployments = len(client.get_deployments())
+            if deployments > 30:
+                # wait for deployment count to be less than a sec
                 wait_for(deployment_less_than_predicate)
-                time.sleep(10)
+                time.sleep(1)
         client.add_app(app(num, instances))
 
 
@@ -111,7 +113,15 @@ def scale_apps(count=1, instances=1):
 
     start = time.time()
     launch_apps(count, instances)
-    time_deployment(test)
+    complete = False
+    while not complete:
+        try:
+            time_deployment(test)
+            complete = True
+        except:
+            time.sleep(2)
+            pass
+
     launch_time = elapse_time(start, time.time())
     delete_all_apps_wait()
     return launch_time
