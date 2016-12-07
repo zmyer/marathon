@@ -457,14 +457,12 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
     description: String,
     maxWait: FiniteDuration = patienceConfig.timeout.toMillis.millis)(fn: CallbackEvent => Boolean): CallbackEvent = {
     @tailrec
-    def matchingEvent: Option[CallbackEvent] = if (events.isEmpty) None else {
-      val event = events.poll()
-      if (fn(event)) {
-        Some(event)
-      } else {
+    def matchingEvent: Option[CallbackEvent] = Option(events.poll()) match {
+      case Some(event) if fn(event) => Some(event)
+      case Some(event) =>
         logger.info(s"Event $event did not match criteria skipping to next event")
         matchingEvent
-      }
+      case None => matchingEvent
     }
 
     eventually(timeout(Span(maxWait.toMillis, Milliseconds))) {
