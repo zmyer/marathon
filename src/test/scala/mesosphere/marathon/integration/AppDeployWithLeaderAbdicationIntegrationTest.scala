@@ -7,6 +7,7 @@ import java.util.UUID
 import mesosphere.AkkaIntegrationFunTest
 import mesosphere.marathon.api.v2.json.AppUpdate
 import mesosphere.marathon.core.health.{ MarathonHttpHealthCheck, PortReference }
+import mesosphere.marathon.integration.facades.MarathonFacade
 import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.state.{ PortDefinition, UpgradeStrategy }
 import org.apache.commons.io.FileUtils
@@ -65,8 +66,11 @@ class AppDeployWithLeaderAbdicationIntegrationTest extends AkkaIntegrationFunTes
     val leader = marathon.leader().value
     marathon.abdicate().code should be (200)
 
+    val secondary: MarathonFacade = additionalMarathons.headOption.map(_.client).getOrElse(
+      fail("expected at least 1 additional marathon in the cluster"))
+
     And("a new leader is elected")
-    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { marathon.leader().value != leader }
+    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { secondary.leader().value != leader }
 
     And("the updated task becomes healthy")
     // This would move the service mock from "InProgress" [HTTP 503] to "Complete" [HTTP 200]
@@ -79,9 +83,9 @@ class AppDeployWithLeaderAbdicationIntegrationTest extends AkkaIntegrationFunTes
     And("app was deployed successfully")
     waitForEventMatching("app should be restarted and deployment should be finished") { matchDeploymentSuccess(1, appId.toString) }
 
-    val after = marathon.tasks(appId)
+    val after = secondary.tasks(appId)
     val afterTaskIds = after.value.map(_.id)
-    log.info(s"App after restart: ${marathon.app(appId).entityPrettyJsonString}")
+    log.info(s"App after restart: ${secondary.app(appId).entityPrettyJsonString}")
 
     And("taskId after restart should be equal to the updated taskId (not started one)")
     afterTaskIds should equal (updatedTaskIds)
