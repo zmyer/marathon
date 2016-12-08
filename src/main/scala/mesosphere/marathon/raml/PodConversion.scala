@@ -25,7 +25,7 @@ trait PodConversion extends NetworkConversion with ConstraintConversion with Con
       state.UpgradeStrategy(raml.minimumHealthCapacity, raml.maximumOverCapacity)
     }
 
-    val unreachableStrategy = podDef.unreachableStrategy.fold(DefaultUnreachableStrategy)(Raml.fromRaml(_))
+    val unreachableStrategy = podDef.scheduling.flatMap(_.unreachableStrategy).fold(DefaultUnreachableStrategy)(Raml.fromRaml(_))
     val killSelection: state.KillSelection = podDef.scheduling.fold(state.KillSelection.DefaultKillSelection) {
       _.killSelection.fold(state.KillSelection.DefaultKillSelection)(Raml.fromRaml(_))
     }
