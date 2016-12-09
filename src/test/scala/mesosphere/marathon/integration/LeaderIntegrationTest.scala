@@ -17,7 +17,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
   }
 
   private def leadingServerProcess(leader: String): LocalMarathon =
-    (additionalMarathons :+ marathonServer).find(_.masterUrl.contains(leader)).getOrElse(
+    (additionalMarathons :+ marathonServer).find(_.client.url.contains(leader)).getOrElse(
       fail("could not determine the which marathon process was running as leader")
     )
 
