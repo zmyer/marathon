@@ -21,6 +21,9 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
       fail("could not determine the which marathon process was running as leader")
     )
 
+  private def runningServerProcesses(): Seq[LocalMarathon] =
+    (additionalMarathons :+ marathonServer).filter(_.isRunning())
+
   test("all nodes return the same leader") {
     Given("a leader has been elected")
     WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
@@ -77,15 +80,18 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
   test("it survives a small reelection test - https://github.com/mesosphere/marathon/issues/4215") {
     require(numAdditionalMarathons > 1)
+    def firstProcess = runningServerProcesses().headOption.getOrElse(
+      fail("there are marathon servers running")
+    )
     for (_ <- 1 to numAdditionalMarathons) {
+      Given("a leader")
+      WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { firstProcess.client.leader().code == 200 }
+
       // pick the leader to communicate with because it's the only known survivor
-      val leadingProcess = leadingServerProcess(marathon.leader().value.leader)
+      val leader = firstProcess.client.leader().value
+      val leadingProcess: LocalMarathon = leadingServerProcess(leader.leader)
       val client = leadingProcess.client
 
-      Given("a leader")
-      WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { client.leader().code == 200 }
-
-      val leader = client.leader().value
       val secondary = nonLeader(leader) // need to communicate with someone after the leader dies
 
       When("calling DELETE /v2/leader")
@@ -110,6 +116,9 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
   }
 
   test("the leader sets a tombstone for the old twitter commons leader election") {
+    Given("a leader")
+    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
+
     val leader = marathon.leader()
     val secondary = nonLeader(leader.value.leader) // need to communicate with someone after the leader dies
 
@@ -133,9 +142,6 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
         zooKeeper.close()
       }
     }
-
-    Given("a leader")
-    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { leader.code == 200 }
 
     checkTombstone()
 
