@@ -195,7 +195,7 @@ object TaskReplaceActor {
     var nrToKillImmediately = math.max(0, runningInstancesCount - minHealthy)
 
     if (minHealthy == maxCapacity && maxCapacity <= runningInstancesCount) {
-      if (runSpec.residency.isDefined) {
+      if (runSpec.isResident) {
         // Kill enough instances so that we end up with one instance below minHealthy.
         // TODO: We need to do this also while restarting, since the kill could get lost.
         nrToKillImmediately = runningInstancesCount - minHealthy + 1

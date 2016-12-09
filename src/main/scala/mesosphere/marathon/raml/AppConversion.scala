@@ -19,7 +19,8 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Secr
   }
 
   implicit val appResidencyWrites: Writes[Residency, AppResidency] = Writes { residency =>
-    AppResidency(residency.relaunchEscalationTimeoutSeconds.toInt, residency.taskLostBehavior.toRaml)
+    // We ignore residency fields an just write defaults
+    AppResidency(Residency.defaultRelaunchEscalationTimeoutSeconds.toInt, Residency.defaultTaskLostBehaviour.toRaml)
   }
 
   implicit val versionInfoWrites: Writes[state.VersionInfo, VersionInfo] = Writes {

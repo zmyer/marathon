@@ -41,7 +41,11 @@ trait RunSpec extends plugin.RunSpec {
   val version: Timestamp
   val resources: Resources
   val backoffStrategy: BackoffStrategy
-  val residency: Option[Residency] = Option.empty[Residency]
+
+  // Residency is deprecated and should not be used.
+  protected val residency: Option[Residency] = Option.empty[Residency]
+  val isResident = residency.isDefined
+
   val upgradeStrategy: UpgradeStrategy
   def withInstances(instances: Int): RunSpec
   def isUpgrade(to: RunSpec): Boolean

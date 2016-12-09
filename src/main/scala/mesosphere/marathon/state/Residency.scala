@@ -3,7 +3,9 @@ package mesosphere.marathon.state
 import com.wix.accord.dsl._
 import mesosphere.marathon.Protos.ResidencyDefinition.TaskLostBehavior
 
-case class Residency(relaunchEscalationTimeoutSeconds: Long, taskLostBehavior: TaskLostBehavior)
+case class Residency(
+  private val relaunchEscalationTimeoutSeconds: Long,
+  private val taskLostBehavior: TaskLostBehavior)
 
 object Residency {
   def default: Residency = Residency(defaultRelaunchEscalationTimeoutSeconds, defaultTaskLostBehaviour)

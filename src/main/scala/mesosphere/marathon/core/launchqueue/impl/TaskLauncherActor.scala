@@ -278,7 +278,7 @@ private class TaskLauncherActor(
           // of that node after a task on that node has died.
           //
           // B) If a reservation timed out, already rejected offers might become eligible for creating new reservations.
-          if (runSpec.constraints.nonEmpty || (runSpec.residency.isDefined && shouldLaunchInstances)) {
+          if (runSpec.constraints.nonEmpty || (runSpec.isResident && shouldLaunchInstances)) {
             maybeOfferReviver.foreach(_.reviveOffers())
           }
       }
@@ -455,7 +455,8 @@ private class TaskLauncherActor(
   private[this] object OfferMatcherRegistration {
     private[this] val myselfAsOfferMatcher: OfferMatcher = {
       //set the precedence only, if this app is resident
-      new ActorOfferMatcher(clock, self, runSpec.residency.map(_ => runSpec.id))
+      val precedence = if (runSpec.isResident) Some(runSpec.id) else None
+      new ActorOfferMatcher(clock, self, precedence)
     }
     private[this] var registeredAsMatcher = false
 

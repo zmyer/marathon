@@ -35,7 +35,7 @@ object InstanceOpFactory {
     lazy val reserved: Seq[Instance] = instances.filter(_.isReserved)
     def hasWaitingReservations: Boolean = reserved.nonEmpty
     def numberOfWaitingReservations: Int = reserved.size
-    def isForResidentRunSpec: Boolean = runSpec.residency.isDefined
+    def isForResidentRunSpec: Boolean = runSpec.isResident
   }
 
   object Request {

@@ -93,8 +93,6 @@ case class AppDefinition(
 
   val portNumbers: Seq[Int] = portDefinitions.map(_.port)
 
-  val isResident: Boolean = residency.isDefined
-
   override val version: Timestamp = versionInfo.version
 
   override val isSingleInstance: Boolean = labels.get(Labels.SingleInstanceApp).contains("true")
@@ -166,7 +164,8 @@ case class AppDefinition(
       case _ => // ignore
     }
 
-    residency.foreach { r => builder.setResidency(ResidencySerializer.toProto(r)) }
+    // App.residency is deprecated. We just care whether it was set or not.
+    residency.foreach { _ => builder.setResidency(ResidencySerializer.toProto()) }
 
     builder.build
   }

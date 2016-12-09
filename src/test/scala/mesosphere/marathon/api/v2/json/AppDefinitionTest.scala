@@ -921,13 +921,9 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
     val proto = app.toProto
 
     proto.hasResidency shouldBe true
-    proto.getResidency.getRelaunchEscalationTimeoutSeconds shouldBe 3600
-    proto.getResidency.getTaskLostBehavior shouldBe Protos.ResidencyDefinition.TaskLostBehavior.WAIT_FOREVER
 
     val appAgain = AppDefinition.fromProto(proto)
     appAgain.residency should not be empty
-    appAgain.residency.get.relaunchEscalationTimeoutSeconds shouldBe 3600
-    appAgain.residency.get.taskLostBehavior shouldBe Protos.ResidencyDefinition.TaskLostBehavior.WAIT_FOREVER
   }
 
   test("app with readinessCheck passes validation") {
