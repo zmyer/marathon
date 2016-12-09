@@ -316,7 +316,8 @@ case class AppDefinition(
           ipAddress != to.ipAddress ||
           readinessChecks != to.readinessChecks ||
           residency != to.residency ||
-          secrets != to.secrets
+          secrets != to.secrets ||
+          killSelection != to.killSelection
       }
     case _ =>
       // A validation rule will ensure, this can not happen
