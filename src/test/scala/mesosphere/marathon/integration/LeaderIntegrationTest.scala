@@ -1,7 +1,7 @@
 package mesosphere.marathon
 package integration
 
-import mesosphere.{ AkkaIntegrationFunTest, IntegrationTag, Unstable }
+import mesosphere.AkkaIntegrationFunTest
 import mesosphere.marathon.integration.facades.MarathonFacade
 import mesosphere.marathon.integration.setup._
 import org.apache.zookeeper.data.Stat
@@ -12,9 +12,14 @@ import scala.concurrent.duration._
 @IntegrationTest
 class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterTest {
 
-  def nonLeader(leader: String): MarathonFacade = {
+  private def nonLeader(leader: String): MarathonFacade = {
     marathonFacades.find(!_.url.contains(leader)).get
   }
+
+  private def leadingServerProcess(leader: String): LocalMarathon =
+    (additionalMarathons :+ marathonServer).find(_.masterUrl.contains(leader)).getOrElse(
+      fail("could not determine the which marathon process was running as leader")
+    )
 
   test("all nodes return the same leader") {
     Given("a leader has been elected")
@@ -55,6 +60,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
       marathon.leader().code == 200
     }
     val leader = marathon.leader().value
+    val leadingServer = leadingServerProcess(leader.leader)
 
     When("calling DELETE /v2/leader")
     val result = marathon.abdicate()
@@ -65,18 +71,25 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
     And("the leader must have died")
     WaitTestSupport.waitUntil("the leading marathon dies changes", 30.seconds) {
-      !marathonServer.isRunning()
+      !leadingServer.isRunning()
     }
   }
 
-  test("it survives a small burn-in reelection test - https://github.com/mesosphere/marathon/issues/4215", Unstable, IntegrationTag) {
-    for (_ <- 1 to 10) {
+  test("it survives a small reelection test - https://github.com/mesosphere/marathon/issues/4215") {
+    require(numAdditionalMarathons > 1)
+    for (_ <- 1 to numAdditionalMarathons) {
+      // pick the leader to communicate with because it's the only known survivor
+      val leadingProcess = leadingServerProcess(marathon.leader().value.leader)
+      val client = leadingProcess.client
+
       Given("a leader")
-      WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
-      val leader = marathon.leader().value
+      WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { client.leader().code == 200 }
+
+      val leader = client.leader().value
+      val secondary = nonLeader(leader) // need to communicate with someone after the leader dies
 
       When("calling DELETE /v2/leader")
-      val result = marathon.abdicate()
+      val result = client.abdicate()
 
       Then("the request should be successful")
       result.code should be (200)
@@ -84,7 +97,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
       And("the leader must have changed")
       WaitTestSupport.waitUntil("the leader changes", 30.seconds) {
-        val result = marathon.leader()
+        val result = secondary.leader()
         result.code == 200 && result.value != leader
       }
 
@@ -97,6 +110,9 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
   }
 
   test("the leader sets a tombstone for the old twitter commons leader election") {
+    val leader = marathon.leader()
+    val secondary = nonLeader(leader.value.leader) // need to communicate with someone after the leader dies
+
     def checkTombstone(): Unit = {
       val watcher = new Watcher { override def process(event: WatchedEvent): Unit = println(event) }
       val zooKeeper = new ZooKeeper(zkServer.connectUri, 30 * 1000, watcher)
@@ -110,7 +126,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
         }
 
         And("the tombstone points to the leader")
-        val apiLeader: String = marathon.leader().value.leader
+        val apiLeader: String = secondary.leader().value.leader
         val tombstoneData = zooKeeper.getData("/marathon/leader/member_-00000000", false, stat.get)
         new String(tombstoneData, "UTF-8") should equal(apiLeader)
       } finally {
@@ -119,11 +135,12 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     }
 
     Given("a leader")
-    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
+    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { leader.code == 200 }
 
     checkTombstone()
 
     When("calling DELETE /v2/leader")
+    val leadingProcess = leadingServerProcess(leader.value.leader)
     val result = marathon.abdicate()
 
     Then("the request should be successful")
@@ -131,7 +148,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     (result.entityJson \ "message").as[String] should be ("Leadership abdicated")
 
     And("the leader must have died")
-    WaitTestSupport.waitUntil("the marathon process dies", 30.seconds) { !marathonServer.isRunning() }
+    WaitTestSupport.waitUntil("the marathon process dies", 30.seconds) { !leadingProcess.isRunning() }
 
     checkTombstone()
   }
