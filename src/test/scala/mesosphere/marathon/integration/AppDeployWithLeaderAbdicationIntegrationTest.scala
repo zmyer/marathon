@@ -78,7 +78,7 @@ class AppDeployWithLeaderAbdicationIntegrationTest extends AkkaIntegrationFunTes
     waitForEvent("health_status_changed_event")
 
     Then("the app should have only 1 task launched")
-    waitForTasks(appId, 1) should have size 1
+    waitForTasks(appId, 1)(secondary) should have size 1
 
     And("app was deployed successfully")
     waitForEventMatching("app should be restarted and deployment should be finished") { matchDeploymentSuccess(1, appId.toString) }

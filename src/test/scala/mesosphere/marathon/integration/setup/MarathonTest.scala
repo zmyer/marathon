@@ -368,9 +368,9 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
     )
   }
 
-  def waitForTasks(appId: PathId, num: Int, maxWait: FiniteDuration = patienceConfig.timeout.toMillis.millis): List[ITEnrichedTask] = {
+  def waitForTasks(appId: PathId, num: Int, maxWait: FiniteDuration = patienceConfig.timeout.toMillis.millis)(implicit facade: MarathonFacade = marathon): List[ITEnrichedTask] = {
     eventually(timeout(Span(maxWait.toMillis, Milliseconds))) {
-      val tasks = Try(marathon.tasks(appId)).map(_.value).getOrElse(Nil).filter(_.launched)
+      val tasks = Try(facade.tasks(appId)).map(_.value).getOrElse(Nil).filter(_.launched)
       logger.info(s"${tasks.size}/$num tasks launched for $appId")
       require(tasks.size == num, s"Waiting for $num tasks to be launched")
       tasks
