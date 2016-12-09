@@ -244,10 +244,9 @@ class PodsResourceTest extends AkkaUnitTest with Mockito {
 
       "there are no versions" when {
         "list no versions" in {
-          val podRepository = PodRepository.inMemRepository(new InMemoryPersistenceStore())
           val groupManager = mock[GroupManager]
           groupManager.pod(any).returns(Future.successful(None))
-          implicit val podManager = PodManagerImpl(groupManager, podRepository)
+          implicit val podManager = PodManagerImpl(groupManager)
           val f = Fixture()
 
           val response = f.podsResource.versions("/id", f.auth.request)
@@ -256,10 +255,8 @@ class PodsResourceTest extends AkkaUnitTest with Mockito {
           }
         }
         "return 404 when asking for a version" in {
-          val podRepository = PodRepository.inMemRepository(new InMemoryPersistenceStore())
           val groupManager = mock[GroupManager]
           groupManager.pod(any).returns(Future.successful(None))
-          implicit val podManager = PodManagerImpl(groupManager, podRepository)
           val f = Fixture()
 
           val response = f.podsResource.version("/id", "2008", f.auth.request)
@@ -279,7 +276,7 @@ class PodsResourceTest extends AkkaUnitTest with Mockito {
           podRepository.store(pod2).futureValue
           val groupManager = mock[GroupManager]
           groupManager.pod(any).returns(Future.successful(Some(pod2)))
-          implicit val podManager = PodManagerImpl(groupManager, podRepository)
+          implicit val podManager = PodManagerImpl(groupManager)
           val f = Fixture()
 
           val response = f.podsResource.versions("/id", f.auth.request)
@@ -293,7 +290,7 @@ class PodsResourceTest extends AkkaUnitTest with Mockito {
           val podRepository = PodRepository.inMemRepository(new InMemoryPersistenceStore())
           podRepository.store(pod1).futureValue
           podRepository.store(pod2).futureValue
-          implicit val podManager = PodManagerImpl(mock[GroupManager], podRepository)
+          implicit val podManager = PodManagerImpl(mock[GroupManager])
           val f = Fixture()
 
           val response = f.podsResource.version("/id", pod1.version.toString, f.auth.request)

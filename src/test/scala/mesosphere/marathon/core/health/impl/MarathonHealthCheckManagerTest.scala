@@ -1,34 +1,32 @@
-package mesosphere.marathon.core.health.impl
+/*package mesosphere.marathon
+package core.health.impl
 
 import akka.actor._
 import akka.event.EventStream
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.EventFilter
 import com.codahale.metrics.MetricRegistry
 import com.typesafe.config.ConfigFactory
-import mesosphere.marathon._
 import mesosphere.marathon.core.base.ConstantClock
-import mesosphere.marathon.core.health.{ Health, HealthCheck, MesosCommandHealthCheck }
-import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder, TestTaskBuilder }
+import mesosphere.marathon.core.group.GroupManager
+import mesosphere.marathon.core.health.{Health, HealthCheck, MesosCommandHealthCheck}
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
-import mesosphere.marathon.core.leadership.{ AlwaysElectedLeadershipModule, LeadershipModule }
-import mesosphere.marathon.core.storage.store.impl.memory.InMemoryPersistenceStore
+import mesosphere.marathon.core.instance.{Instance, TestInstanceBuilder, TestTaskBuilder}
+import mesosphere.marathon.core.leadership.{AlwaysElectedLeadershipModule, LeadershipModule}
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.termination.KillService
-import mesosphere.marathon.core.task.tracker.{ InstanceCreationHandler, InstanceTracker, TaskStateOpProcessor }
+import mesosphere.marathon.core.task.tracker.{InstanceCreationHandler, InstanceTracker, TaskStateOpProcessor}
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId.StringPathId
 import mesosphere.marathon.state._
-import mesosphere.marathon.storage.repository.AppRepository
-import mesosphere.marathon.test.{ CaptureEvents, MarathonShutdownHookSupport, MarathonSpec, MarathonTestHelper }
+import mesosphere.marathon.test.{CaptureEvents, MarathonShutdownHookSupport, MarathonSpec, MarathonTestHelper}
 import mesosphere.util.Logging
-import org.apache.mesos.{ Protos => mesos }
+import org.apache.mesos.{Protos => mesos}
 import org.rogach.scallop.ScallopConf
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{ Millis, Span }
+import org.scalatest.time.{Millis, Span}
 
 import scala.collection.immutable.Set
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class MarathonHealthCheckManagerTest
@@ -38,7 +36,7 @@ class MarathonHealthCheckManagerTest
   var taskTracker: InstanceTracker = _
   var taskCreationHandler: InstanceCreationHandler = _
   var stateOpProcessor: TaskStateOpProcessor = _
-  var appRepository: AppRepository = _
+  var groupManager: GroupManager = _
   var eventStream: EventStream = _
 
   implicit var system: ActorSystem = _
@@ -69,8 +67,7 @@ class MarathonHealthCheckManagerTest
     taskCreationHandler = taskTrackerModule.instanceCreationHandler
     stateOpProcessor = taskTrackerModule.stateOpProcessor
 
-    val store = new InMemoryPersistenceStore()(ctx = ExecutionContext.global, mat = mat, metrics = metrics)
-    appRepository = AppRepository.inMemRepository(store)(ExecutionContext.global)
+    val groupManager = mock[GroupManager]
 
     eventStream = new EventStream(system)
 
@@ -80,7 +77,7 @@ class MarathonHealthCheckManagerTest
       killService,
       eventStream,
       taskTracker,
-      appRepository
+      groupManager
     )
   }
 
@@ -110,7 +107,8 @@ class MarathonHealthCheckManagerTest
 
   test("Add for a known app") {
     val app: AppDefinition = AppDefinition(id = appId)
-    appRepository.store(app).futureValue
+
+    //appRepository.store(app).futureValue
 
     val healthCheck = MesosCommandHealthCheck(gracePeriod = 0.seconds, command = Command("true"))
     hcManager.add(app, healthCheck, Seq.empty)
@@ -127,7 +125,7 @@ class MarathonHealthCheckManagerTest
 
   test("Update") {
     val app: AppDefinition = AppDefinition(id = appId, versionInfo = VersionInfo.NoVersion)
-    appRepository.store(app).futureValue
+    //appRepository.store(app).futureValue
 
     val instance = TestInstanceBuilder.newBuilder(appId).addTaskStaged().getInstance()
     val instanceId = instance.instanceId
@@ -167,7 +165,7 @@ class MarathonHealthCheckManagerTest
 
   test("statuses") {
     val app: AppDefinition = AppDefinition(id = appId)
-    appRepository.store(app).futureValue
+    //appRepository.store(app).futureValue
     val version = app.version
 
     val healthCheck = MesosCommandHealthCheck(gracePeriod = 0.seconds, command = Command("true"))
@@ -238,11 +236,12 @@ class MarathonHealthCheckManagerTest
       TestInstanceBuilder.newBuilder(appId, version = versions(i)).addTaskStaged(version = Some(versions(i))).getInstance()
     }
     def startTask(appId: PathId, instance: Instance, version: Timestamp, healthChecks: Set[_ <: HealthCheck]) = {
-      appRepository.store(AppDefinition(
+
+      /*appRepository.store(AppDefinition(
         id = appId,
         versionInfo = VersionInfo.forNewConfig(version),
         healthChecks = healthChecks
-      )).futureValue
+      )).futureValue*/
       taskCreationHandler.created(InstanceUpdateOperation.LaunchEphemeral(instance)).futureValue
       val update = InstanceUpdateOperation.MesosUpdate(instance, taskStatus(instance), clock.now())
       stateOpProcessor.process(update).futureValue
@@ -250,13 +249,17 @@ class MarathonHealthCheckManagerTest
     def startTask_i(i: Int): Unit = startTask(appId, instances(i), versions(i), healthChecks(i))
     def stopTask(instance: Instance) =
       taskCreationHandler.terminated(InstanceUpdateOperation.ForceExpunge(instance.instanceId)).futureValue
-
+    val app = AppDefinition(
+      id = appId,
+      versionInfo = VersionInfo.forNewConfig(version),
+      healthChecks = healthChecks
+    )
     // one other task of another app
     val otherAppId = "other".toRootPath
     val otherInstance = TestInstanceBuilder.newBuilder(appId).addTaskStaged(version = Some(Timestamp.zero)).getInstance()
     val otherHealthChecks = Set(MesosCommandHealthCheck(gracePeriod = 0.seconds, command = Command("true")))
     startTask(otherAppId, otherInstance, Timestamp(42), otherHealthChecks)
-    hcManager.addAllFor(appRepository.get(otherAppId).futureValue.get, Seq.empty)
+    hcManager.addAllFor(app, Seq.empty)
     assert(hcManager.list(otherAppId) == otherHealthChecks) // linter:ignore:UnlikelyEquality
 
     // start task 0 without running health check
@@ -316,7 +319,7 @@ class MarathonHealthCheckManagerTest
   test("reconcileWith loads the last known task health state") {
     val healthCheck = MesosCommandHealthCheck(command = Command("true"))
     val app: AppDefinition = AppDefinition(id = appId, healthChecks = Set(healthCheck))
-    appRepository.store(app).futureValue
+    //appRepository.store(app).futureValue
 
     // Create a task
     val instance: Instance = TestInstanceBuilder.newBuilder(appId, version = app.version).addTaskStaged().getInstance()
@@ -343,3 +346,4 @@ class MarathonHealthCheckManagerTest
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(1000, Millis)))
 }
+*/
