@@ -75,7 +75,9 @@ case class AppUpdate(
 
     residency: Option[Residency] = None,
 
-    secrets: Option[Map[String, Secret]] = None) {
+    secrets: Option[Map[String, Secret]] = None,
+
+    killSelection: Option[KillSelection] = None) {
 
   require(version.isEmpty || onlyVersionOrIdSet, "The 'version' field may only be combined with the 'id' field.")
 
@@ -146,7 +148,8 @@ case class AppUpdate(
     versionInfo = app.versionInfo,
     residency = residency.orElse(app.residency),
     secrets = secrets.getOrElse(app.secrets),
-    taskKillGracePeriod = taskKillGracePeriod.orElse(app.taskKillGracePeriod)
+    taskKillGracePeriod = taskKillGracePeriod.orElse(app.taskKillGracePeriod),
+    killSelection = killSelection.getOrElse(app.killSelection)
   )
 
   def withCanonizedIds(base: PathId = PathId.empty): AppUpdate = copy(
