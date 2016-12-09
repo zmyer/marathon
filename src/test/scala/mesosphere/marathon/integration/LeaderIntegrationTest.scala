@@ -45,29 +45,31 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
     Then("all nodes send a redirect")
     results.foreach { connection =>
-      connection.getResponseCode should be(302) withClue (s"Connection to ${connection.getURL} was not a redirect.")
+      connection.getResponseCode should be(302) withClue s"Connection to ${connection.getURL} was not a redirect."
     }
   }
 
-  // Disabled due to the leader now dying on abdication
-  ignore("the leader abdicates when it receives a DELETE") {
+  test("the leader abdicates and dies when it receives a DELETE") {
     Given("a leader")
-    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
+    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) {
+      marathon.leader().code == 200
+    }
     val leader = marathon.leader().value
 
     When("calling DELETE /v2/leader")
     val result = marathon.abdicate()
 
     Then("the request should be successful")
-    result.code should be (200)
-    (result.entityJson \ "message").as[String] should be ("Leadership abdicated")
+    result.code should be(200)
+    (result.entityJson \ "message").as[String] should be("Leadership abdicated")
 
-    And("the leader must have changed")
-    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { nonLeader(leader.leader).leader().value != leader }
+    And("the leader must have died")
+    WaitTestSupport.waitUntil("the leading marathon dies changes", 30.seconds) {
+      !marathonServer.isRunning()
+    }
   }
 
   test("it survives a small burn-in reelection test - https://github.com/mesosphere/marathon/issues/4215", Unstable, IntegrationTag) {
-    val random = new scala.util.Random
     for (_ <- 1 to 10) {
       Given("a leader")
       WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
@@ -94,8 +96,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     }
   }
 
-  // Disabled due to the leader now dying on abdication
-  ignore("the leader sets a tombstone for the old twitter commons leader election") {
+  test("the leader sets a tombstone for the old twitter commons leader election") {
     def checkTombstone(): Unit = {
       val watcher = new Watcher { override def process(event: WatchedEvent): Unit = println(event) }
       val zooKeeper = new ZooKeeper(zkServer.connectUri, 30 * 1000, watcher)
@@ -119,7 +120,6 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
     Given("a leader")
     WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
-    val leader = marathon.leader().value
 
     checkTombstone()
 
@@ -130,8 +130,8 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     result.code should be (200)
     (result.entityJson \ "message").as[String] should be ("Leadership abdicated")
 
-    And("the leader must have changed")
-    WaitTestSupport.waitUntil("the leader changes", 30.seconds) { marathon.leader().value != leader }
+    And("the leader must have died")
+    WaitTestSupport.waitUntil("the marathon process dies", 30.seconds) { !marathonServer.isRunning() }
 
     checkTombstone()
   }

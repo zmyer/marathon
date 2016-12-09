@@ -147,14 +147,21 @@ case class LocalMarathon(
     future
   }
 
+  private def activePids: Seq[String] = {
+    val PIDRE = """^\s*(\d+)\s+(\S*)\s*(.*)$""".r
+    Process("jps -lv").!!.split("\n").collect {
+      case PIDRE(pid, main, jvmArgs) if main.contains(mainClass) && jvmArgs.contains(uuid) => pid
+    }(collection.breakOut)
+  }
+
+  def isRunning(): Boolean =
+    activePids.nonEmpty
+
   def stop(): Unit = {
     marathon.foreach(_.destroy())
     marathon = Option.empty[Process]
-    val PIDRE = """^\s*(\d+)\s+(\S*)\s*(.*)$""".r
 
-    val pids = Process("jps -lv").!!.split("\n").collect {
-      case PIDRE(pid, main, jvmArgs) if main.contains(mainClass) && jvmArgs.contains(uuid) => pid
-    }
+    val pids = activePids
     if (pids.nonEmpty) {
       Process(s"kill -9 ${pids.mkString(" ")}").!
     }

@@ -10,7 +10,7 @@ import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.io.IO
 import mesosphere.util.PortAllocator
 import org.apache.commons.httpclient.HttpStatus
-import org.scalatest.{ BeforeAndAfter, ConfigMap }
+import org.scalatest.ConfigMap
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -19,7 +19,7 @@ import scala.concurrent.duration.Duration
   * Tests forwarding requests.
   */
 @IntegrationTest
-class ForwardToLeaderIntegrationTest extends IntegrationFunTest with BeforeAndAfter {
+class ForwardToLeaderIntegrationTest extends IntegrationFunTest {
   implicit var actorSystem: ActorSystem = _
   val forwarder = new ForwarderService
 
@@ -176,7 +176,7 @@ class ForwardToLeaderIntegrationTest extends IntegrationFunTest with BeforeAndAf
 
   test("forwarding loop") {
     val forwardPort1 = forwarder.startForwarder(PortAllocator.ephemeralPort())
-    val forwardPort2 = forwarder.startForwarder(PortAllocator.ephemeralPort())
+    forwarder.startForwarder(PortAllocator.ephemeralPort())
 
     val appFacade = new AppMockFacade()
     val result = appFacade.ping("localhost", port = forwardPort1)

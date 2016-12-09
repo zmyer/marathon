@@ -9,7 +9,7 @@ import mesosphere.marathon.api.v2.json.AppUpdate
 import mesosphere.marathon.core.health.{ MarathonHttpHealthCheck, PortReference }
 import mesosphere.marathon.integration.facades.MarathonFacade
 import mesosphere.marathon.integration.setup._
-import mesosphere.marathon.state.{ PortDefinition, UpgradeStrategy }
+import mesosphere.marathon.state.{ PathId, PortDefinition, UpgradeStrategy }
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 
@@ -64,10 +64,9 @@ class AppDeployWithLeaderAbdicationIntegrationTest extends AkkaIntegrationFunTes
 
     When("marathon leader is abdicated")
     val leader = marathon.leader().value
-    marathon.abdicate().code should be (200)
-
-    val secondary: MarathonFacade = additionalMarathons.headOption.map(_.client).getOrElse(
-      fail("expected at least 1 additional marathon in the cluster"))
+    val secondary = nonLeader(leader)
+    val leaderFacade = new MarathonFacade(s"http://${leader.leader}", PathId.empty)
+    leaderFacade.abdicate().code should be (200)
 
     And("a new leader is elected")
     WaitTestSupport.waitUntil("the leader changes", 30.seconds) { secondary.leader().value != leader }
