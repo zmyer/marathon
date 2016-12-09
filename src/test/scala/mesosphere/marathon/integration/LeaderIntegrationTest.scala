@@ -78,7 +78,8 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
     }
   }
 
-  test("it survives a small reelection test - https://github.com/mesosphere/marathon/issues/4215") {
+  test("it survives a small reelection test") {
+    //https://github.com/mesosphere/marathon/issues/4215
     require(numAdditionalMarathons > 1)
     def firstProcess = runningServerProcesses.headOption.getOrElse(
       fail("there are marathon servers running")

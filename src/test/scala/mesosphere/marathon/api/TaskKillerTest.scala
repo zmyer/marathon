@@ -1,6 +1,6 @@
-package mesosphere.marathon.api
+package mesosphere.marathon
+package api
 
-import mesosphere.marathon._
 import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
