@@ -529,6 +529,7 @@ trait LocalMarathonTest
     extends ExitDisabledTest
     with MarathonTest
     with ScalaFutures {
+
   this: MesosTest with ZookeeperServerTest =>
 
   val marathonArgs = Map.empty[String, String]

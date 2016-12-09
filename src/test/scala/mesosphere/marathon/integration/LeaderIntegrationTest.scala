@@ -21,7 +21,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
       fail("could not determine the which marathon process was running as leader")
     )
 
-  private def runningServerProcesses(): Seq[LocalMarathon] =
+  private def runningServerProcesses: Seq[LocalMarathon] =
     (additionalMarathons :+ marathonServer).filter(_.isRunning())
 
   test("all nodes return the same leader") {
@@ -80,7 +80,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
   test("it survives a small reelection test - https://github.com/mesosphere/marathon/issues/4215") {
     require(numAdditionalMarathons > 1)
-    def firstProcess = runningServerProcesses().headOption.getOrElse(
+    def firstProcess = runningServerProcesses.headOption.getOrElse(
       fail("there are marathon servers running")
     )
     for (_ <- 1 to numAdditionalMarathons) {
@@ -107,7 +107,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
       And("all instances agree on the leader")
       WaitTestSupport.waitUntil("all instances agree on the leader", 30.seconds) {
-        val results = marathonFacades.map(marathon => marathon.leader())
+        val results = runningServerProcesses.map(_.client.leader())
         results.forall(_.code == 200) && results.map(_.value).distinct.size == 1
       }
     }
@@ -115,7 +115,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
   test("the leader sets a tombstone for the old twitter commons leader election") {
     Given("a leader")
-    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 }
+    WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { marathon.leader().code == 200 } // TODO(jdef) this is failing but I don't know why..
 
     val leader = marathon.leader()
     val secondary = nonLeader(leader.value.leader) // need to communicate with someone after the leader dies
