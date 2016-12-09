@@ -227,7 +227,9 @@ types:
           a globally unique (cluster-wide) service port is assigned and provided as
           part of the app definition to be used in load balancing definitions.
       readinessChecks?: readiness.ReadinessCheck[]
-      residency?: AppResidency
+      residency?:
+        (pragma.deprecated):
+        type: AppResidency
       requirePorts?:
         type: boolean
         description: |
