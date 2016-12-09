@@ -17,7 +17,7 @@ import org.apache.zookeeper.ZooDefs.Ids
 import org.apache.zookeeper.server.{ ServerConfig, ZooKeeperServerMain }
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, Suite }
+import org.scalatest.{ BeforeAndAfterAll, Suite }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
@@ -100,7 +100,7 @@ object ZookeeperServer {
     new ZookeeperServer(autoStart, port)
 }
 
-trait ZookeeperServerTest extends BeforeAndAfterAllConfigMap { this: Suite with ScalaFutures =>
+trait ZookeeperServerTest extends BeforeAndAfterAll { this: Suite with ScalaFutures =>
   val zkServer = ZookeeperServer(autoStart = false)
   private val clients = Lock(ListBuffer.empty[CuratorFramework])
   private val twitterClients = Lock(ListBuffer.empty[ZkClient])
@@ -128,12 +128,12 @@ trait ZookeeperServerTest extends BeforeAndAfterAllConfigMap { this: Suite with 
     client
   }
 
-  abstract override def beforeAll(cm: ConfigMap): Unit = {
-    super.beforeAll(cm)
+  abstract override def beforeAll(): Unit = {
+    super.beforeAll()
     zkServer.start()
   }
 
-  abstract override def afterAll(cm: ConfigMap): Unit = {
+  abstract override def afterAll(): Unit = {
     clients { c =>
       c.foreach(_.close())
       c.clear()
@@ -143,6 +143,6 @@ trait ZookeeperServerTest extends BeforeAndAfterAllConfigMap { this: Suite with 
       c.clear()
     }
     zkServer.close()
-    super.afterAll(cm)
+    super.afterAll()
   }
 }

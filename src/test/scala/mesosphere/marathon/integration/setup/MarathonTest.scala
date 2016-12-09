@@ -30,7 +30,7 @@ import org.apache.mesos.Protos
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.{ Milliseconds, Span }
-import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, Suite }
+import org.scalatest.{ BeforeAndAfterAll, Suite }
 import play.api.libs.json.{ JsString, Json }
 
 import scala.annotation.tailrec
@@ -177,7 +177,7 @@ case class LocalMarathon(
   * base trait that spins up/tears down a marathon and has all of the original tooling from
   * SingleMarathonIntegrationTest.
   */
-trait MarathonTest extends Suite with StrictLogging with ScalaFutures with BeforeAndAfterAllConfigMap with Eventually {
+trait MarathonTest extends Suite with StrictLogging with ScalaFutures with BeforeAndAfterAll with Eventually {
   def marathonUrl: String
   def marathon: MarathonFacade
   def mesos: MesosFacade
@@ -262,11 +262,11 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
     server
   }
 
-  abstract override def afterAll(cm: ConfigMap): Unit = {
+  abstract override def afterAll(): Unit = {
     Try(marathon.unsubscribe(s"http://localhost:${callbackEndpoint.localAddress.getPort}"))
     Try(callbackEndpoint.unbind().futureValue)
     Try(killAppProxies())
-    super.afterAll(cm)
+    super.afterAll()
   }
 
   private def killAppProxies(): Unit = {
@@ -543,15 +543,15 @@ trait LocalMarathonTest
   lazy val marathon = marathonServer.client
   lazy val appMock: AppMockFacade = new AppMockFacade()
 
-  abstract override def beforeAll(cm: ConfigMap): Unit = {
-    super.beforeAll(cm)
+  abstract override def beforeAll(): Unit = {
+    super.beforeAll()
     marathonServer.start().futureValue(Timeout(90.seconds))
     callbackEndpoint
   }
 
-  abstract override def afterAll(cm: ConfigMap): Unit = {
+  abstract override def afterAll(): Unit = {
     Try(marathonServer.close())
-    super.afterAll(cm)
+    super.afterAll()
   }
 }
 
@@ -577,14 +577,14 @@ trait MarathonClusterTest extends Suite with StrictLogging with ZookeeperServerT
   }
   lazy val marathonFacades = marathon +: additionalMarathons.map(_.client)
 
-  override def beforeAll(cm: ConfigMap): Unit = {
-    super.beforeAll(cm)
+  override def beforeAll(): Unit = {
+    super.beforeAll()
     Future.sequence(additionalMarathons.map(_.start())).futureValue(Timeout(60.seconds))
   }
 
-  override def afterAll(cm: ConfigMap): Unit = {
+  override def afterAll(): Unit = {
     Try(additionalMarathons.foreach(_.close()))
-    super.afterAll(cm)
+    super.afterAll()
   }
 
   def nonLeader(leader: ITLeaderResult): MarathonFacade = {

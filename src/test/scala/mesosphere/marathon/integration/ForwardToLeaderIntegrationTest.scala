@@ -10,7 +10,6 @@ import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.io.IO
 import mesosphere.util.PortAllocator
 import org.apache.commons.httpclient.HttpStatus
-import org.scalatest.ConfigMap
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -32,9 +31,9 @@ class ForwardToLeaderIntegrationTest extends IntegrationFunTest {
     forwarder.close()
   }
 
-  override def afterAll(cm: ConfigMap): Unit = {
+  override def afterAll(): Unit = {
     forwarder.close()
-    super.afterAll(cm)
+    super.afterAll()
   }
 
   test("direct ping") {

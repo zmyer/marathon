@@ -13,7 +13,7 @@ import mesosphere.marathon.util.Retry
 import mesosphere.util.PortAllocator
 import org.apache.commons.io.FileUtils
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, Suite }
+import org.scalatest.{ BeforeAndAfterAll, Suite }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
@@ -326,7 +326,7 @@ trait SimulatedMesosTest extends MesosTest {
   val mesosMasterUrl = ""
 }
 
-trait MesosLocalTest extends Suite with ScalaFutures with MesosTest with BeforeAndAfterAllConfigMap {
+trait MesosLocalTest extends Suite with ScalaFutures with MesosTest with BeforeAndAfterAll {
   implicit val system: ActorSystem
   implicit val mat: Materializer
   implicit val ctx: ExecutionContext
@@ -340,14 +340,14 @@ trait MesosLocalTest extends Suite with ScalaFutures with MesosTest with BeforeA
 
   override def cleanMesos(): Unit = mesosLocalServer.clean()
 
-  abstract override def beforeAll(cm: ConfigMap): Unit = {
-    super.beforeAll(cm)
+  abstract override def beforeAll(): Unit = {
+    super.beforeAll()
     mesosLocalServer.start().futureValue
   }
 
-  abstract override def afterAll(cm: ConfigMap): Unit = {
+  abstract override def afterAll(): Unit = {
     mesosLocalServer.close()
-    super.afterAll(cm)
+    super.afterAll()
   }
 }
 
@@ -369,13 +369,13 @@ trait MesosClusterTest extends Suite with ZookeeperServerTest with MesosTest wit
 
   override def cleanMesos(): Unit = mesosCluster.clean()
 
-  abstract override def beforeAll(cm: ConfigMap): Unit = {
-    super.beforeAll(cm)
+  abstract override def beforeAll(): Unit = {
+    super.beforeAll()
     mesosCluster.start().futureValue
   }
 
-  abstract override def afterAll(cm: ConfigMap): Unit = {
+  abstract override def afterAll(): Unit = {
     mesosCluster.close()
-    super.afterAll(cm)
+    super.afterAll()
   }
 }

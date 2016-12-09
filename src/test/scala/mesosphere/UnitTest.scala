@@ -2,7 +2,7 @@ package mesosphere
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, Scheduler }
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKitBase
 import akka.util.Timeout
@@ -11,6 +11,8 @@ import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.test.{ ExitDisabledTest, Mockito }
 import org.scalactic.source.Position
 import org.scalatest._
+
+import scala.concurrent.ExecutionContextExecutor
 
 /**
   * Tests which are still unreliable should be marked with this tag until
@@ -53,16 +55,16 @@ trait UnitTestLike extends WordSpecLike
 
 abstract class UnitTest extends WordSpec with UnitTestLike
 
-trait AkkaTest extends Suite with BeforeAndAfterAllConfigMap with FutureTestSupport with TestKitBase {
+trait AkkaTest extends Suite with BeforeAndAfterAll with FutureTestSupport with TestKitBase {
   protected lazy val akkaConfig: Config = ConfigFactory.load
   implicit lazy val system = ActorSystem(suiteName, akkaConfig)
-  implicit lazy val scheduler = system.scheduler
+  implicit lazy val scheduler: Scheduler = system.scheduler
   implicit lazy val mat = ActorMaterializer()
-  implicit lazy val ctx = system.dispatcher
+  implicit lazy val ctx: ExecutionContextExecutor = system.dispatcher
   implicit val askTimeout = Timeout(patienceConfig.timeout.toMillis, TimeUnit.MILLISECONDS)
 
-  abstract override def afterAll(cm: ConfigMap): Unit = {
-    super.afterAll(cm)
+  abstract override def afterAll(): Unit = {
+    super.afterAll()
     // intentionally shutdown the actor system last.
     system.terminate().futureValue
   }
