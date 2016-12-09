@@ -92,8 +92,6 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
       val leadingProcess: LocalMarathon = leadingServerProcess(leader.leader)
       val client = leadingProcess.client
 
-      val secondary = nonLeader(leader) // need to communicate with someone after the leader dies
-
       When("calling DELETE /v2/leader")
       val result = client.abdicate()
 
@@ -103,7 +101,7 @@ class LeaderIntegrationTest extends AkkaIntegrationFunTest with MarathonClusterT
 
       And("the leader must have changed")
       WaitTestSupport.waitUntil("the leader changes", 30.seconds) {
-        val result = secondary.leader()
+        val result = firstProcess.client.leader()
         result.code == 200 && result.value != leader
       }
 
