@@ -15,7 +15,6 @@ import mesosphere.marathon.core.leadership.LeadershipCoordinator
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.storage.migration.Migration
 import mesosphere.marathon.storage.repository.{ AppRepository, FrameworkIdRepository }
-import mesosphere.marathon.test.ExitDisabledTest
 import org.apache.mesos.{ SchedulerDriver, Protos => mesos }
 import org.mockito.Matchers.{ eq => mockEq }
 import org.mockito.Mockito
@@ -59,7 +58,7 @@ object MarathonSchedulerServiceTest {
   }
 }
 
-class MarathonSchedulerServiceTest extends AkkaFunTest with ExitDisabledTest {
+class MarathonSchedulerServiceTest extends AkkaFunTest {
   import MarathonSchedulerServiceTest._
 
   private[this] var probe: TestProbe = _
