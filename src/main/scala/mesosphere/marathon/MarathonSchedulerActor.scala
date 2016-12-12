@@ -398,9 +398,8 @@ class SchedulerActions(
   }
 
   def scaleRunSpec(): Future[Unit] = {
-    appRepository.ids().concat(podRepository.ids()).runWith(Sink.set).andThen {
-      case Success(ids) => for (id <- ids) schedulerActor ! ScaleRunSpec(id)
-      case Failure(t) => log.warn("Failed to get task names", t)
+    groupRepository.root().map { root =>
+      root.transitiveRunSpecs.foreach(spec => schedulerActor ! ScaleRunSpec(spec.id))
     }.map(_ => ())
   }
 
@@ -413,7 +412,8 @@ class SchedulerActions(
     * @param driver scheduler driver
     */
   def reconcileTasks(driver: SchedulerDriver): Future[Status] = {
-    appRepository.ids().concat(podRepository.ids()).runWith(Sink.set).flatMap { runSpecIds =>
+    groupRepository.root().flatMap { root =>
+      val runSpecIds = root.transitiveRunSpecsById.keySet
       instanceTracker.instancesBySpec().map { instances =>
         val knownTaskStatuses = runSpecIds.flatMap { runSpecId =>
           TaskStatusCollector.collectTaskStatusFor(instances.specInstances(runSpecId))
