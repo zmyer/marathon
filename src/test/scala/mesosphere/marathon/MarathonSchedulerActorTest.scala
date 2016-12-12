@@ -199,15 +199,16 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val app: AppDefinition = AppDefinition(id = "/test-app".toPath, instances = 1)
+
     val instances = Seq(TestInstanceBuilder.newBuilder(app.id).addTaskRunning().getInstance())
 
     queue.get(app.id) returns Some(LaunchQueueTestHelper.zeroCounts)
-    appRepo.ids() returns Source.single(app.id)
     instanceTracker.specInstancesSync(app.id) returns Seq.empty[Instance]
     instanceTracker.instancesBySpecSync returns InstanceTracker.InstancesBySpec.of(InstanceTracker.SpecInstances.forInstances("nope".toPath, instances))
     instanceTracker.specInstancesSync("nope".toPath) returns instances
     appRepo.get(app.id) returns Future.successful(Some(app))
     instanceTracker.countLaunchedSpecInstancesSync(app.id) returns 0
+    groupRepo.root() returns Future.successful(createRootGroup(apps = Map(app.id -> app)))
 
     val schedulerActor = createActor()
     try {
