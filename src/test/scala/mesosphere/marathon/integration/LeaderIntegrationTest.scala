@@ -6,6 +6,7 @@ import mesosphere.marathon.integration.facades.MarathonFacade
 import mesosphere.marathon.integration.setup._
 import org.apache.zookeeper.data.Stat
 import org.apache.zookeeper.{ WatchedEvent, Watcher, ZooKeeper }
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration._
 
@@ -223,7 +224,7 @@ class ReelectionLeaderIntegrationTest extends LeaderIntegrationTest {
     def firstProcess = runningServerProcesses.headOption.getOrElse(
       fail("there are marathon servers running")
     )
-    for (_ <- 1 to numAdditionalMarathons) {
+    for (_ <- 1 to 15) {
       Given("a leader")
       WaitTestSupport.waitUntil("a leader has been elected", 30.seconds) { firstProcess.client.leader().code == 200 }
 
@@ -239,6 +240,10 @@ class ReelectionLeaderIntegrationTest extends LeaderIntegrationTest {
       result.code should be (200)
       (result.entityJson \ "message").as[String] should be ("Leadership abdicated")
 
+      And("the leader must have died")
+      WaitTestSupport.waitUntil("the former leading marathon process dies", 30.seconds) { !leadingProcess.isRunning() }
+      leadingProcess.stop() // already stopped, but still need to clear old state
+
       And("the leader must have changed")
       WaitTestSupport.waitUntil("the leader changes", 30.seconds) {
         val result = firstProcess.client.leader()
@@ -250,6 +255,13 @@ class ReelectionLeaderIntegrationTest extends LeaderIntegrationTest {
         val results = runningServerProcesses.map(_.client.leader())
         results.forall(_.code == 200) && results.map(_.value).distinct.size == 1
       }
+
+      // allow ZK session for former leader to timeout before proceeding
+      Thread.sleep(20000L)
+
+      And("the old leader should restart just fine")
+      leadingProcess.start().futureValue(Timeout(60.seconds))
+
     }
   }
 }
