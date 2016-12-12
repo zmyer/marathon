@@ -14,7 +14,7 @@ import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.state.{ PathId, RunSpec }
-import mesosphere.marathon.storage.repository.{ GroupRepository, ReadOnlyAppRepository, ReadOnlyPodRepository }
+import mesosphere.marathon.storage.repository.GroupRepository
 import mesosphere.marathon.stream._
 import mesosphere.marathon.upgrade.DeploymentManager._
 import mesosphere.marathon.upgrade.{ DeploymentManager, DeploymentPlan, ScalingProposition }
@@ -356,8 +356,6 @@ object MarathonSchedulerActor {
 }
 
 class SchedulerActions(
-    appRepository: ReadOnlyAppRepository,
-    podRepository: ReadOnlyPodRepository,
     groupRepository: GroupRepository,
     healthCheckManager: HealthCheckManager,
     instanceTracker: InstanceTracker,
@@ -502,10 +500,7 @@ class SchedulerActions(
   }
 
   def runSpecById(id: PathId): Future[Option[RunSpec]] = {
-    appRepository.get(id).flatMap {
-      case Some(app) => Future.successful(Some(app))
-      case None => podRepository.get(id)
-    }
+    groupRepository.root().map(_.transitiveRunSpecsById.get(id))
   }
 }
 
