@@ -123,15 +123,16 @@ lazy val commonSettings = inConfig(IntegrationTest)(Defaults.testTasks) ++ inCon
   testOptions in Test := Seq(formattingTestArg(target.value / "test-reports"), Tests.Argument("-l", "mesosphere.marathon.IntegrationTest", "-l", "mesosphere.marathon.UnstableTest")),
   fork in Test := true,
 
-  testOptions in UnstableTest := Seq(formattingTestArg(target.value / "test-reports" / "unstable"), Tests.Argument("-n", "mesosphere.marathon.UnstableTest")),
-  parallelExecution in UnstableTest := false,
+  testOptions in UnstableTest := Seq(formattingTestArg(target.value / "test-reports" / "unstable")),
+  parallelExecution in UnstableTest := true,
+  testForkedParallel in UnstableTest := true,
 
   fork in IntegrationTest := true,
   testOptions in IntegrationTest := Seq(formattingTestArg(target.value / "test-reports" / "integration"),
     Tests.Argument("-n", "mesosphere.marathon.IntegrationTest", "-l", "mesosphere.marathon.UnstableTest")),
   parallelExecution in IntegrationTest := true,
   testForkedParallel in IntegrationTest := true,
-  
+
   scapegoatVersion := "1.2.1",
 
   coverageMinimum := 69,
