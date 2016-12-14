@@ -6,6 +6,9 @@ import org.apache.mesos.Protos.{ FrameworkID, MasterInfo, Offer, TaskStatus }
 import org.apache.mesos.{ Scheduler, SchedulerDriver }
 import org.slf4j.LoggerFactory
 
+import scala.collection.immutable.Seq
+import scala.collection.JavaConversions._
+
 object SchedulerActor {
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -38,7 +41,6 @@ class SchedulerActor(scheduler: Scheduler) extends Actor with Stash {
       scheduler.registered(driver, frameworkId, masterInfo)
 
     case ResourceOffers(offers) =>
-      import scala.collection.JavaConversions._
       scheduler.resourceOffers(driver, offers)
 
     case status: TaskStatus =>
