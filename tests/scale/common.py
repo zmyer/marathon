@@ -1,5 +1,6 @@
 import time
 
+from dcos.mesos import DCOSClient
 from shakedown import *
 from utils import *
 
@@ -178,3 +179,51 @@ def install_mom(version='v1.3.5'):
     client = marathon.create_client()
     client.add_app(get_mom_json(version))
     deployment_wait()
+
+
+class Resources(object):
+
+    cpus = 0
+    mem = 0
+
+    def __init__(self, cpus=0, mem=0):
+        self.cpus = cpus
+        self.mem = mem
+
+    def __str__(self):
+        return "cpus: {}, mem: {}".format(self.cpus, self.mem)
+
+    def __repr__(self):
+        return "cpus: {}, mem: {}".format(self.cpus, self.mem)
+
+    def __sub__(self, other):
+        total_cpu = self.cpus - other.cpus
+        total_mem = self.mem - other.mem
+
+        return Resources(total_cpu, total_mem)
+
+    def __rsub__(self, other):
+        return self.__sub__(other)
+
+def get_resources(rtype='resources'):
+    """ resource types from summary include:  resources, used_resources
+    offered_resources, reserved_resources, unreserved_resources
+    This current returns resources
+    """
+    cpus = 0
+    mem = 0
+    summary = DCOSClient().get_state_summary()
+
+    if 'slaves' in summary:
+        agents = summary.get('slaves')
+        for agent in agents:
+            cpus += agent[rtype]['cpus']
+            mem += agent[rtype]['mem']
+
+    return Resources(cpus, mem)
+
+def get_available_resources():
+    res = get_resources()
+    used = get_resources('used_resources')
+
+    return res - used
