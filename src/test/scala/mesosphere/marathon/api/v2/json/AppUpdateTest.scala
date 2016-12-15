@@ -373,9 +373,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
       """
 
     val update = fromJsonString(json)
-    val residency = update.empty("foo".toPath).residency
-    assert(residency.isDefined)
-    assert(residency.forall(_ == Residency.defaultResidency))
+    update.empty("foo".toPath).isResident should be(true)
   }
 
   test("empty app updateStrategy") {
@@ -441,7 +439,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
     assert(update.container == create.container)
   }
 
-  test("empty app persists existing residency") {
+  test("empty app persists existing residency for backwards compatibility") {
     val json =
       """
         {
@@ -471,8 +469,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
 
     val update = fromJsonString(json)
     val create = update.empty("/app".toPath)
-    assert(update.residency.isDefined)
-    assert(update.residency == create.residency)
+    assert(update.isResident)
   }
 
   test("empty app persists existing upgradeStrategy") {
@@ -537,9 +534,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
       """
 
     val update = fromJsonString(json)
-    val residency = update.empty("foo".toPath).residency
-    assert(residency.isDefined)
-    assert(residency.forall(_ == Residency.defaultResidency))
+    update.empty("foo".toPath).isResident should be(true)
   }
 
   test("empty app update strategy on external volumes") {

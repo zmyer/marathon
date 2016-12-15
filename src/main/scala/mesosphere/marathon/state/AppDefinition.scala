@@ -76,7 +76,7 @@ case class AppDefinition(
 
   versionInfo: VersionInfo = VersionInfo.OnlyVersion(Timestamp.now()),
 
-  override val residency: Option[Residency] = AppDefinition.DefaultResidency,
+  override val isResident: Boolean = false,
 
   secrets: Map[String, Secret] = AppDefinition.DefaultSecrets,
 
@@ -165,7 +165,7 @@ case class AppDefinition(
     }
 
     // App.residency is deprecated. We just care whether it was set or not.
-    residency.foreach { _ => builder.setResidency(ResidencySerializer.toProto()) }
+    if (isResident) builder.setResidency(ResidencySerializer.toProto())
 
     builder.build
   }
@@ -255,7 +255,7 @@ case class AppDefinition(
         else UpgradeStrategy.empty,
       dependencies = proto.getDependenciesList.map(PathId(_))(collection.breakOut),
       ipAddress = ipAddressOption,
-      residency = residencyOption,
+      isResident = residencyOption.isDefined,
       secrets = proto.getSecretsList.map(SecretsSerializer.fromProto)(collection.breakOut)
     )
   }
@@ -314,7 +314,7 @@ case class AppDefinition(
           acceptedResourceRoles != to.acceptedResourceRoles ||
           ipAddress != to.ipAddress ||
           readinessChecks != to.readinessChecks ||
-          residency != to.residency ||
+          isResident != to.isResident ||
           secrets != to.secrets
       }
     case _ =>
@@ -483,7 +483,7 @@ object AppDefinition extends GeneralPurposeCombinators {
 
   private val complyWithResidencyRules: Validator[AppDefinition] =
     isTrue("AppDefinition must contain persistent volumes and define residency") { app =>
-      !(app.residency.isDefined ^ app.persistentVolumes.nonEmpty)
+      !(app.isResident ^ app.persistentVolumes.nonEmpty)
     }
 
   private val containsCmdArgsOrContainer: Validator[AppDefinition] =

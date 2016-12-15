@@ -34,6 +34,7 @@ case class PodDefinition(
     override val killSelection: KillSelection = KillSelection.DefaultKillSelection
 ) extends RunSpec with plugin.PodSpec with MarathonState[Protos.Json, PodDefinition] {
 
+  override val isResident = false
   val endpoints: Seq[Endpoint] = containers.flatMap(_.endpoints)
   val resources = aggregateResources()
 

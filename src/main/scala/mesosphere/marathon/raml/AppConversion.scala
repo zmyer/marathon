@@ -59,7 +59,7 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Secr
       ports = app.portDefinitions.map(_.port),
       portDefinitions = app.portDefinitions.toRaml,
       readinessChecks = app.readinessChecks.toRaml,
-      residency = app.residency.toRaml,
+      residency = if (app.isResident) Some(AppResidency(taskLostBehavior = TaskLostBehavior.WaitForever)) else None,
       requirePorts = Some(app.requirePorts),
       secrets = app.secrets.toRaml,
       storeUrls = app.storeUrls,

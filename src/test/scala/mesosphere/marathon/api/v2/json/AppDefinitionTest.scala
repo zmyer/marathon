@@ -2,7 +2,6 @@ package mesosphere.marathon
 package api.v2.json
 
 import com.wix.accord._
-import mesosphere.marathon.Protos
 import mesosphere.marathon.Protos.Constraint
 import mesosphere.marathon.api.JsonTestHelper
 import mesosphere.marathon.api.v2.ValidationHelper
@@ -915,15 +914,13 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
   test("Residency serialization (toProto) and deserialization (fromProto)") {
     val app = AppDefinition(
       id = "/test".toRootPath,
-      residency = Some(Residency(
-        relaunchEscalationTimeoutSeconds = 3600,
-        taskLostBehavior = Protos.ResidencyDefinition.TaskLostBehavior.WAIT_FOREVER)))
+      isResident = true)
     val proto = app.toProto
 
-    proto.hasResidency shouldBe true
+    proto.hasResidency should be(true)
 
     val appAgain = AppDefinition.fromProto(proto)
-    appAgain.residency should not be empty
+    appAgain.isResident should be(true)
   }
 
   test("app with readinessCheck passes validation") {

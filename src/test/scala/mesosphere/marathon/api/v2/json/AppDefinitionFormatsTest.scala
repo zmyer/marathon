@@ -1,7 +1,6 @@
 package mesosphere.marathon
 package api.v2.json
 
-import mesosphere.marathon.Protos
 import mesosphere.marathon.Protos.Constraint
 import mesosphere.marathon.core.health.HealthCheck
 import mesosphere.marathon.core.readiness.ReadinessCheckTestHelper
@@ -202,7 +201,7 @@ class AppDefinitionFormatsTest
     appDef.upgradeStrategy should be(UpgradeStrategy.forResidentTasks)
   }
 
-  test("FromJSON should read the default residency automatically residency ") {
+  test("FromJSON should read the default residency automatically") {
     val json = Json.parse(
       """
         |{
@@ -218,10 +217,10 @@ class AppDefinitionFormatsTest
         |}
       """.stripMargin)
     val appDef = json.as[AppDefinition]
-    appDef.residency should be(Some(Residency.defaultResidency))
+    appDef.isResident should be(true)
   }
 
-  test("""FromJSON should parse "residency" """) {
+  test("""FromJSON should parse "residency" to ensure backwards compatibility """) {
     val appDef = Json.parse(
       """{
         |  "id": "test",
@@ -231,15 +230,14 @@ class AppDefinitionFormatsTest
         |  }
         |}""".stripMargin).as[AppDefinition]
 
-    appDef.residency should equal(Some(Residency(300, Protos.ResidencyDefinition.TaskLostBehavior.RELAUNCH_AFTER_TIMEOUT)))
+    appDef.isResident should be(true)
   }
 
-  test("ToJson should serialize residency") {
+  test("ToJson should serialize residency as flag") {
     import Fixture._
 
-    val json = Json.toJson(a1.copy(residency = Some(Residency(7200, Protos.ResidencyDefinition.TaskLostBehavior.WAIT_FOREVER))))
-    (json \ "residency" \ "relaunchEscalationTimeoutSeconds").as[Long] should equal(7200)
-    (json \ "residency" \ "taskLostBehavior").as[String] should equal(Protos.ResidencyDefinition.TaskLostBehavior.WAIT_FOREVER.name())
+    val json = Json.toJson(a1.copy(isResident = true))
+    (json \ "isResident").as[Boolean] should be(true)
   }
 
   test("AppDefinition JSON includes readinessChecks") {

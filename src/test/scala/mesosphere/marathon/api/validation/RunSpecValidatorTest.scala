@@ -442,7 +442,7 @@ class RunSpecValidatorTest extends MarathonSpec with Matchers with GivenWhenThen
     validAppDefinition(to1).isSuccess should be(false)
 
     When("Check if only defining local volumes without residency is valid")
-    val to2 = from.copy(residency = None)
+    val to2 = from.copy(isResident = false)
     Then("Should be invalid")
     validAppDefinition(to2).isSuccess should be(false)
 
@@ -451,7 +451,7 @@ class RunSpecValidatorTest extends MarathonSpec with Matchers with GivenWhenThen
     validAppDefinition(from).isSuccess should be(true)
 
     When("Check if defining no local volumes and no residency is valid")
-    val to3 = from.copy(residency = None, container = None)
+    val to3 = from.copy(isResident = false, container = None)
     Then("Should be valid")
     validAppDefinition(to3).isSuccess should be(true)
   }
@@ -764,7 +764,7 @@ class RunSpecValidatorTest extends MarathonSpec with Matchers with GivenWhenThen
         id = PathId(id),
         cmd = Some("test"),
         container = Some(Container.Mesos(volumes)),
-        residency = Some(Residency(123, Protos.ResidencyDefinition.TaskLostBehavior.RELAUNCH_AFTER_TIMEOUT))
+        isResident = true
       )
     }
     val vol1 = persistentVolume("foo")

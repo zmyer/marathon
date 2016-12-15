@@ -1,6 +1,7 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon
+package upgrade
 
-import mesosphere.marathon.state.{ AppDefinition, PathId, Residency, UpgradeStrategy }
+import mesosphere.marathon.state.{ AppDefinition, PathId, UpgradeStrategy }
 import mesosphere.marathon.test.Mockito
 import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 
@@ -14,7 +15,7 @@ class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with
       id = PathId("/app"),
       instances = 1,
       upgradeStrategy = UpgradeStrategy.forResidentTasks, // UpgradeStrategy(0.5, 0)
-      residency = Some(Residency.default))
+      isResident = true)
 
     When("the ignition strategy is computed")
     val strategy = computeRestartStrategy(app, runningInstancesCount = app.instances)
@@ -32,7 +33,7 @@ class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with
       id = PathId("/app"),
       instances = 1,
       upgradeStrategy = UpgradeStrategy.forResidentTasks, // UpgradeStrategy(0.5, 0)
-      residency = Some(Residency.default))
+      isResident = true)
 
     When("the ignition strategy is computed")
     val strategy = computeRestartStrategy(app, runningInstancesCount = 0)
@@ -50,7 +51,7 @@ class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with
       id = PathId("/app"),
       instances = 5,
       upgradeStrategy = UpgradeStrategy.forResidentTasks, // UpgradeStrategy(0.5, 0)
-      residency = Some(Residency.default))
+      isResident = true)
 
     When("the ignition strategy is computed")
     val strategy = computeRestartStrategy(app, runningInstancesCount = app.instances)
@@ -68,7 +69,7 @@ class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with
       id = PathId("/app"),
       instances = 5,
       upgradeStrategy = UpgradeStrategy(minimumHealthCapacity = 1, maximumOverCapacity = 0), // UpgradeStrategy(0.5, 0)
-      residency = Some(Residency.default))
+      isResident = true)
 
     When("the ignition strategy is computed")
     val strategy = computeRestartStrategy(app, runningInstancesCount = app.instances + 2)
@@ -86,7 +87,7 @@ class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with
       id = PathId("/app"),
       instances = 5,
       upgradeStrategy = UpgradeStrategy(minimumHealthCapacity = 1, maximumOverCapacity = 0), // UpgradeStrategy(0.5, 0)
-      residency = Some(Residency.default))
+      isResident = true)
 
     When("the ignition strategy is computed")
     val strategy = computeRestartStrategy(app, runningInstancesCount = app.instances - 2)
@@ -104,7 +105,7 @@ class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with
       id = PathId("/app"),
       instances = 5,
       upgradeStrategy = UpgradeStrategy(minimumHealthCapacity = 1, maximumOverCapacity = 0), // UpgradeStrategy(0.5, 0)
-      residency = Some(Residency.default))
+      isResident = true)
 
     When("the ignition strategy is computed")
     val strategy = computeRestartStrategy(app, runningInstancesCount = app.instances)

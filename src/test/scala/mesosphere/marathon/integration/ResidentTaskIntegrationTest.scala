@@ -289,10 +289,7 @@ class ResidentTaskIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMa
       val app = AppDefinition(
         appId,
         instances = instances,
-        residency = Some(Residency(
-          Residency.defaultRelaunchEscalationTimeoutSeconds,
-          Residency.defaultTaskLostBehaviour
-        )),
+        isResident = true,
         constraints = constraints,
         container = Some(Container.Mesos(
           volumes = Seq(persistentVolume)

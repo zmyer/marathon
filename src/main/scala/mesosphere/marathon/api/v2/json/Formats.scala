@@ -1065,7 +1065,7 @@ trait AppAndGroupFormats {
             acceptedResourceRoles = extra.acceptedResourceRoles,
             ipAddress = extra.ipAddress,
             versionInfo = VersionInfo.OnlyVersion(extra.version),
-            residency = extra.residencyOrDefault,
+            isResident = extra.residencyOrDefault.isDefined,
             readinessChecks = extra.readinessChecks,
             secrets = extra.secrets,
             taskKillGracePeriod = extra.maybeTaskKillGracePeriod,
@@ -1183,7 +1183,7 @@ trait AppAndGroupFormats {
         "labels" -> runSpec.labels,
         "ipAddress" -> runSpec.ipAddress,
         "version" -> runSpec.version,
-        "residency" -> runSpec.residency,
+        "isResident" -> runSpec.isResident,
         "secrets" -> runSpec.secrets,
         "taskKillGracePeriodSeconds" -> runSpec.taskKillGracePeriod,
         "unreachableStrategy" -> Raml.toRaml(runSpec.unreachableStrategy),
@@ -1400,7 +1400,7 @@ trait AppAndGroupFormats {
             acceptedResourceRoles = extra.acceptedResourceRoles,
             ipAddress = extra.ipAddress,
             fetch = extra.fetch.orElse(extra.uris.map { seq => seq.map(FetchUri.apply(_)) }),
-            residency = extra.residency,
+            isResident = extra.residency.isDefined,
             portDefinitions = extra.portDefinitions.orElse {
               extra.ports.map { ports => PortDefinitions.apply(ports: _*) }
             },

@@ -73,7 +73,7 @@ case class AppUpdate(
 
     ipAddress: Option[IpAddress] = None,
 
-    residency: Option[Residency] = None,
+    isResident: Boolean = false,
 
     secrets: Option[Map[String, Secret]] = None) {
 
@@ -84,22 +84,23 @@ case class AppUpdate(
     case _ => true
   }
 
-  def isResident: Boolean = residency.isDefined
-
   def persistentVolumes: Seq[PersistentVolume] = {
     container.fold(Seq.empty[Volume])(_.volumes).collect{ case vol: PersistentVolume => vol }
   }
 
+  /**
+    * ???
+    * @param appId
+    * @return ???
+    */
   def empty(appId: PathId): AppDefinition = {
     def volumes: Seq[Volume] = container.fold(Seq.empty[Volume])(_.volumes)
     def externalVolumes: Seq[ExternalVolume] = volumes.collect { case vol: ExternalVolume => vol }
-    val defaultResidency = if (persistentVolumes.nonEmpty) Some(Residency.defaultResidency) else None
-    val residency = this.residency.orElse(defaultResidency)
     val defaultUpgradeStrategy =
-      if (residency.isDefined || isResident || externalVolumes.nonEmpty) UpgradeStrategy.forResidentTasks
+      if (isResident || externalVolumes.nonEmpty || persistentVolumes.nonEmpty) UpgradeStrategy.forResidentTasks
       else UpgradeStrategy.empty
     val upgradeStrategy = this.upgradeStrategy.getOrElse(defaultUpgradeStrategy)
-    apply(AppDefinition(appId, residency = residency, upgradeStrategy = upgradeStrategy))
+    apply(AppDefinition(appId, isResident = isResident || persistentVolumes.nonEmpty, upgradeStrategy = upgradeStrategy))
   }
 
   /**
@@ -144,7 +145,7 @@ case class AppUpdate(
     // For all other updates, the GroupVersioningUtil will determine a new version if the AppDefinition
     // has really changed.
     versionInfo = app.versionInfo,
-    residency = residency.orElse(app.residency),
+    isResident = app.isResident,
     secrets = secrets.getOrElse(app.secrets),
     taskKillGracePeriod = taskKillGracePeriod.orElse(app.taskKillGracePeriod)
   )
@@ -165,7 +166,6 @@ object AppUpdate {
       appUp.portDefinitions is optional(PortDefinitions.portDefinitionsValidator)
       appUp.fetch is optional(every(fetchUriIsValid))
       appUp.container.each is Container.validContainer(enabledFeatures)
-      appUp.residency is valid
       appUp.mem should optional(be >= 0.0)
       appUp.cpus should optional(be >= 0.0)
       appUp.instances should optional(be >= 0)

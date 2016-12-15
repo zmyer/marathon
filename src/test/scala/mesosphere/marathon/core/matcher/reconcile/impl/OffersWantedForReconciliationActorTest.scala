@@ -6,7 +6,7 @@ import akka.testkit.{ TestActorRef, TestProbe }
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.event.DeploymentStepSuccess
 import mesosphere.marathon.core.flow.ReviveOffersConfig
-import mesosphere.marathon.state.{ AppDefinition, PathId, Residency }
+import mesosphere.marathon.state.{ AppDefinition, PathId }
 import mesosphere.marathon.test.{ GroupCreation, MarathonActorSupport, MarathonTestHelper, Mockito }
 import mesosphere.marathon.upgrade.DeploymentPlan
 import org.scalatest.concurrent.ScalaFutures
@@ -60,7 +60,7 @@ class OffersWantedForReconciliationActorTest
 
     When("the deployment for a resident app stops")
     val valAfterDeploymentStepSuccess = f.futureOffersWanted()
-    val app = AppDefinition(PathId("/resident"), residency = Some(Residency.default))
+    val app = AppDefinition(PathId("/resident"), isResident = true)
     val plan = DeploymentPlan(original = createRootGroup(apps = Map(app.id -> app)), target = createRootGroup())
     f.eventStream.publish(DeploymentStepSuccess(plan = plan, currentStep = plan.steps.head))
 

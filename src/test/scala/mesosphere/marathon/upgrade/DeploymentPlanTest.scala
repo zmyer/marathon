@@ -459,7 +459,7 @@ class DeploymentPlanTest extends MarathonSpec with Matchers with GivenWhenThen w
       AppDefinition(
         id = PathId(id),
         container = Some(Container.Mesos(volumes)),
-        residency = Some(Residency(123, Protos.ResidencyDefinition.TaskLostBehavior.RELAUNCH_AFTER_TIMEOUT))
+        isResident = true
       )
     }
     val vol1 = persistentVolume("foo")
