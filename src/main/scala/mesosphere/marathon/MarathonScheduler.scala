@@ -1,6 +1,6 @@
 package mesosphere.marathon
 
-import javax.inject.{ Inject, Named, Provider }
+import javax.inject.{ Inject, Named }
 
 import akka.actor.ActorSystem
 import akka.event.EventStream
@@ -17,16 +17,21 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NonFatal
 
+trait SchedulerCallbacks {
+  def disconnected(): Unit
+}
+
 class MarathonScheduler @Inject() (
     @Named(EventModule.busName) eventBus: EventStream,
     clock: Clock,
-    offerProcessor: Provider[OfferProcessor],
+    offerProcessor: OfferProcessor,
     taskStatusProcessor: TaskStatusUpdateProcessor,
     frameworkIdUtil: FrameworkIdUtil,
     mesosLeaderInfo: MesosLeaderInfo,
     taskIdUtil: TaskIdUtil,
     system: ActorSystem,
-    config: MarathonConf) extends Scheduler {
+    config: MarathonConf,
+    schedulerCallbacks: SchedulerCallbacks) extends Scheduler {
 
   private[this] val log = LoggerFactory.getLogger(getClass.getName)
 
@@ -53,7 +58,7 @@ class MarathonScheduler @Inject() (
   override def resourceOffers(driver: SchedulerDriver, offers: java.util.List[Offer]): Unit = {
     import scala.collection.JavaConverters._
     offers.asScala.foreach { offer =>
-      val processFuture = offerProcessor.get().processOffer(offer)
+      val processFuture = offerProcessor.processOffer(offer)
       processFuture.onComplete {
         case scala.util.Success(_)           => log.debug(s"Finished processing offer '${offer.getId.getValue}'")
         case scala.util.Failure(NonFatal(e)) => log.error(s"while processing offer '${offer.getId.getValue}'", e)
@@ -89,11 +94,9 @@ class MarathonScheduler @Inject() (
 
     eventBus.publish(SchedulerDisconnectedEvent())
 
-    // stop the driver. this avoids ambiguity and delegates leadership-abdication responsibility.
-    // this helps to clarify responsibility during leadership transitions: currently the
-    // **scheduler service** is responsible for integrating with leadership election.
-    // @see MarathonSchedulerService.startLeadership
-    driver.stop(true)
+    // Disconnection from the Mesos master has occurred.
+    // Thus, call the scheduler callbacks.
+    schedulerCallbacks.disconnected()
   }
 
   override def slaveLost(driver: SchedulerDriver, slave: SlaveID) {
@@ -135,7 +138,7 @@ class MarathonScheduler @Inject() (
     * the scheduler may never re-register with the saved FrameworkID until
     * the leading Mesos master process is killed.
     */
-  protected def suicide(removeFrameworkId: Boolean): Unit = {
+  private def suicide(removeFrameworkId: Boolean): Unit = {
     log.error(s"Committing suicide!")
 
     if (removeFrameworkId) Await.ready(frameworkIdUtil.expunge(), config.zkTimeoutDuration)

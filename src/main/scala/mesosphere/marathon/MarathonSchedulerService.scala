@@ -3,13 +3,12 @@ package mesosphere.marathon
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.{ Timer, TimerTask }
-import javax.inject.{ Inject, Named, Provider }
+import javax.inject.{ Inject, Named }
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.EventStream
 import akka.pattern.{ after, ask }
 import akka.util.Timeout
-import com.codahale.metrics.Gauge
 import com.google.common.util.concurrent.AbstractExecutionThreadService
 import com.twitter.common.base.ExceptionalCommand
 import com.twitter.common.zookeeper.Candidate
@@ -17,11 +16,9 @@ import com.twitter.common.zookeeper.Candidate.Leader
 import com.twitter.common.zookeeper.Group.JoinException
 import mesosphere.marathon.MarathonSchedulerActor._
 import mesosphere.marathon.Protos.MarathonTask
-import mesosphere.marathon.core.heartbeat._
 import mesosphere.marathon.core.leadership.LeadershipCoordinator
 import mesosphere.marathon.event.{ EventModule, LocalLeadershipEvent }
 import mesosphere.marathon.health.HealthCheckManager
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ AppDefinition, AppRepository, Migration, PathId, Timestamp }
 import mesosphere.marathon.upgrade.DeploymentManager.{ CancelDeployment, DeploymentStepInfo }
 import mesosphere.marathon.upgrade.DeploymentPlan
@@ -30,7 +27,6 @@ import mesosphere.util.state.FrameworkIdUtil
 import org.apache.mesos.Protos.FrameworkID
 import org.apache.mesos.SchedulerDriver
 import org.slf4j.LoggerFactory
-import com.codahale.metrics.MetricRegistry
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
@@ -65,7 +61,7 @@ trait LeadershipAbdication {
   * Wrapper class for the scheduler
   */
 class MarathonSchedulerService @Inject() (
-  leadershipCoordinator: Provider[LeadershipCoordinator],
+  leadershipCoordinator: LeadershipCoordinator,
   healthCheckManager: HealthCheckManager,
   @Named(ModuleNames.CANDIDATE) candidate: Option[Candidate],
   config: MarathonConf,
@@ -75,11 +71,9 @@ class MarathonSchedulerService @Inject() (
   driverFactory: SchedulerDriverFactory,
   system: ActorSystem,
   migration: Migration,
-  @Named("schedulerActor") schedulerActor: Provider[ActorRef],
+  @Named("schedulerActor") schedulerActor: ActorRef,
   @Named(EventModule.busName) eventStream: EventStream,
-  leadershipCallbacks: Seq[LeadershipCallback] = Seq.empty,
-  @Named(ModuleNames.MESOS_HEARTBEAT_ACTOR) mesosHeartbeatActor: ActorRef,
-  metrics: Metrics = new Metrics(new MetricRegistry))
+  leadershipCallbacks: Seq[LeadershipCallback] = Seq.empty)
     extends AbstractExecutionThreadService with Leader with LeadershipAbdication {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -122,7 +116,7 @@ class MarathonSchedulerService @Inject() (
 
   def deploy(plan: DeploymentPlan, force: Boolean = false): Future[Unit] = {
     log.info(s"Deploy plan with force=$force:\n$plan ")
-    val future: Future[Any] = PromiseActor.askWithoutTimeout(system, schedulerActor.get(), Deploy(plan, force))
+    val future: Future[Any] = PromiseActor.askWithoutTimeout(system, schedulerActor, Deploy(plan, force))
     future.map {
       case DeploymentStarted(_) => ()
       case CommandFailed(_, t)  => throw t
@@ -130,13 +124,13 @@ class MarathonSchedulerService @Inject() (
   }
 
   def cancelDeployment(id: String): Unit =
-    schedulerActor.get() ! CancelDeployment(id)
+    schedulerActor ! CancelDeployment(id)
 
   def listAppVersions(appId: PathId): Iterable[Timestamp] =
     Await.result(appRepository.listVersions(appId), config.zkTimeoutDuration)
 
   def listRunningDeployments(): Future[Seq[DeploymentStepInfo]] =
-    (schedulerActor.get() ? RetrieveRunningDeployments)
+    (schedulerActor ? RetrieveRunningDeployments)
       .recoverWith {
         case _: TimeoutException =>
           Future.failed(new TimeoutException(s"Can not retrieve the list of running deployments in time"))
@@ -155,7 +149,7 @@ class MarathonSchedulerService @Inject() (
   def killTasks(
     appId: PathId,
     tasks: Iterable[MarathonTask]): Iterable[MarathonTask] = {
-    schedulerActor.get() ! KillTasks(appId, tasks.map(_.getId).toSet)
+    schedulerActor ! KillTasks(appId, tasks.map(_.getId).toSet)
 
     tasks
   }
@@ -188,7 +182,8 @@ class MarathonSchedulerService @Inject() (
   override def triggerShutdown(): Unit = synchronized {
     log.info("Shutdown triggered")
 
-    abdicateLeadership()
+    leader.set(false)
+
     stopDriver()
 
     log.info("Cancelling timer")
@@ -217,39 +212,39 @@ class MarathonSchedulerService @Inject() (
       scala.concurrent.blocking {
         driver.foreach(_.run())
       }
-    } onComplete { result =>
-      synchronized {
+    } onComplete {
+      case Success(_) =>
+        log.info("Driver future completed. Executing optional abdication command.")
 
-        log.info(s"Driver future completed with result=$result.")
-        result match {
-          case Failure(t) => log.error("Exception while running driver", t)
-          case _          =>
-        }
+        // If there is an abdication command we need to execute it so that our
+        // leadership is given up. Note that executing the abdication command
+        // does a few things: - It causes onDefeated() to be executed (which is
+        // part of the Leader interface).  - It removes us as a leadership
+        // candidate. We must offer out leadership candidacy if we ever want to
+        // become the leader again in the future.
+        //
+        // If we don't have a abdication command we simply mark ourselves as
+        // not the leader
+        executeAbdicationCommand()
 
-        // ONLY do this if there's some sort of driver crash: avoid invoking abdication logic if
-        // the driver was stopped via stopDriver. stopDriver only happens when
-        //   1. we're being terminated (and have already abdicated)
-        //   2. we've lost leadership (no need to abdicate if we've already lost)
-        driver.foreach { _ =>
-          // tell leader election that we step back, but want to be re-elected if isRunning is true.
-          executeAbdicationCommand()
+        // If we are shutting down then don't offer leadership. But if we
+        // aren't then the driver was stopped via external means. For example,
+        // our leadership could have been defeated or perhaps it was
+        // abdicated. Therefore, for these cases we offer our leadership again.
+        if (isRunning) {
           offerLeadership()
         }
-
-        driver = None
-      }
+      case Failure(t) =>
+        log.error("Exception while running driver", t)
+        abdicateAfterFailure(() => executeAbdicationCommand(), runAbdicationCommand = true)
     }
   }
 
-  private[this] def stopDriver(): Unit = synchronized {
-    // many are the assumptions concerning when this is invoked. see onElected, runDriver,
-    // defeatLeadership, triggerShutdown.
+  def stopDriver(): Unit = synchronized {
     log.info("Stopping driver")
 
     // Stopping the driver will cause the driver run() method to return.
     driver.foreach(_.stop(true)) // failover = true
-
-    // signals that the driver was stopped manually (as opposed to crashing mid-process)
     driver = None
   }
 
@@ -281,7 +276,7 @@ class MarathonSchedulerService @Inject() (
       log.info(s"Finished onElected leadership callbacks")
 
       //start all leadership coordination actors
-      Await.result(leadershipCoordinator.get().prepareForStart(), config.maxActorStartupTime().milliseconds)
+      Await.result(leadershipCoordinator.prepareForStart(), config.maxActorStartupTime().milliseconds)
 
       //create new driver
       driver = Some(driverFactory.createDriver())
@@ -303,7 +298,7 @@ class MarathonSchedulerService @Inject() (
   }
   //End Leader interface
 
-  private[marathon] def defeatLeadership(): Unit = synchronized {
+  private def defeatLeadership(): Unit = synchronized {
     log.info("Defeat leadership")
 
     eventStream.publish(LocalLeadershipEvent.Standby)
@@ -315,11 +310,7 @@ class MarathonSchedulerService @Inject() (
     // Our leadership has been defeated. Thus, update leadership and stop the driver.
     // Note that abdication command will be ran upon driver shutdown.
     leader.set(false)
-    driver.foreach { driverInstance =>
-      mesosHeartbeatActor ! Heartbeat.MessageDeactivate(MesosHeartbeatMonitor.sessionOf(driverInstance))
-      // Our leadership has been defeated. Thus, stop the driver.
-      stopDriver()
-    }
+    stopDriver()
   }
 
   private def electLeadership(abdicateOption: Option[ExceptionalCommand[JoinException]]): Unit = synchronized {
@@ -339,7 +330,7 @@ class MarathonSchedulerService @Inject() (
     if (leader.get()) {
       log.info("Abdicating")
 
-      leadershipCoordinator.get().stop()
+      leadershipCoordinator.stop()
 
       // To abdicate we defeat our leadership
       defeatLeadership()
@@ -364,29 +355,23 @@ class MarathonSchedulerService @Inject() (
   }
 
   private def offerLeadership(): Unit = synchronized {
-    // If we are shutting down then don't offer leadership. But if we
-    // aren't then the driver was stopped via external means. For example,
-    // our leadership could have been defeated or perhaps it was
-    // abdicated. Therefore, for these cases we offer our leadership again.
-    if (latch.getCount > 0) {
-      log.info(s"Will offer leadership after $offerLeadershipBackOff backoff")
-      after(offerLeadershipBackOff, system.scheduler)(Future {
-        candidate.synchronized {
-          candidate match {
-            case Some(c) =>
-              // In this case we care using ZooKeeper for leadership candidacy.
-              // Thus, offer our leadership.
-              log.info("Using HA and therefore offering leadership")
-              c.offerLeadership(this)
-            case _ =>
-              // In this case we aren't using ZooKeeper for leadership election.
-              // Thus, we simply elect ourselves as leader.
-              log.info("Not using HA and therefore electing as leader by default")
-              electLeadership(None)
-          }
+    log.info(s"Will offer leadership after $offerLeadershipBackOff backoff")
+    after(offerLeadershipBackOff, system.scheduler)(Future {
+      candidate.synchronized {
+        candidate match {
+          case Some(c) =>
+            // In this case we care using ZooKeeper for leadership candidacy.
+            // Thus, offer our leadership.
+            log.info("Using HA and therefore offering leadership")
+            c.offerLeadership(this)
+          case _ =>
+            // In this case we aren't using ZooKeeper for leadership election.
+            // Thus, we simply elect ourselves as leader.
+            log.info("Not using HA and therefore electing as leader by default")
+            electLeadership(None)
         }
-      })
-    }
+      }
+    })
   }
 
   private def schedulePeriodicOperations(): Unit = synchronized {
@@ -395,7 +380,7 @@ class MarathonSchedulerService @Inject() (
       new TimerTask {
         def run() {
           if (leader.get()) {
-            schedulerActor.get() ! ScaleApps
+            schedulerActor ! ScaleApps
           }
           else log.info("Not leader therefore not scaling apps")
         }
@@ -408,8 +393,8 @@ class MarathonSchedulerService @Inject() (
       new TimerTask {
         def run() {
           if (leader.get()) {
-            schedulerActor.get() ! ReconcileTasks
-            schedulerActor.get() ! ReconcileHealthChecks
+            schedulerActor ! ReconcileTasks
+            schedulerActor ! ReconcileHealthChecks
           }
           else log.info("Not leader therefore not reconciling tasks")
         }
