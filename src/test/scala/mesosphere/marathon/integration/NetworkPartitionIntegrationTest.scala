@@ -4,6 +4,9 @@ package integration
 import mesosphere.AkkaIntegrationFunTest
 import mesosphere.marathon.integration.facades.ITEnrichedTask
 import mesosphere.marathon.integration.setup._
+import mesosphere.marathon.state.UnreachableStrategy
+
+import scala.concurrent.duration._
 
 /**
   * Integration test to simulate the issues discovered a verizon where a network partition caused Marathon to be
@@ -18,6 +21,21 @@ import mesosphere.marathon.integration.setup._
 @UnstableTest
 class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMarathonMesosClusterTest {
 
+  override lazy val mesosNumMasters = 1
+  override lazy val mesosNumSlaves = 1
+
+  override val marathonArgs: Map[String, String] = Map(
+    "logging_level" -> "debug",
+    "reconciliation_initial_delay" -> "5000",
+    "reconciliation_interval" -> "5000",
+    "scale_apps_initial_delay" -> "5000",
+    "scale_apps_interval" -> "5000",
+    "min_revive_offers_interval" -> "100",
+    "task_lost_expunge_gc" -> "30000",
+    "task_lost_expunge_initial_delay" -> "1000",
+    "task_lost_expunge_interval" -> "1000"
+  )
+
   before {
     mesosCluster.masters.foreach(_.start())
     mesosCluster.agents.foreach(_.start())
@@ -27,7 +45,8 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
 
   test("Loss of ZK and Loss of Slave will not kill the task when slave comes back") {
     Given("a new app")
-    val app = appProxy(testBasePath / "app", "v1", instances = 1, healthCheck = None)
+    val strategy = UnreachableStrategy(5.minutes, 10.minutes)
+    val app = appProxy(testBasePath / "app", "v1", instances = 1, healthCheck = None).copy(unreachableStrategy = strategy)
     waitForDeployment(marathon.createAppV2(app))
     val task = waitForTasks(app.id, 1).head
 
@@ -65,12 +84,4 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
     event.info.get("taskStatus").contains(status) &&
       event.info.get("taskId").contains(task.id)
   }
-
-  override val marathonArgs: Map[String, String] = Map(
-    "reconciliation_initial_delay" -> "5000",
-    "reconciliation_interval" -> "5000",
-    "scale_apps_initial_delay" -> "5000",
-    "scale_apps_interval" -> "5000",
-    "min_revive_offers_interval" -> "100"
-  )
 }
