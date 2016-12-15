@@ -74,7 +74,7 @@ object RamlTypeGenerator {
   val PlayWrites = RootClass.newClass("play.api.libs.json.Writes")
   val PlayPath = RootClass.newClass("play.api.libs.json.JsPath")
 
-  val JsNull = REF("play.api.libs.json.JsNull")
+  val PlayJsNull = REF("play.api.libs.json.JsNull")
 
   def camelify(name: String): String = name.toLowerCase.capitalize
 
@@ -359,7 +359,7 @@ object RamlTypeGenerator {
                   VAL(field.name) := IF(REF("o") DOT field.name DOT "nonEmpty") THEN (
                     serialized
                   ) ELSE (
-                    JsNull
+                    PlayJsNull
                   )
                 else if(field.omitEmpty && !field.repeated && !builtInTypes.contains(field.`type`.toString()))
                   // earlier "require" check ensures that we won't see a field w/ omitEmpty that is not optional.
@@ -367,7 +367,7 @@ object RamlTypeGenerator {
                   VAL(field.name) := serialized MATCH (
                     // avoid serializing JS objects w/o any fields
                     CASE(ID("obj") withType(PlayJsObject),
-                      IF(REF("obj.fields") DOT "isEmpty")) ==> JsNull,
+                      IF(REF("obj.fields") DOT "isEmpty")) ==> PlayJsNull,
                     CASE(ID("rs")) ==> REF("rs")
                   )
                 else
@@ -377,7 +377,7 @@ object RamlTypeGenerator {
                   REF(PlayJsObject) APPLY (SEQ(
                     actualFields.map { field =>
                       TUPLE(LIT(field.name), REF(field.name))
-                    }) DOT "filter" APPLY (REF("_._2") INFIX("!=") APPLY JsNull))
+                    }) DOT "filter" APPLY (REF("_._2") INFIX("!=") APPLY PlayJsNull))
                 )
             )
           )
