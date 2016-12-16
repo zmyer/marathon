@@ -36,11 +36,10 @@ def group(gcount=1, instances=1):
     return group
 
 
-
 def constraints(name, operator, value=None):
     constraints = [name, operator]
     if value is not None:
-      constraints.append(value)
+        constraints.append(value)
     return [constraints]
 
 
@@ -51,7 +50,6 @@ def unique_host_constraint():
 def delete_all_apps():
     client = marathon.create_client()
     client.remove_group("/", True)
-    time_deployment("undeploy")
 
 
 def time_deployment(test=""):
@@ -59,11 +57,12 @@ def time_deployment(test=""):
     start = time.time()
     deployment_count = 1
     while deployment_count > 0:
-        time.sleep(1)
         # need protection when tearing down
         try:
             deployments = client.get_deployments()
             deployment_count = len(deployments)
+            if deployment_count > 0:
+                time.sleep(1)
         except:
             wait_for_service_endpoint('marathon-user')
             pass
@@ -82,9 +81,11 @@ def delete_group_and_wait(group="test"):
     delete_group(group)
     time_deployment("undeploy")
 
+
 def deployment_less_than_predicate(count=10):
     client = marathon.create_client()
     return len(client.get_deployments()) < count
+
 
 def launch_apps(count=1, instances=1):
     client = marathon.create_client()
@@ -107,6 +108,113 @@ def launch_group(instances=1):
 def delete_all_apps_wait():
     delete_all_apps()
     time_deployment("undeploy")
+
+
+def scale_test_apps(test_obj):
+    if 'instance' in test_obj.style:
+        scale_test_app_instances(test_obj)
+
+
+def get_current_tasks():
+    return len(get_tasks())
+
+
+def get_current_app_tasks(starting_tasks):
+    return len(get_tasks()) - starting_tasks
+
+
+def scale_test_app_instances(test_obj):
+
+    # make sure no apps currently
+    try:
+        delete_all_apps_wait2()
+    except Exception as e:
+        test_obj.add_event('test setup failure')
+        assert False
+
+    test_obj.start = time.time()
+    starting_tasks = get_current_tasks()
+    # launch apps
+    try:
+        launch_apps(test_obj.count, test_obj.instance)
+    except:
+        test_obj.add_event('Failure to launched (but we still will wait for deploys)')
+        pass
+
+    # time launch
+    try:
+        time_deployment2(test_obj, starting_tasks)
+    except Exception as e:
+        assert False
+
+    current_tasks = get_current_app_tasks(starting_tasks)
+    test_obj.add_event('undeploying {} tasks'.format(current_tasks))
+
+    # delete apps
+    try:
+        delete_all_apps_wait2(test_obj)
+    except:
+        test_obj.add_event('undeployment failure')
+        assert False
+
+
+def delete_all_apps_wait2(test_obj=None):
+    delete_all_apps()
+    undeployment_wait(test_obj)
+
+
+def undeployment_wait(test_obj=None):
+    client = marathon.create_client()
+    start = time.time()
+    deployment_count = 1
+    failure_count = 0
+    while deployment_count > 0:
+        # need protection when tearing down
+        try:
+            deployments = client.get_deployments()
+            deployment_count = len(deployments)
+
+            if deployment_count > 0:
+                time.sleep(1)
+        except:
+            failure_count += 1
+            if failure_count > 3 and test_obj is not None:
+                test_obj.failed('Too many failures waiting for undeploy')
+                raise TestException()
+
+            wait_for_service_endpoint('marathon-user')
+            pass
+
+    if test_obj is not None:
+        test_obj.undeploy_complete(start)
+
+
+def time_deployment2(test_obj, starting_tasks):
+    client = marathon.create_client()
+    target_tasks = starting_tasks + (test_obj.count * test_obj.instance)
+    current_tasks = 0
+
+    deployment_count = 1
+    failure_count = 0
+    while deployment_count > 0:
+        # need protection when tearing down
+        try:
+            deployments = client.get_deployments()
+            deployment_count = len(deployments)
+            current_tasks = get_current_app_tasks(starting_tasks)
+
+            if deployment_count > 0:
+                time.sleep(1)
+        except:
+            failure_count += 1
+            if failure_count > 3:
+                test_obj.failed('Too many failures query for deployments')
+                raise TestException()
+
+            wait_for_service_endpoint('marathon-user')
+            pass
+
+    test_obj.successful()
 
 
 def scale_apps(count=1, instances=1):
@@ -167,7 +275,7 @@ def cluster_info(mom_name='marathon-user'):
             print("Marathon MoM not present")
 
 
-def get_mom_json(version='v1.3.5'):
+def get_mom_json(version='v1.3.6'):
     mom_json = get_resource("mom.json")
     docker_image = "mesosphere/marathon:{}".format(version)
     mom_json['container']['docker']['image'] = docker_image
@@ -175,10 +283,54 @@ def get_mom_json(version='v1.3.5'):
     return mom_json
 
 
-def install_mom(version='v1.3.5'):
+def install_mom(version='v1.3.6'):
+    # the docker tags start with v
+    # however the marathon reports version without the v :(
+    if not version.startswith('v'):
+        version = 'v{}'.format(version)
+
     client = marathon.create_client()
     client.add_app(get_mom_json(version))
     deployment_wait()
+
+
+def uninstall_mom():
+    try:
+        client = marathon.create_client()
+        client.remove_app('marathon-user')
+        deployment_wait()
+    except:
+        pass
+
+    delete_zk_node('universe/marathon-user')
+
+
+def ensure_test_mom(test_obj):
+    valid = ensure_mom_version(test_obj.mom_version)
+    if not valid:
+        test_obj.failed('Unable to install mom')
+
+    return valid
+
+
+def ensure_mom_version(version):
+    if not is_mom_version(version):
+        try:
+            uninstall_mom()
+            install_mom(version)
+        except:
+            return False
+    return True
+
+
+def is_mom_version(version):
+    try:
+        with marathon_on_marathon():
+            client = marathon.create_client()
+            about = client.get_about()
+            return version == about.get("version")
+    except Exception as e:
+        return False
 
 
 class Resources(object):
@@ -205,6 +357,10 @@ class Resources(object):
     def __rsub__(self, other):
         return self.__sub__(other)
 
+    def __gt__(self, other):
+        return self.cpus > other.cpus and self.mem > other.cpus
+
+
 def get_resources(rtype='resources'):
     """ resource types from summary include:  resources, used_resources
     offered_resources, reserved_resources, unreserved_resources
@@ -222,8 +378,104 @@ def get_resources(rtype='resources'):
 
     return Resources(cpus, mem)
 
-def get_available_resources():
+
+def available_resources():
     res = get_resources()
     used = get_resources('used_resources')
 
     return res - used
+
+
+class ScaleTest(object):
+
+    name = ''
+    mom = None
+    mom_version = None
+    # app, pod
+    under_test = ''
+    # instance, group, count
+    style = ''
+
+    instance = 1
+    count = 1
+    # successful, failed, skipped
+    status = 'running'
+    deploy_time = None
+    undeploy_time = None
+
+    def __init__(self, name, mom, under_test, style, count, instance):
+        self.name = name
+        self.under_test = under_test
+        self.style = style
+        self.instance = int(instance)
+        self.count = int(count)
+        self.start = time.time()
+        self.mom = mom
+        self.events = []
+
+    def __str__(self):
+        return "test: {} status: {} time: {} events: {}".format(
+            self.name,
+            self.status,
+            self.deploy_time,
+            len(self.events))
+
+    def __repr__(self):
+        return "test: {} status: {} time: {} events: {}".format(
+            self.name,
+            self.status,
+            self.deploy_time,
+            len(self.events))
+
+    def add_event(self, eventInfo):
+        self.events.append('    event: {} (time in test: {})'.format(eventInfo, elapse_time(self.start)))
+
+    def _status(self, status):
+        """ end of scale test, however still may have events like undeploy_time
+        this marks the end of the test time
+        """
+        self.status = status
+        self.deploy_time = elapse_time(self.start)
+
+    def successful(self):
+        self.add_event('successful')
+        self._status('successful')
+
+    def failed(self, reason="unknown"):
+        self.add_event('failed: {}'.format(reason))
+        self._status('failed')
+
+    def skip(self, reason="unknown"):
+        self.add_event('skipped: {}'.format(reason))
+        self._status('skipped')
+
+    def undeploy_complete(self, start):
+        self.add_event('undeployment complete')
+        self.undeploy_time = elapse_time(start)
+
+    def log_events(self):
+        for event in self.events:
+            print(event)
+
+    def log_stats(self):
+        print('    status: {}, deploy: {}, undeploy: {}'.format(self.status, self.deploy_time, self.undeploy_time))
+
+
+def start_test(name, marathons):
+    """ test name example: test_mom1_apps_instances_1_100
+    """
+    test = ScaleTest(name, *name.split("_")[1:])
+    test.mom_version = marathons[test.mom]
+    return test
+
+
+def resource_need(instances=1, counts=1, app_cpu=0.01, app_mem=1):
+    total_tasks = instances * counts
+    total_cpu = app_cpu * total_tasks
+    total_mem = app_mem * total_tasks
+    return Resources(total_cpu, total_mem)
+
+
+def scaletest_resources(test_obj):
+    return resource_need(test_obj.instance,
+                         test_obj.count)
