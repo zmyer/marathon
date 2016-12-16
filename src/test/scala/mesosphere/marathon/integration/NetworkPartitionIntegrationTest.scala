@@ -18,14 +18,12 @@ import scala.concurrent.duration._
   * are simulated with a disconnection from the processes.
   */
 @IntegrationTest
-@UnstableTest
 class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMarathonMesosClusterTest {
 
   override lazy val mesosNumMasters = 1
   override lazy val mesosNumSlaves = 1
 
   override val marathonArgs: Map[String, String] = Map(
-    "logging_level" -> "debug",
     "reconciliation_initial_delay" -> "5000",
     "reconciliation_interval" -> "5000",
     "scale_apps_initial_delay" -> "5000",
@@ -67,11 +65,18 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
     // and master
     mesosCluster.masters(0).stop()
 
+    // Simulate suicide.
+    // See but https://github.com/mesosphere/marathon/issues/3566
+    marathonServer.stop()
+
     // zk back in service
     zkServer.start()
 
     mesosCluster.masters(0).start()
     mesosCluster.agents(0).start()
+
+    // Simulate Systemd rebooting Marathon
+    marathonServer.start()
 
     // bring up the cluster
     Then("The task reappears as running")
