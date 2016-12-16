@@ -3,13 +3,9 @@ package state
 
 import com.wix.accord._
 import com.wix.accord.dsl._
-import mesosphere.marathon.Protos.GroupDefinition
 import mesosphere.marathon.api.v2.Validation._
 import mesosphere.marathon.core.externalvolume.ExternalVolumes
-import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.core.pod.PodDefinition
-import mesosphere.marathon.stream._
-
 import org.jgrapht.DirectedGraph
 import org.jgrapht.alg.CycleDetector
 import org.jgrapht.graph._
@@ -425,23 +421,6 @@ object RootGroup {
     version: Timestamp = Group.defaultVersion): RootGroup = new RootGroup(apps, pods, groupsById, dependencies, version)
 
   def empty: RootGroup = RootGroup(version = Timestamp(0))
-
-  def fromProto(msg: GroupDefinition): RootGroup = {
-    require(msg.getId.toPath.isRoot, "`RootGroup.fromProto` requires that the `id` be root.")
-    RootGroup(
-      apps = msg.getDeprecatedAppsList.map { proto =>
-        val app = AppDefinition.fromProto(proto)
-        app.id -> app
-      }(collection.breakOut),
-      pods = msg.getDeprecatedPodsList.map { proto =>
-        val pod = PodDefinition.fromProto(proto)
-        pod.id -> pod
-      }(collection.breakOut),
-      groupsById = msg.getGroupsList.map(fromProto).map(group => group.id -> group)(collection.breakOut),
-      dependencies = msg.getDependenciesList.map(PathId.apply)(collection.breakOut),
-      version = Timestamp(msg.getVersion)
-    )
-  }
 
   def fromGroup(group: Group): RootGroup = {
     require(group.id.isRoot)
