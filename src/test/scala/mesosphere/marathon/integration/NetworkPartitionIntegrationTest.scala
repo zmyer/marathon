@@ -5,6 +5,8 @@ import mesosphere.AkkaIntegrationFunTest
 import mesosphere.marathon.integration.facades.ITEnrichedTask
 import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.state.UnreachableStrategy
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.{ Span, Second, Seconds }
 
 import scala.concurrent.duration._
 
@@ -18,8 +20,10 @@ import scala.concurrent.duration._
   * are simulated with a disconnection from the processes.
   */
 @IntegrationTest
-class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMarathonMesosClusterTest {
+class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest
+    with EmbeddedMarathonMesosClusterTest with Eventually {
 
+  override implicit def patienceConfig = PatienceConfig(timeout = Span(20, Seconds), interval = Span(1, Second))
   override lazy val mesosNumMasters = 1
   override lazy val mesosNumSlaves = 1
 
@@ -65,9 +69,21 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
     // and master
     mesosCluster.masters(0).stop()
 
-    // Simulate suicide.
-    // See but https://github.com/mesosphere/marathon/issues/3566
+    //    (1 to 240).foreach { _ =>
+    //      Thread.sleep(500)
+    //      println(s"MarathonServer.isRunning = ${marathonServer.isRunning()}")
+    //    }
+    var t = 0
+    eventually {
+      println(s"############## Try $t")
+      t += 1
+      marathonServer.isRunning should be(false)
+    }
     marathonServer.stop()
+
+    // Simulate suicide.
+    // See bug https://github.com/mesosphere/marathon/issues/3566
+    //    marathonServer.stop()
 
     // zk back in service
     zkServer.start()
@@ -77,6 +93,7 @@ class NetworkPartitionIntegrationTest extends AkkaIntegrationFunTest with Embedd
 
     // Simulate Systemd rebooting Marathon
     marathonServer.start()
+    eventually { marathonServer.isRunning should be(true) }
 
     // bring up the cluster
     Then("The task reappears as running")
