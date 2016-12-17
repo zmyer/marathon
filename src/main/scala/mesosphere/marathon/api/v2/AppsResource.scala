@@ -43,13 +43,14 @@ class AppsResource @Inject() (
   import AppsResource._
 
   private[this] val ListApps = """^((?:.+/)|)\*$""".r
-  implicit lazy val appDefinitionValidator = AppDefinition.validAppDefinition(config.availableFeatures)(pluginManager)
-  implicit lazy val validateCanonicalAppUpdateAPI = AppValidation.validateCanonicalAppUpdateAPI(config.availableFeatures)
+  private implicit lazy val appDefinitionValidator = AppDefinition.validAppDefinition(config.availableFeatures)(pluginManager)
+  private implicit lazy val validateCanonicalAppUpdateAPI = AppValidation.validateCanonicalAppUpdateAPI(config.availableFeatures)
 
-  val normalizationConfig = AppNormalization.Config(config.defaultNetworkName.get)
-  def validateAndNormalizeApp(app: raml.App): raml.App = AppsResource.preprocessor(config.availableFeatures, normalizationConfig)(app)
+  private val normalizationConfig = AppNormalization.Config(config.defaultNetworkName.get)
 
-  def validateAndNormalizeAppUpdate(app: raml.AppUpdate): raml.AppUpdate = {
+  private def validateAndNormalizeApp(app: raml.App): raml.App = AppsResource.preprocessor(config.availableFeatures, normalizationConfig)(app)
+
+  private def validateAndNormalizeAppUpdate(app: raml.AppUpdate): raml.AppUpdate = {
     validateOrThrow(app)(AppValidation.validateOldAppUpdateAPI)
     val migrated = AppNormalization.forDeprecatedFields(app)
     validateOrThrow(app)(validateCanonicalAppUpdateAPI)

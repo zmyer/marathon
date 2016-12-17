@@ -381,10 +381,21 @@ trait AppValidation {
     app must complyWithResidencyRules
     app must complyWithSingleInstanceLabelRules
     app must complyWithUpgradeStrategyRules
+    app must complyWithDockerNetworkingRules
     app.constraints.each must complyWithConstraintRules
     app.networks is ramlNetworksValidator
     app.networks is every(valid)
   } // TODO(jdef) and ExternalVolumes.validApp
+
+  /**
+    * The Mesos docker containerizer implementation only supports a single CNI network.
+    */
+  val complyWithDockerNetworkingRules: Validator[App] =
+    conditional((app: App) => app.container.fold(false)(_.`type` == EngineType.Docker))(
+      isTrue("may only specify a single container network when using the Docker container engine"){
+        _.networks.count(_.mode == NetworkMode.Container) <= 1
+      }
+    )
 
   val complyWithConstraintRules: Validator[Seq[String]] = new Validator[Seq[String]] {
     import Protos.Constraint.Operator._
