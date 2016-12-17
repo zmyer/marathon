@@ -113,7 +113,8 @@ def delete_all_apps_wait():
 def scale_test_apps(test_obj):
     if 'instance' in test_obj.style:
         scale_test_app_instances(test_obj)
-
+    if 'count' in test_obj.style:
+        count_test_app_instances(test_obj)
 
 def get_current_tasks():
     return len(get_tasks())
@@ -122,6 +123,59 @@ def get_current_tasks():
 def get_current_app_tasks(starting_tasks):
     return len(get_tasks()) - starting_tasks
 
+def count_test_app_instances(test_obj):
+    # make sure no apps currently
+    try:
+        delete_all_apps_wait2()
+    except Exception as e:
+        test_obj.add_event('test setup failure')
+        assert False
+    test_obj.start = time.time()
+    starting_tasks = get_current_tasks()
+
+    # launch and
+    launch_complete = True
+    try:
+        launch_apps2(test_obj)
+    except:
+        test_obj.add_event('Failure to fully launch')
+        launch_complete = False
+        pass
+
+    # time to finish launch
+    try:
+        time_deployment2(test_obj, starting_tasks)
+    except Exception as e:
+        assert False
+
+    current_tasks = get_current_app_tasks(starting_tasks)
+    test_obj.add_event('undeploying {} tasks'.format(current_tasks))
+
+    # delete apps
+    try:
+        delete_all_apps_wait2(test_obj)
+    except:
+        test_obj.add_event('undeployment failure')
+        assert False
+
+    assert launch_complete
+
+
+def launch_apps2(test_obj):
+    client = marathon.create_client()
+    count = test_obj.count
+    instances = test_obj.instance
+
+    for num in range(1, count + 1):
+        # after 400 and every 50 check to see if we need to wait
+        if num > 400 and num % 50 == 0:
+            deployments = len(client.get_deployments())
+            if deployments > 30:
+                # wait for deployment count to be less than a sec
+                wait_for(deployment_less_than_predicate)
+                time.sleep(1)
+        client.add_app(app(num, instances))
+
 
 def scale_test_app_instances(test_obj):
 
@@ -129,16 +183,18 @@ def scale_test_app_instances(test_obj):
     try:
         delete_all_apps_wait2()
     except Exception as e:
-        test_obj.add_event('test setup failure')
+        test_obj.failed('test setup failure')
         assert False
 
     test_obj.start = time.time()
     starting_tasks = get_current_tasks()
     # launch apps
+    launch_complete = True
     try:
-        launch_apps(test_obj.count, test_obj.instance)
+        launch_apps2(test_obj)
     except:
-        test_obj.add_event('Failure to launched (but we still will wait for deploys)')
+        test_obj.failed('Failure to launched (but we still will wait for deploys)')
+        launch_complete = False
         pass
 
     # time launch
@@ -157,6 +213,7 @@ def scale_test_app_instances(test_obj):
         test_obj.add_event('undeployment failure')
         assert False
 
+    assert launch_complete
 
 def delete_all_apps_wait2(test_obj=None):
     delete_all_apps()
@@ -318,6 +375,7 @@ def ensure_mom_version(version):
         try:
             uninstall_mom()
             install_mom(version)
+            wait_for_service_endpoint('marathon-user')
         except:
             return False
     return True
