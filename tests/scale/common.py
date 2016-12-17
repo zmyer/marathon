@@ -116,12 +116,14 @@ def scale_test_apps(test_obj):
     if 'count' in test_obj.style:
         count_test_app_instances(test_obj)
 
+
 def get_current_tasks():
     return len(get_tasks())
 
 
 def get_current_app_tasks(starting_tasks):
     return len(get_tasks()) - starting_tasks
+
 
 def count_test_app_instances(test_obj):
     # make sure no apps currently
@@ -214,6 +216,7 @@ def scale_test_app_instances(test_obj):
         assert False
 
     assert launch_complete
+
 
 def delete_all_apps_wait2(test_obj=None):
     delete_all_apps()
@@ -447,8 +450,6 @@ def available_resources():
 class ScaleTest(object):
 
     name = ''
-    mom = None
-    mom_version = None
     # app, pod
     under_test = ''
     # instance, group, count
@@ -493,7 +494,10 @@ class ScaleTest(object):
         this marks the end of the test time
         """
         self.status = status
-        self.deploy_time = elapse_time(self.start)
+        if 'successful' == status:
+            self.deploy_time = elapse_time(self.start)
+        else:
+            self.deploy_time = 'x'
 
     def successful(self):
         self.add_event('successful')
@@ -516,7 +520,7 @@ class ScaleTest(object):
             print(event)
 
     def log_stats(self):
-        print('    status: {}, deploy: {}, undeploy: {}'.format(self.status, self.deploy_time, self.undeploy_time))
+        print('    *status*: {}, deploy: {}, undeploy: {}'.format(self.status, self.deploy_time, self.undeploy_time))
 
 
 def start_test(name, marathons):
