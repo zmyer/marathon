@@ -21,7 +21,8 @@ types:
         example: /path/to/health.
         default: /
       portName?:
-        type: strings.Name
+        type: string
+        pattern: ^[a-z][-a-z0-9]*$
         description: |
           Name of the port to query as described in the portDefinitions.
         example: http-api

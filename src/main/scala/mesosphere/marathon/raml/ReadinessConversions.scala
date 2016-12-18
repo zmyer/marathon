@@ -18,7 +18,7 @@ trait ReadinessConversions {
       portName = check.portName,
       intervalSeconds = check.interval.toSeconds.toInt,
       timeoutSeconds = check.timeout.toSeconds.toInt,
-      httpStatusCodesForReady = check.httpStatusCodesForReady.to[Set],
+      httpStatusCodesForReady = check.httpStatusCodesForReady,
       preserveLastResponse = check.preserveLastResponse
     )
   }

@@ -74,6 +74,7 @@ types:
         description:
           Name of the service hosted on this port.
           If provided, it must be unique over all port mappings.
+        pattern: ^[a-z][-a-z0-9]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp
