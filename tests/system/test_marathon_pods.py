@@ -1,6 +1,8 @@
 """Marathon job acceptance tests for DC/OS."""
 
 import pytest
+import uuid
+
 from urllib.parse import urljoin
 
 from common import *
@@ -69,7 +71,6 @@ def _pod_version(client, pod_id, version_id):
 def test_create_pod():
     """Launch simple pod in DC/OS root marathon.
     """
-    _clear_pods()
     client = marathon.create_client()
     pod_id = "/pod-create"
 
@@ -84,7 +85,6 @@ def test_create_pod():
 def test_remove_pod():
     """Launch simple pod in DC/OS root marathon.
     """
-    _clear_pods()
     pod_id = "/pod-remove"
     client = marathon.create_client()
 
@@ -104,7 +104,6 @@ def test_remove_pod():
 
 def test_multi_pods():
     """Launch multiple instances of a pod"""
-    _clear_pods()
     client = marathon.create_client()
     pod_id = "/pod-multi"
 
@@ -120,7 +119,6 @@ def test_multi_pods():
 
 def test_scaleup_pods():
     """Scaling up a pod from 1 to 10"""
-    _clear_pods()
     client = marathon.create_client()
     pod_id = "/pod-scaleup"
 
@@ -142,7 +140,6 @@ def test_scaleup_pods():
 
 def test_scaledown_pods():
     """Scaling down a pod from 10 to 1"""
-    _clear_pods()
     client = marathon.create_client()
     pod_id = "/pod-scaleup"
 
@@ -175,9 +172,9 @@ def test_head_of_pods():
 
 def test_version_pods():
     """Versions and reverting with pods"""
-    _clear_pods()
     client = marathon.create_client()
-    pod_id = "/pod-version"
+
+    pod_id = "/pod-{}".format(uuid.uuid4().hex)
 
     pod_json = _pods_json()
     pod_json["id"] = pod_id
@@ -192,21 +189,16 @@ def test_version_pods():
 
     time.sleep(1)
     versions = _pod_versions(client, pod_id)
-    # todo: this works on a new cluster but run multiple
-    # times on a cluster it would fail :(
-    print("num of versions: " + str(len(versions)))
-    # assert len(versions) == 2
+
+    assert len(versions) == 2
 
     pod_version1 = _pod_version(client, pod_id, versions[0])
     pod_version2 = _pod_version(client, pod_id, versions[1])
     assert pod_version1["scaling"]["instances"] != pod_version2["scaling"]["instances"]
 
 
-def setup_module(module):
-
-    url = urljoin(DCOS_SERVICE_URL, _pods_url())
-    result = http.head(url)
-    assert result.status_code == 200
+def setup_function(function):
+    _clear_pods()
 
 
 def teardown_module(module):
