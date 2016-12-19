@@ -151,7 +151,7 @@ lazy val commonSettings = inConfig(SerialIntegrationTest)(Defaults.testTasks) ++
 
   scapegoatVersion := "1.2.1",
 
-  coverageMinimum := 67,
+  coverageMinimum := 62,
   coverageFailOnMinimum := true
 )
 
