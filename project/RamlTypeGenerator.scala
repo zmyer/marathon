@@ -200,8 +200,43 @@ object RamlTypeGenerator {
     }
   }
 
-  case class FieldT(name: String, `type`: Type, comments: Seq[String], required: Boolean, default: Option[String],
-                    repeated: Boolean = false, forceOptional: Boolean = false, omitEmpty: Boolean = false) {
+  sealed trait Constraint {
+    def validate(): Tree
+  }
+
+  object Constraint {
+    def MaxLength(len: Integer) = Constraint { PlayReads DOT "maxLength" APPLYTYPE StringClass APPLY(LIT(len)) }
+    def MinLength(len: Integer) = Constraint { PlayReads DOT "minLength" APPLYTYPE StringClass APPLY(LIT(len)) }
+    def Pattern(p: String) = Constraint { PlayReads DOT "pattern" APPLY(LIT(p) DOT "r") }
+
+    def MaxItems(len: Integer, t: Type) = Constraint { PlayReads DOT "maxLength" APPLYTYPE t APPLY(LIT(len)) }
+    def MinItems(len: Integer, t: Type) = Constraint { PlayReads DOT "minLength" APPLYTYPE t APPLY(LIT(len)) }
+
+    def Max(v: Number, t: Type) = Constraint { PlayReads DOT "max" APPLYTYPE t APPLY(LIT(v)) }
+    def Min(v: Number, t: Type) = Constraint { PlayReads DOT "min" APPLYTYPE t APPLY(LIT(v)) }
+
+    def apply(f: => Tree): Constraint = new Constraint {
+      override def validate(): Tree = f
+    }
+
+    implicit class Constraints(c: Seq[Constraint]) {
+      def validate(exp: Tree): Tree = {
+        if (c.isEmpty) {
+          exp
+        } else {
+          @tailrec
+          def buildChain(constraints: List[ Constraint ], chain: Tree): Tree = constraints match {
+            case Nil => chain
+            case c :: rs => buildChain(rs, chain INFIX("keepAnd", c.validate()))
+          }
+          exp APPLY buildChain(c.tail.to[ List ], c.head.validate())
+        }
+      }
+    }
+  }
+
+  case class FieldT(name: String, `type`: Type, comments: Seq[String], constraints: Seq[Constraint], required: Boolean,
+    default: Option[String], repeated: Boolean = false, forceOptional: Boolean = false, omitEmpty: Boolean = false) {
 
     override def toString: String = s"$name: ${`type`}"
 
@@ -264,15 +299,23 @@ object RamlTypeGenerator {
     }
 
     val playValidator = {
+      def reads = constraints.validate(PlayPath DOT "read" APPLYTYPE `type`)
+      def validate =
+        REF("json") DOT "\\" APPLY(LIT(name)) DOT "validate" APPLYTYPE `type` APPLY(reads)
+      def validateOpt =
+        REF("json") DOT "\\" APPLY(LIT(name)) DOT "validateOpt" APPLYTYPE `type` APPLY(reads)
+      def validateOptWithDefault(defaultValue: Tree) =
+        REF("json") DOT "\\" APPLY(LIT(name)) DOT "validateOpt" APPLYTYPE `type` APPLY(reads) DOT "map" APPLY (REF("_") DOT "getOrElse" APPLY defaultValue)
+
       if (required && !forceOptional) {
-        REF("json") DOT "\\" APPLY LIT(name) DOT "validate" APPLYTYPE `type`
+        validate
       } else if (repeated && !forceOptional) {
-        REF("json") DOT "\\" APPLY LIT(name) DOT "validateOpt" APPLYTYPE `type` DOT "map" APPLY (REF("_") DOT "getOrElse" APPLY(`type` APPLY()))
+        validateOptWithDefault(`type` APPLY())
       } else {
         if (defaultValue.isDefined && !forceOptional) {
-          (REF("json") DOT "\\" APPLY LIT(name)) DOT "validateOpt" APPLYTYPE `type` DOT "map" APPLY (REF("_") DOT "getOrElse" APPLY defaultValue.get)
+          validateOptWithDefault(defaultValue.get)
         } else {
-          (REF("json") DOT "\\" APPLY LIT(name)) DOT "validateOpt" APPLYTYPE `type`
+          validateOpt
         }
       }
     }
@@ -325,7 +368,7 @@ object RamlTypeGenerator {
             }
           )
         )
-      } else if (actualFields.nonEmpty && actualFields.exists(_.default.nonEmpty) && !actualFields.exists(f => f.repeated || f.omitEmpty)) {
+      } else if (actualFields.nonEmpty && actualFields.exists(_.default.nonEmpty) && !actualFields.exists(f => f.repeated || f.omitEmpty || f.constraints.nonEmpty)) {
         Seq(
           IMPORT("play.api.libs.json._"),
           IMPORT("play.api.libs.functional.syntax._"),
@@ -334,9 +377,9 @@ object RamlTypeGenerator {
           ) APPLY (REF(name) DOT "apply _"),
           VAL("playJsonWriter") withFlags Flags.IMPLICIT := REF(PlayJson) DOT "writes" APPLYTYPE (name)
         )
-      } else if (actualFields.size > 22 || actualFields.exists(f => f.repeated || f.omitEmpty) ||
+      } else if (actualFields.size > 22 || actualFields.exists(f => f.repeated || f.omitEmpty || f.constraints.nonEmpty) ||
         actualFields.map(_.toString).exists(t => t.toString.startsWith(name) || t.toString.contains(s"[$name]"))) {
-        Seq(
+        actualFields.find(_.constraints.size > 1).map(_ => Seq(IMPORT("play.api.libs.functional.syntax._"))).getOrElse(Nil) ++ Seq(
           OBJECTDEF("playJsonFormat") withParents PLAY_JSON_FORMAT(name) withFlags Flags.IMPLICIT := BLOCK(
             DEF("reads", PLAY_JSON_RESULT(name)) withParams PARAM("json", PlayJsValue) := BLOCK(
               actualFields.map { field =>
@@ -529,6 +572,34 @@ object RamlTypeGenerator {
 
   def buildTypes(typeTable: Map[String, Symbol], allTypes: Set[TypeDeclaration]): Set[GeneratedClass] = {
     @tailrec def buildTypes(types: Set[TypeDeclaration], results: Set[GeneratedClass] = Set.empty[GeneratedClass]): Set[GeneratedClass] = {
+      def buildConstraints(field: TypeDeclaration, fieldType: Type): Seq[Constraint] = {
+        Option(field).collect {
+          case s: StringTypeDeclaration =>
+            Seq(
+              Option(s.maxLength()).map(Constraint.MaxLength),
+              Option(s.minLength()).map(Constraint.MinLength),
+              Option(s.pattern()).map(Constraint.Pattern)
+            ).flatten
+          case a: ArrayTypeDeclaration =>
+            Seq(
+              Option(a.maxItems()).map(len => Constraint.MaxItems(len, fieldType)),
+              Option(a.minItems()).map(len => Constraint.MinItems(len, fieldType))
+            ).flatten
+          case n: NumberTypeDeclaration =>
+            // convert numbers so that constraints are appropriately rendered
+            def toNum(v: Double): Number = fieldType match {
+              case DoubleClass => v
+              case FloatClass => v.toFloat
+              case LongClass => v.toLong
+              case _ => v.toInt
+            }
+
+            Seq(
+              Option(n.maximum()).map(v => Constraint.Max(toNum(v), fieldType)),
+              Option(n.minimum()).map(v => Constraint.Min(toNum(v), fieldType))
+            ).flatten
+        }.getOrElse(Nil)
+      }
       def createField(fieldOwner: String, field: TypeDeclaration): FieldT = {
         val comments = comment(field)
         val defaultValue = Option(field.defaultValue())
@@ -562,18 +633,20 @@ object RamlTypeGenerator {
             // reducing with TYPE_OF doesn't work, you'd expect Seq[Seq[X]] but only get Seq[X]
             // https://github.com/eed3si9n/treehugger/issues/38
             val finalType = typeList.reduce((a, b) => s"$b[$a]")
-            FieldT(a.name(), finalType, comments, required, defaultValue, true, forceOptional, omitEmpty = omitEmpty)
+            FieldT(a.name(), finalType, comments, buildConstraints(field, finalType), required, defaultValue, true, forceOptional, omitEmpty = omitEmpty)
           case n: NumberTypeDeclaration =>
-            FieldT(n.name(), typeTable(Option(n.format()).getOrElse("double")), comments, required, defaultValue, forceOptional = forceOptional, omitEmpty = omitEmpty)
+            val fieldType = typeTable(Option(n.format()).getOrElse("double"))
+            FieldT(n.name(), fieldType, comments, buildConstraints(field, fieldType), required, defaultValue, forceOptional = forceOptional, omitEmpty = omitEmpty)
           case o: ObjectTypeDeclaration if typeIsActuallyAMap(o) =>
             o.properties.head match {
               case n: NumberTypeDeclaration =>
-                FieldT(o.name(), TYPE_MAP(StringClass, typeTable(Option(n.format()).getOrElse("double"))), comments, false, defaultValue, true, forceOptional = forceOptional, omitEmpty = omitEmpty)
+                FieldT(o.name(), TYPE_MAP(StringClass, typeTable(Option(n.format()).getOrElse("double"))), comments, Nil, false, defaultValue, true, forceOptional = forceOptional, omitEmpty = omitEmpty)
               case t =>
-                FieldT(o.name(), TYPE_MAP(StringClass, typeTable(t.`type`())), comments, false, defaultValue, true, forceOptional = forceOptional, omitEmpty = omitEmpty)
+                FieldT(o.name(), TYPE_MAP(StringClass, typeTable(t.`type`())), comments, Nil, false, defaultValue, true, forceOptional = forceOptional, omitEmpty = omitEmpty)
             }
           case t: TypeDeclaration =>
-            FieldT(t.name(), typeTable(t.`type`()), comments, required, defaultValue, forceOptional = forceOptional, omitEmpty = omitEmpty)
+            val fieldType = typeTable(t.`type`())
+            FieldT(t.name(), fieldType, comments, buildConstraints(field, fieldType), required, defaultValue, forceOptional = forceOptional, omitEmpty = omitEmpty)
         }
       }
 
