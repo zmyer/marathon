@@ -421,6 +421,12 @@ class Resources(object):
     def __gt__(self, other):
         return self.cpus > other.cpus and self.mem > other.cpus
 
+    def __mul__(self, other):
+        return Resources(self.cpus * other, self.mem * other)
+
+    def __rmul__(self, other):
+        return Resources(self.cpus * other, self.mem * other)
+
 
 def get_resources(rtype='resources'):
     """ resource types from summary include:  resources, used_resources
