@@ -21,7 +21,7 @@ types:
           The container port that a task's process is actually listening on.
           Required if the network mode is container
       hostPort?:
-        type: numbers.EphemeralPort
+        type: numbers.AnyPort
         description: |
           Mapped port on the host.
           All host ports are allocated from resource offers.
@@ -64,10 +64,8 @@ types:
     description: Port
     properties:
       number?:
-        type: integer
+        type: numbers.AnyPort
         format: int32
-        minimum: 0
-        maximum: 65535
         description: The port number
         default: 0
       name:

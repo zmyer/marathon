@@ -119,12 +119,12 @@ types:
           Note: only used if protocol == HTTP[S]."
         example: /path/to/health
       port?:
-        type: numbers.EphemeralPort
+        type: numbers.AnyPort
         description: |
           The specific port to connect to.
           In case of dynamic ports, see portIndex.
       portIndex?:
-        type: numbers.EphemeralPort
+        type: numbers.AnyPort
         description: |
           Index in this app's ports array to be used for health requests.
           An index is used so the app can use random ports,

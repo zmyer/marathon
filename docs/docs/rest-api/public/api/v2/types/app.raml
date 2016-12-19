@@ -139,6 +139,7 @@ types:
         type: array
         (pragma.omitEmpty):
         items: constraints.AppConstraint
+        uniqueItems: true
       container?: appContainer.Container
       cpus?:
         type: number
@@ -184,6 +185,7 @@ types:
       healthChecks?:
         type: health.AppHealthCheck[]
         (pragma.omitEmpty):
+        uniqueItems: true
       instances?:
         type: integer
         format: int32
@@ -225,7 +227,7 @@ types:
         type: array
         (pragma.forceOptional):
         (pragma.deprecated): Use `portDefinitions` instead.
-        items: number.EphemeralPort
+        items: number.AnyPort
         description: |
           An array of required port resources on the agent host.
           The number of items in the array determines how many dynamic ports are

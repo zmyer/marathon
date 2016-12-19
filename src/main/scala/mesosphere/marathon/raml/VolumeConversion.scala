@@ -36,7 +36,7 @@ trait VolumeConversion extends ConstraintConversion with DefaultConversions {
         case DiskType.Path => PersistentVolumeType.Path
         case DiskType.Root => PersistentVolumeType.Root
       })
-      PersistentVolume(pvType, pv.size, pv.maxSize, pv.constraints.toRaml[Seq[Seq[String]]])
+      PersistentVolume(pvType, pv.size, pv.maxSize, pv.constraints.toRaml[Set[Seq[String]]])
     }
 
     def create(hostPath: Option[String] = None, persistent: Option[PersistentVolume] = None, external: Option[ExternalVolume] = None): AppVolume = AppVolume(
