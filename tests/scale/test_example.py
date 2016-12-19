@@ -1,9 +1,16 @@
+import os
 import time
 
 from shakedown import *
-
+from common import * 
 from utils import file_dir
 
+default_moms = {
+    'mom1': '1.3.6',
+    'mom2': '1.4.0-RC3'
+}
+# to be discovered
+marathons = {}
 
 def test_agents():
     private_agents = sorted(get_private_agents())
