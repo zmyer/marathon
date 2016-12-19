@@ -205,15 +205,15 @@ object RamlTypeGenerator {
   }
 
   object Constraint {
-    def MaxLength(len: Integer) = Constraint { PlayReads DOT "maxLength" APPLYTYPE StringClass APPLY(LIT(len)) }
-    def MinLength(len: Integer) = Constraint { PlayReads DOT "minLength" APPLYTYPE StringClass APPLY(LIT(len)) }
-    def Pattern(p: String) = Constraint { PlayReads DOT "pattern" APPLY(LIT(p) DOT "r") }
+    def MaxLength(len: Integer) = Constraint { REF("maxLength") APPLYTYPE StringClass APPLY(LIT(len)) }
+    def MinLength(len: Integer) = Constraint { REF("minLength") APPLYTYPE StringClass APPLY(LIT(len)) }
+    def Pattern(p: String) = Constraint { REF("pattern") APPLY(LIT(p) DOT "r") }
 
-    def MaxItems(len: Integer, t: Type) = Constraint { PlayReads DOT "maxLength" APPLYTYPE t APPLY(LIT(len)) }
-    def MinItems(len: Integer, t: Type) = Constraint { PlayReads DOT "minLength" APPLYTYPE t APPLY(LIT(len)) }
+    def MaxItems(len: Integer, t: Type) = Constraint { REF("maxLength") APPLYTYPE t APPLY(LIT(len)) }
+    def MinItems(len: Integer, t: Type) = Constraint { REF("minLength") APPLYTYPE t APPLY(LIT(len)) }
 
-    def Max(v: Number, t: Type) = Constraint { PlayReads DOT "max" APPLYTYPE t APPLY(LIT(v)) }
-    def Min(v: Number, t: Type) = Constraint { PlayReads DOT "min" APPLYTYPE t APPLY(LIT(v)) }
+    def Max(v: Number, t: Type) = Constraint { REF("max") APPLYTYPE t APPLY(LIT(v)) }
+    def Min(v: Number, t: Type) = Constraint { REF("min") APPLYTYPE t APPLY(LIT(v)) }
 
     def apply(f: => Tree): Constraint = new Constraint {
       override def validate(): Tree = f
@@ -379,6 +379,7 @@ object RamlTypeGenerator {
         )
       } else if (actualFields.size > 22 || actualFields.exists(f => f.repeated || f.omitEmpty || f.constraints.nonEmpty) ||
         actualFields.map(_.toString).exists(t => t.toString.startsWith(name) || t.toString.contains(s"[$name]"))) {
+        actualFields.find(_.constraints.nonEmpty).map(_ => Seq(IMPORT(PlayReads DOT "_"))).getOrElse(Nil) ++
         actualFields.find(_.constraints.size > 1).map(_ => Seq(IMPORT("play.api.libs.functional.syntax._"))).getOrElse(Nil) ++ Seq(
           OBJECTDEF("playJsonFormat") withParents PLAY_JSON_FORMAT(name) withFlags Flags.IMPLICIT := BLOCK(
             DEF("reads", PLAY_JSON_RESULT(name)) withParams PARAM("json", PlayJsValue) := BLOCK(
