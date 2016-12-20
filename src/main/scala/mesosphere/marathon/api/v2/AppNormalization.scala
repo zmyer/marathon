@@ -250,7 +250,8 @@ trait AppNormalization {
       ports = None,
       // and the rest (simple)
       healthChecks = healthChecks,
-      residency = residency
+      residency = residency,
+      readinessChecks = app.readinessChecks.map(normalizeReadinessCheck)
     )
   }
 
@@ -266,8 +267,7 @@ trait AppNormalization {
 
     app.copy(
       container = container,
-      networks = networks,
-      readinessChecks = app.readinessChecks.map(normalizeReadinessCheck)
+      networks = networks
     )
   }
 }

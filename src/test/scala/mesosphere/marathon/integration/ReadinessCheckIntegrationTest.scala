@@ -63,19 +63,21 @@ class ReadinessCheckIntegrationTest extends AkkaIntegrationFunTest with Embedded
   def deploy(service: App, continue: Boolean): Unit = {
     Given("An application service")
     val result = marathon.createAppV2(service)
-    result.code should be (201)
-    val task = waitForTasks(service.id.toPath, 1).head //make sure, the app has really started
-    val serviceFacade = new ServiceMockFacade(task)
-    WaitTestSupport.waitUntil("ServiceMock is up", patienceConfig.timeout.totalNanos.nanos){ Try(serviceFacade.plan()).isSuccess }
+    withClue(result.entityString) {
+      result.code should be (201)
+      val task = waitForTasks(service.id.toPath, 1).head //make sure, the app has really started
+      val serviceFacade = new ServiceMockFacade(task)
+      WaitTestSupport.waitUntil("ServiceMock is up", patienceConfig.timeout.totalNanos.nanos){ Try(serviceFacade.plan()).isSuccess }
 
-    while (continue && serviceFacade.plan().code != 200) {
-      When("We continue on block until the plan is ready")
-      marathon.listDeploymentsForBaseGroup().value should have size 1
-      serviceFacade.continue()
+      while (continue && serviceFacade.plan().code != 200) {
+        When("We continue on block until the plan is ready")
+        marathon.listDeploymentsForBaseGroup().value should have size 1
+        serviceFacade.continue()
+      }
+
+      Then("The deployment should finish")
+      waitForDeployment(result)
     }
-
-    Then("The deployment should finish")
-    waitForDeployment(result)
   }
 
   def serviceProxy(appId: PathId, plan: String, withHealth: Boolean): App = {
