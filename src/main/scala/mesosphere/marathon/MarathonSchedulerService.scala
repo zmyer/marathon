@@ -10,7 +10,7 @@ import akka.stream.Materializer
 import akka.util.Timeout
 import com.google.common.util.concurrent.AbstractExecutionThreadService
 import mesosphere.marathon.MarathonSchedulerActor._
-import mesosphere.marathon.core.base.toRichRuntime
+import mesosphere.marathon.core.base.ShutdownHooks
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService }
 import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.heartbeat._
@@ -74,7 +74,8 @@ class MarathonSchedulerService @Inject() (
   system: ActorSystem,
   migration: Migration,
   @Named("schedulerActor") schedulerActor: ActorRef,
-  @Named(ModuleNames.MESOS_HEARTBEAT_ACTOR) mesosHeartbeatActor: ActorRef)(implicit mat: Materializer)
+  @Named(ModuleNames.MESOS_HEARTBEAT_ACTOR) mesosHeartbeatActor: ActorRef,
+  shutdownHooks: ShutdownHooks)(implicit mat: Materializer)
     extends AbstractExecutionThreadService with ElectionCandidate with DeploymentService {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -274,7 +275,7 @@ class MarathonSchedulerService @Inject() (
     }
 
     log.error("Terminating after loss of leadership")
-    Runtime.getRuntime.asyncExit()
+    shutdownHooks.abortAsync()
   }
 
   //End ElectionDelegate interface

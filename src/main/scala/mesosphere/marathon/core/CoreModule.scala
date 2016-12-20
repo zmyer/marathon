@@ -1,7 +1,7 @@
 package mesosphere.marathon.core
 
 import mesosphere.marathon.core.auth.AuthModule
-import mesosphere.marathon.core.base.ActorsModule
+import mesosphere.marathon.core.base.{ ActorsModule, ShutdownHooks }
 import mesosphere.marathon.core.election.ElectionModule
 import mesosphere.marathon.core.event.EventModule
 import mesosphere.marathon.core.group.GroupManagerModule
@@ -26,6 +26,7 @@ import mesosphere.marathon.storage.StorageModule
   * (as long as we have them).
   */
 trait CoreModule {
+  def shutdownHooks: ShutdownHooks
   def actorsModule: ActorsModule
   def appOfferMatcherModule: LaunchQueueModule
   def authModule: AuthModule

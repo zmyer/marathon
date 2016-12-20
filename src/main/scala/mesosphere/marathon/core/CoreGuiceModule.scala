@@ -8,7 +8,7 @@ import akka.stream.Materializer
 import com.google.inject._
 import com.google.inject.name.Names
 import mesosphere.marathon.core.appinfo.{ AppInfoModule, AppInfoService, GroupInfoService, PodStatusService }
-import mesosphere.marathon.core.base.Clock
+import mesosphere.marathon.core.base.{ Clock, ShutdownHooks }
 import mesosphere.marathon.core.election.ElectionService
 import mesosphere.marathon.core.event.HttpCallbackSubscriptionService
 import mesosphere.marathon.core.group.GroupManager
@@ -227,4 +227,7 @@ class CoreGuiceModule extends AbstractModule {
 
   @Provides @Singleton
   def healthCheckManager(coreModule: CoreModule): HealthCheckManager = coreModule.healthModule.healthCheckManager
+
+  @Provides @Singleton
+  def shutdownHooks(coreModule: CoreModule): ShutdownHooks = coreModule.shutdownHooks
 }

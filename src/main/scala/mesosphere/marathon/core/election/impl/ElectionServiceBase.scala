@@ -208,7 +208,7 @@ abstract class ElectionServiceBase(
           case ex: Throwable => // all other exceptions here are fatal errors, that can not be handled.
             log.error("Fatal error while trying to take over leadership. Exit now.", ex)
             abdicateLeadership(error = true)
-            Runtime.getRuntime.asyncExit()
+            shutdownHooks.abortAsync()
         }
     }
   }

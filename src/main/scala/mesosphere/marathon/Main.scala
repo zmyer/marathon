@@ -10,7 +10,6 @@ import mesosphere.chaos.metrics.MetricsModule
 import mesosphere.marathon.api.MarathonRestModule
 import mesosphere.marathon.core.base._
 import mesosphere.marathon.core.CoreGuiceModule
-import mesosphere.marathon.core.base.toRichRuntime
 import mesosphere.marathon.metrics.{ MetricsReporterModule, MetricsReporterService }
 import mesosphere.marathon.stream._
 import mesosphere.mesos.LibMesos
@@ -25,13 +24,6 @@ class MarathonApp(args: Seq[String]) extends AutoCloseable with StrictLogging {
 
   SLF4JBridgeHandler.removeHandlersForRootLogger()
   SLF4JBridgeHandler.install()
-  Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler {
-    override def uncaughtException(thread: Thread, throwable: Throwable): Unit = {
-      logger.error(s"Terminating ${conf.httpPort()} due to uncaught exception in thread ${thread.getName}:${thread.getId}", throwable)
-      Runtime.getRuntime.asyncExit()(ExecutionContext.global)
-    }
-  })
-
   protected def modules: Seq[Module] = {
     Seq(
       new HttpModule(conf),
@@ -72,6 +64,15 @@ class MarathonApp(args: Seq[String]) extends AutoCloseable with StrictLogging {
     }
 
     val injector = Guice.createInjector(modules)
+
+    val shutdownHooks = injector.getInstance(classOf[ShutdownHooks])
+    Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler {
+      override def uncaughtException(thread: Thread, throwable: Throwable): Unit = {
+        logger.error(s"Terminating ${conf.httpPort()} due to uncaught exception in thread ${thread.getName}:${thread.getId}", throwable)
+        shutdownHooks.abortAsync()(ExecutionContext.global)
+      }
+    })
+
     val services = Seq(
       classOf[HttpService],
       classOf[MarathonSchedulerService],

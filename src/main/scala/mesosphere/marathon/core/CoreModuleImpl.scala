@@ -60,8 +60,8 @@ class CoreModuleImpl @Inject() (
   // INFRASTRUCTURE LAYER
 
   private[this] lazy val random = Random
-  private[this] lazy val shutdownHookModule = ShutdownHooks()
-  override lazy val actorsModule = new ActorsModule(shutdownHookModule, actorSystem)
+  lazy val shutdownHooks = ShutdownHooks()
+  override lazy val actorsModule = new ActorsModule(shutdownHooks, actorSystem)
 
   override lazy val leadershipModule = LeadershipModule(actorsModule.actorRefFactory)
   override lazy val electionModule = new ElectionModule(
@@ -70,7 +70,7 @@ class CoreModuleImpl @Inject() (
     eventStream,
     metrics,
     hostPort,
-    shutdownHookModule
+    shutdownHooks
   )
 
   // TASKS
@@ -81,7 +81,8 @@ class CoreModuleImpl @Inject() (
       storageModule.instanceRepository, instanceUpdateSteps)(actorsModule.materializer)
   override lazy val taskJobsModule = new TaskJobsModule(marathonConf, leadershipModule, clock)
   override lazy val storageModule = StorageModule(
-    marathonConf)(
+    marathonConf,
+    shutdownHooks)(
     metrics,
     actorsModule.materializer,
     ExecutionContext.global,

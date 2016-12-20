@@ -4,6 +4,7 @@ import akka.Done
 import akka.event.EventStream
 import akka.testkit.TestProbe
 import mesosphere.AkkaFunTest
+import mesosphere.marathon.core.base.ShutdownHooks
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.launcher.OfferProcessor
 import mesosphere.marathon.core.launchqueue.LaunchQueue
@@ -29,6 +30,7 @@ class MarathonSchedulerTest extends AkkaFunTest {
   var offerProcessor: OfferProcessor = _
   var taskStatusProcessor: TaskStatusUpdateProcessor = _
   var suicideFn: (Boolean) => Unit = { _ => () }
+  var shutdownHooks: ShutdownHooks = _
 
   before {
     repo = mock[AppRepository]
@@ -40,13 +42,15 @@ class MarathonSchedulerTest extends AkkaFunTest {
     probe = TestProbe()
     eventBus = system.eventStream
     taskStatusProcessor = mock[TaskStatusUpdateProcessor]
+    shutdownHooks = mock[ShutdownHooks]
     marathonScheduler = new MarathonScheduler(
       eventBus,
       offerProcessor = offerProcessor,
       taskStatusProcessor = taskStatusProcessor,
       frameworkIdRepository,
       mesosLeaderInfo,
-      config) {
+      config,
+      shutdownHooks) {
       override protected def suicide(removeFrameworkId: Boolean): Unit = {
         suicideFn(removeFrameworkId)
       }

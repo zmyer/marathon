@@ -10,6 +10,7 @@ import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.MarathonConf
 import mesosphere.marathon.core.base._
 import mesosphere.marathon.metrics.Metrics
+import mesosphere.marathon.storage.CuratorZk
 import org.apache.curator.framework.api.ACLProvider
 import org.apache.curator.framework.recipes.leader.{ LeaderLatch, LeaderLatchListener }
 import org.apache.curator.framework.{ AuthInfo, CuratorFramework, CuratorFrameworkFactory }
@@ -65,7 +66,7 @@ class CuratorElectionService(
     } catch {
       case NonFatal(e) =>
         log.error(s"ZooKeeper initialization failed - Committing suicide: ${e.getMessage}")
-        Runtime.getRuntime.asyncExit()(scala.concurrent.ExecutionContext.global)
+        shutdownHooks.abortAsync()(scala.concurrent.ExecutionContext.global)
     }
   }
 
@@ -130,7 +131,7 @@ class CuratorElectionService(
       retryPolicy(new RetryPolicy {
         override def allowRetry(retryCount: Int, elapsedTimeMs: Long, sleeper: RetrySleeper): Boolean = {
           log.error("ZooKeeper access failed - Committing suicide to avoid invalidating ZooKeeper state")
-          Runtime.getRuntime.asyncExit()(scala.concurrent.ExecutionContext.global)
+          shutdownHooks.abortAsync()(scala.concurrent.ExecutionContext.global)
           false
         }
       })
@@ -146,7 +147,7 @@ class CuratorElectionService(
     }
 
     client.start()
-    client.getZookeeperClient.blockUntilConnectedOrTimedOut()
+    CuratorZk.blockUntilConnected(client, shutdownHooks, abideConnectionTimeout = true)
     client
   }
 

@@ -4,7 +4,7 @@ package test
 import java.security.Permission
 
 import akka.actor.{ ActorSystem, Scheduler }
-import mesosphere.marathon.core.base.RichRuntime
+import mesosphere.marathon.core.base.ShutdownHooks
 import mesosphere.marathon.util.{ Lock, Retry, RichLock }
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 
@@ -36,7 +36,7 @@ trait ExitDisabledTest extends Suite with BeforeAndAfterAll {
 
   def exitCalled(desiredCode: Int)(implicit system: ActorSystem, scheduler: Scheduler): Future[Boolean] = {
     implicit val ctx = system.dispatcher
-    Retry.blocking("Check for exit", Int.MaxValue, 1.micro, RichRuntime.DefaultExitDelay.plus(1.second)) {
+    Retry.blocking("Check for exit", Int.MaxValue, 1.micro, ShutdownHooks.DefaultExitDelay.plus(1.second)) {
       if (ExitDisabledTest.exitsCalled(_.contains(desiredCode))) {
         ExitDisabledTest.exitsCalled(e => e.remove(e.indexOf(desiredCode)))
         true

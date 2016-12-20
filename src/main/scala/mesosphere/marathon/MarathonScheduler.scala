@@ -25,7 +25,9 @@ class MarathonScheduler @Inject() (
     taskStatusProcessor: TaskStatusUpdateProcessor,
     frameworkIdRepository: FrameworkIdRepository,
     mesosLeaderInfo: MesosLeaderInfo,
-    config: MarathonConf) extends Scheduler {
+    config: MarathonConf,
+    shutdownHooks: ShutdownHooks
+) extends Scheduler {
 
   private[this] val log = LoggerFactory.getLogger(getClass.getName)
 
@@ -164,6 +166,6 @@ class MarathonScheduler @Inject() (
     if (removeFrameworkId) Await.ready(frameworkIdRepository.delete(), config.zkTimeoutDuration)
 
     // Asynchronously call asyncExit to avoid deadlock due to the JVM shutdown hooks
-    Runtime.getRuntime.asyncExit()
+    shutdownHooks.abortAsync()
   }
 }

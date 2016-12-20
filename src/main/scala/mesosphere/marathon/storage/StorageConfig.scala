@@ -7,6 +7,7 @@ import java.util.Collections
 import akka.actor.{ ActorRefFactory, Scheduler }
 import akka.stream.Materializer
 import com.typesafe.config.Config
+import mesosphere.marathon.core.base.ShutdownHooks
 import mesosphere.marathon.core.storage.store.PersistenceStore
 import mesosphere.marathon.core.storage.store.impl.BasePersistenceStore
 import mesosphere.marathon.core.storage.store.impl.cache.{ LazyCachingPersistenceStore, LazyVersionCachingPersistentStore, LoadTimeCachingPersistenceStore }
@@ -14,11 +15,13 @@ import mesosphere.marathon.core.storage.store.impl.memory.{ Identity, InMemoryPe
 import mesosphere.marathon.core.storage.store.impl.zk.{ NoRetryPolicy, RichCuratorFramework, ZkId, ZkPersistenceStore, ZkSerialized }
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.util.{ RetryConfig, toRichConfig }
+import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.ACLProvider
 import org.apache.curator.framework.imps.GzipCompressionProvider
 import org.apache.curator.framework.{ AuthInfo, CuratorFrameworkFactory }
 import org.apache.zookeeper.ZooDefs
 import org.apache.zookeeper.data.ACL
+import scala.annotation.tailrec
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, _ }
@@ -100,7 +103,8 @@ case class CuratorZk(
     maxOutstanding: Int,
     maxVersions: Int,
     versionCacheConfig: Option[VersionCacheConfig],
-    availableFeatures: Set[String]
+    availableFeatures: Set[String],
+    shutdownHooks: ShutdownHooks
 ) extends PersistenceStorageConfig[ZkId, String, ZkSerialized] {
 
   lazy val client: RichCuratorFramework = {
@@ -123,7 +127,7 @@ case class CuratorZk(
     builder.namespace(zkPath.stripPrefix("/"))
     val client = builder.build()
     client.start()
-    client.blockUntilConnected()
+    CuratorZk.blockUntilConnected(client, shutdownHooks)
     RichCuratorFramework(client)
   }
 
@@ -135,7 +139,7 @@ case class CuratorZk(
 
 object CuratorZk {
   val StoreName = "zk"
-  def apply(conf: StorageConf): CuratorZk =
+  def apply(conf: StorageConf, shutdownHooks: ShutdownHooks): CuratorZk =
     CuratorZk(
       cacheType = if (conf.storeCache()) LazyCaching else NoCaching,
       sessionTimeout = Some(conf.zkSessionTimeoutDuration),
@@ -152,10 +156,11 @@ object CuratorZk {
       maxOutstanding = 1024,
       maxVersions = conf.maxVersions(),
       versionCacheConfig = if (conf.versionCacheEnabled()) StorageConfig.DefaultVersionCacheConfig else None,
-      availableFeatures = conf.availableFeatures
+      availableFeatures = conf.availableFeatures,
+      shutdownHooks = shutdownHooks
     )
 
-  def apply(config: Config): CuratorZk = {
+  def apply(config: Config, shutdownHooks: ShutdownHooks): CuratorZk = {
     val username = config.optionalString("username")
     val password = config.optionalString("password")
     val acls = (username, password) match {
@@ -179,8 +184,40 @@ object CuratorZk {
       maxVersions = config.int("max-versions", StorageConfig.DefaultMaxVersions),
       versionCacheConfig =
         if (config.bool("version-cache-enabled", true)) StorageConfig.DefaultVersionCacheConfig else None,
-      availableFeatures = config.stringList("available-features", Seq.empty).to[Set]
+      availableFeatures = config.stringList("available-features", Seq.empty).to[Set],
+      shutdownHooks = shutdownHooks
     )
+  }
+
+  /**
+    * Block the current thread until Zookeeper connection is established. If Marathon is detected to be shutting, then throws
+    * InterruptedException.
+    *
+    * @param client The zookeeper curator framework reference
+    * @param shutdownHooks reference to Marathon lifecycle management object
+    * @param abideConnectionTimeout throw InterruptedException if it takes longer than the configured connection timeout
+    */
+  def blockUntilConnected(client: CuratorFramework, shutdownHooks: ShutdownHooks, abideConnectionTimeout: Boolean = false): Unit = {
+    val timeoutAt: Long =
+      if (abideConnectionTimeout)
+        System.currentTimeMillis() + client.getZookeeperClient.getConnectionTimeoutMs
+      else
+        Long.MaxValue
+
+    @tailrec def poll(): Unit = {
+      if (System.currentTimeMillis > timeoutAt)
+        throw new InterruptedException("timed out while waiting for zookeeper connection")
+      else if (shutdownHooks.isShuttingDown)
+        throw new InterruptedException("abandoning attempt to wait for connection to zookeeper; Marathon is shutting down")
+      else try {
+        client.blockUntilConnected(1, java.util.concurrent.TimeUnit.SECONDS)
+      } catch {
+        case _: InterruptedException =>
+          poll()
+      }
+    }
+
+    poll()
   }
 }
 
@@ -212,17 +249,17 @@ object StorageConfig {
 
   val DefaultLegacyMaxVersions = 25
   val DefaultMaxVersions = 5000
-  def apply(conf: StorageConf): StorageConfig = {
+  def apply(conf: StorageConf, shutdownHooks: ShutdownHooks): StorageConfig = {
     conf.internalStoreBackend() match {
       case InMem.StoreName => InMem(conf)
-      case CuratorZk.StoreName => CuratorZk(conf)
+      case CuratorZk.StoreName => CuratorZk(conf, shutdownHooks)
     }
   }
 
-  def apply(conf: Config): StorageConfig = {
+  def apply(conf: Config, shutdownHooks: ShutdownHooks): StorageConfig = {
     conf.string("storage-type", "zk") match {
       case InMem.StoreName => InMem(conf)
-      case CuratorZk.StoreName => CuratorZk(conf)
+      case CuratorZk.StoreName => CuratorZk(conf, shutdownHooks)
     }
   }
 }
