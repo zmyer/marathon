@@ -100,7 +100,8 @@ case class CuratorZk(
     maxOutstanding: Int,
     maxVersions: Int,
     versionCacheConfig: Option[VersionCacheConfig],
-    availableFeatures: Set[String]
+    availableFeatures: Set[String],
+    defaultNetworkName: Option[String]
 ) extends PersistenceStorageConfig[ZkId, String, ZkSerialized] {
 
   lazy val client: RichCuratorFramework = {
@@ -152,7 +153,8 @@ object CuratorZk {
       maxOutstanding = 1024,
       maxVersions = conf.maxVersions(),
       versionCacheConfig = if (conf.versionCacheEnabled()) StorageConfig.DefaultVersionCacheConfig else None,
-      availableFeatures = conf.availableFeatures
+      availableFeatures = conf.availableFeatures,
+      defaultNetworkName = conf.defaultNetworkName.get
     )
 
   def apply(config: Config): CuratorZk = {
@@ -179,14 +181,16 @@ object CuratorZk {
       maxVersions = config.int("max-versions", StorageConfig.DefaultMaxVersions),
       versionCacheConfig =
         if (config.bool("version-cache-enabled", true)) StorageConfig.DefaultVersionCacheConfig else None,
-      availableFeatures = config.stringList("available-features", Seq.empty).to[Set]
+      availableFeatures = config.stringList("available-features", Seq.empty).to[Set],
+      defaultNetworkName = config.optionalString("default-network-name")
     )
   }
 }
 
 case class InMem(
     maxVersions: Int,
-    availableFeatures: Set[String]) extends PersistenceStorageConfig[RamId, String, Identity] {
+    availableFeatures: Set[String],
+    defaultNetworkName: Option[String]) extends PersistenceStorageConfig[RamId, String, Identity] {
   override val cacheType: CacheType = NoCaching
   override val versionCacheConfig: Option[VersionCacheConfig] = None
 
@@ -199,12 +203,14 @@ object InMem {
   val StoreName = "mem"
 
   def apply(conf: StorageConf): InMem =
-    InMem(conf.maxVersions(), conf.availableFeatures)
+    InMem(conf.maxVersions(), conf.availableFeatures, conf.defaultNetworkName.get)
 
   def apply(conf: Config): InMem =
     InMem(
       conf.int("max-versions", StorageConfig.DefaultMaxVersions),
-      availableFeatures = conf.stringList("available-features", Seq.empty).to[Set])
+      availableFeatures = conf.stringList("available-features", Seq.empty).to[Set],
+      defaultNetworkName = conf.optionalString("default-network-name")
+    )
 }
 
 object StorageConfig {

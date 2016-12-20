@@ -29,9 +29,11 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen {
     instanceRepository: InstanceRepository = mock[InstanceRepository],
     taskFailureRepository: TaskFailureRepository = mock[TaskFailureRepository],
     frameworkIdRepository: FrameworkIdRepository = mock[FrameworkIdRepository],
-    eventSubscribersRepository: EventSubscribersRepository = mock[EventSubscribersRepository]): Migration = {
-    new Migration(Set.empty, persistenceStore, appRepository, groupRepository, deploymentRepository,
-      taskRepository, instanceRepository, taskFailureRepository, frameworkIdRepository, eventSubscribersRepository)
+    eventSubscribersRepository: EventSubscribersRepository = mock[EventSubscribersRepository],
+    serviceDefinitionRepository: ServiceDefinitionRepository = mock[ServiceDefinitionRepository]): Migration = {
+    new Migration(Set.empty, None, persistenceStore, appRepository, groupRepository, deploymentRepository,
+      taskRepository, instanceRepository, taskFailureRepository, frameworkIdRepository, eventSubscribersRepository,
+      serviceDefinitionRepository)
   }
   // scalastyle:on
 
@@ -99,7 +101,6 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen {
     "migrate throws an error for versions > current" in {
       val mockedStore = mock[PersistenceStore[_, _, _]]
       val migrate = migration(persistenceStore = mockedStore)
-      val minVersion = migrate.minSupportedStorageVersion
 
       Given("An unsupported storage version")
       val unsupportedVersion = StorageVersions(Int.MaxValue, Int.MaxValue, Int.MaxValue, StorageVersion.StorageFormat.PERSISTENCE_STORE)

@@ -23,6 +23,7 @@ import scala.util.matching.Regex
 @SuppressWarnings(Array("UnusedMethodParameter")) // materializer will definitely be used in the future.
 class Migration(
     private[migration] val availableFeatures: Set[String],
+    private[migration] val defaultNetworkName: Option[String],
     private[migration] val persistenceStore: PersistenceStore[_, _, _],
     private[migration] val appRepository: AppRepository,
     private[migration] val groupRepository: GroupRepository,
@@ -31,7 +32,8 @@ class Migration(
     private[migration] val instanceRepo: InstanceRepository,
     private[migration] val taskFailureRepo: TaskFailureRepository,
     private[migration] val frameworkIdRepo: FrameworkIdRepository,
-    private[migration] val eventSubscribersRepo: EventSubscribersRepository)(implicit
+    private[migration] val eventSubscribersRepo: EventSubscribersRepository,
+    private[migration] val serviceDefinitionRepo: ServiceDefinitionRepository)(implicit
   mat: Materializer,
     metrics: Metrics) extends StrictLogging {
 
@@ -45,7 +47,11 @@ class Migration(
     * All the migrations, that have to be applied.
     * They get applied after the master has been elected.
     */
-  def migrations: List[MigrationAction] = List.empty
+  def migrations: List[MigrationAction] = List(
+    StorageVersions(1, 5, 0, StorageVersion.StorageFormat.PERSISTENCE_STORE) -> (
+      () => MigrationTo1_5(this).migrate
+    )
+  )
 
   def applyMigrationSteps(from: StorageVersion): Future[Seq[StorageVersion]] = {
     migrations.filter(_._1 > from).sortBy(_._1).foldLeft(Future.successful(Seq.empty[StorageVersion])) {

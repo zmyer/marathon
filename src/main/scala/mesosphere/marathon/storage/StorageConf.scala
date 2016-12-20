@@ -42,5 +42,11 @@ trait StorageConf extends ZookeeperConf {
     prefix = "disable_"
   )
 
+  lazy val defaultNetworkName = opt[String](
+    "default_network_name",
+    descr = "Network name, injected into applications' container-mode network{} specs that do not define their own name.",
+    noshort = true
+  )
+
   def availableFeatures: Set[String]
 }
