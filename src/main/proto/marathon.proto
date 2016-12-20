@@ -122,7 +122,7 @@ message ServiceDefinition {
   optional ResourceRoles acceptedResourceRoles = 22;
   optional int64 last_scaling_at = 23;
   optional int64 last_config_change_at = 24;
-  optional IpAddress OBSOLETE_ipAddress = 25; // deprecated since 1.4
+  optional IpAddress OBSOLETE_ipAddress = 25; // deprecated since 1.5
   optional ResidencyDefinition residency = 26;
   repeated mesos.Port portDefinitions = 27;
   repeated ReadinessCheckDefinition readinessCheckDefinition = 28;
@@ -227,9 +227,10 @@ message ExtendedContainerInfo {
 
     required string image = 1;
 
-    optional mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];
+    // deprecated in favor of ServiceDefinition.networks since 1.5
+    optional mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];
 
-    // deprecated in favor of ExtendedContainerInfo.PortMapping,since 1.4
+    // deprecated in favor of ExtendedContainerInfo.PortMapping,since 1.5
     message ObsoleteDockerPortMapping {
       optional uint32 host_port = 1;
       required uint32 container_port = 2;
@@ -239,7 +240,7 @@ message ExtendedContainerInfo {
       optional uint32 service_port = 100 [default = 0];
     }
 
-    // deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+    // deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
     repeated ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;
 
     optional bool privileged = 4 [default = false];
@@ -306,7 +307,7 @@ message ExtendedContainerInfo {
 
   required mesos.ContainerInfo.Type type = 1;
   repeated Volume volumes = 2;
-  repeated PortMapping port_mappings = 6; // since 1.4
+  repeated PortMapping port_mappings = 6; // since 1.5
 
   optional DockerInfo docker = 3;
   optional MesosDockerInfo mesosDocker = 4;

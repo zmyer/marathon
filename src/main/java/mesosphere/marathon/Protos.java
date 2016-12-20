@@ -7605,7 +7605,7 @@ public final class Protos {
      * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
      *
      * <pre>
-     * deprecated since 1.4
+     * deprecated since 1.5
      * </pre>
      */
     boolean hasOBSOLETEIpAddress();
@@ -7613,7 +7613,7 @@ public final class Protos {
      * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
      *
      * <pre>
-     * deprecated since 1.4
+     * deprecated since 1.5
      * </pre>
      */
     mesosphere.marathon.Protos.IpAddress getOBSOLETEIpAddress();
@@ -7621,7 +7621,7 @@ public final class Protos {
      * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
      *
      * <pre>
-     * deprecated since 1.4
+     * deprecated since 1.5
      * </pre>
      */
     mesosphere.marathon.Protos.IpAddressOrBuilder getOBSOLETEIpAddressOrBuilder();
@@ -8885,7 +8885,7 @@ public final class Protos {
      * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
      *
      * <pre>
-     * deprecated since 1.4
+     * deprecated since 1.5
      * </pre>
      */
     public boolean hasOBSOLETEIpAddress() {
@@ -8895,7 +8895,7 @@ public final class Protos {
      * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
      *
      * <pre>
-     * deprecated since 1.4
+     * deprecated since 1.5
      * </pre>
      */
     public mesosphere.marathon.Protos.IpAddress getOBSOLETEIpAddress() {
@@ -8905,7 +8905,7 @@ public final class Protos {
      * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
      *
      * <pre>
-     * deprecated since 1.4
+     * deprecated since 1.5
      * </pre>
      */
     public mesosphere.marathon.Protos.IpAddressOrBuilder getOBSOLETEIpAddressOrBuilder() {
@@ -12972,7 +12972,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public boolean hasOBSOLETEIpAddress() {
@@ -12982,7 +12982,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.IpAddress getOBSOLETEIpAddress() {
@@ -12996,7 +12996,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public Builder setOBSOLETEIpAddress(mesosphere.marathon.Protos.IpAddress value) {
@@ -13016,7 +13016,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public Builder setOBSOLETEIpAddress(
@@ -13034,7 +13034,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public Builder mergeOBSOLETEIpAddress(mesosphere.marathon.Protos.IpAddress value) {
@@ -13057,7 +13057,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public Builder clearOBSOLETEIpAddress() {
@@ -13074,7 +13074,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.IpAddress.Builder getOBSOLETEIpAddressBuilder() {
@@ -13086,7 +13086,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.IpAddressOrBuilder getOBSOLETEIpAddressOrBuilder() {
@@ -13100,7 +13100,7 @@ public final class Protos {
        * <code>optional .mesosphere.marathon.IpAddress OBSOLETE_ipAddress = 25;</code>
        *
        * <pre>
-       * deprecated since 1.4
+       * deprecated since 1.5
        * </pre>
        */
       private com.google.protobuf.SingleFieldBuilder<
@@ -23138,7 +23138,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping> 
@@ -23147,7 +23147,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping getPortMappings(int index);
@@ -23155,7 +23155,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     int getPortMappingsCount();
@@ -23163,7 +23163,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     java.util.List<? extends mesosphere.marathon.Protos.ExtendedContainerInfo.PortMappingOrBuilder> 
@@ -23172,7 +23172,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     mesosphere.marathon.Protos.ExtendedContainerInfo.PortMappingOrBuilder getPortMappingsOrBuilder(
@@ -23405,22 +23405,30 @@ public final class Protos {
       com.google.protobuf.ByteString
           getImageBytes();
 
-      // optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];
+      // optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];
       /**
-       * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+       * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+       *
+       * <pre>
+       * deprecated in favor of ServiceDefinition.networks since 1.5
+       * </pre>
        */
-      boolean hasNetwork();
+      boolean hasOBSOLETENetwork();
       /**
-       * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+       * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+       *
+       * <pre>
+       * deprecated in favor of ServiceDefinition.networks since 1.5
+       * </pre>
        */
-      org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network getNetwork();
+      org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network getOBSOLETENetwork();
 
       // repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;
       /**
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping> 
@@ -23429,7 +23437,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping getOBSOLETEPortMappings(int index);
@@ -23437,7 +23445,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       int getOBSOLETEPortMappingsCount();
@@ -23445,7 +23453,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       java.util.List<? extends mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMappingOrBuilder> 
@@ -23454,7 +23462,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMappingOrBuilder getOBSOLETEPortMappingsOrBuilder(
@@ -23619,7 +23627,7 @@ public final class Protos {
                   unknownFields.mergeVarintField(2, rawValue);
                 } else {
                   bitField0_ |= 0x00000002;
-                  network_ = value;
+                  oBSOLETENetwork_ = value;
                 }
                 break;
               }
@@ -23786,7 +23794,7 @@ public final class Protos {
        * Protobuf type {@code mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping}
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.PortMapping,since 1.4
+       * deprecated in favor of ExtendedContainerInfo.PortMapping,since 1.5
        * </pre>
        */
       public static final class ObsoleteDockerPortMapping extends
@@ -24246,7 +24254,7 @@ public final class Protos {
          * Protobuf type {@code mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping}
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.PortMapping,since 1.4
+         * deprecated in favor of ExtendedContainerInfo.PortMapping,since 1.5
          * </pre>
          */
         public static final class Builder extends
@@ -24998,20 +25006,28 @@ public final class Protos {
         }
       }
 
-      // optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];
-      public static final int NETWORK_FIELD_NUMBER = 2;
-      private org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network network_;
+      // optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];
+      public static final int OBSOLETE_NETWORK_FIELD_NUMBER = 2;
+      private org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network oBSOLETENetwork_;
       /**
-       * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+       * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+       *
+       * <pre>
+       * deprecated in favor of ServiceDefinition.networks since 1.5
+       * </pre>
        */
-      public boolean hasNetwork() {
+      public boolean hasOBSOLETENetwork() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+       * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+       *
+       * <pre>
+       * deprecated in favor of ServiceDefinition.networks since 1.5
+       * </pre>
        */
-      public org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network getNetwork() {
-        return network_;
+      public org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network getOBSOLETENetwork() {
+        return oBSOLETENetwork_;
       }
 
       // repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;
@@ -25021,7 +25037,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       public java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping> getOBSOLETEPortMappingsList() {
@@ -25031,7 +25047,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       public java.util.List<? extends mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMappingOrBuilder> 
@@ -25042,7 +25058,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       public int getOBSOLETEPortMappingsCount() {
@@ -25052,7 +25068,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping getOBSOLETEPortMappings(int index) {
@@ -25062,7 +25078,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
        *
        * <pre>
-       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+       * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMappingOrBuilder getOBSOLETEPortMappingsOrBuilder(
@@ -25187,7 +25203,7 @@ public final class Protos {
 
       private void initFields() {
         image_ = "";
-        network_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
+        oBSOLETENetwork_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
         oBSOLETEPortMappings_ = java.util.Collections.emptyList();
         privileged_ = false;
         parameters_ = java.util.Collections.emptyList();
@@ -25225,7 +25241,7 @@ public final class Protos {
           output.writeBytes(1, getImageBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeEnum(2, network_.getNumber());
+          output.writeEnum(2, oBSOLETENetwork_.getNumber());
         }
         for (int i = 0; i < oBSOLETEPortMappings_.size(); i++) {
           output.writeMessage(3, oBSOLETEPortMappings_.get(i));
@@ -25254,7 +25270,7 @@ public final class Protos {
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeEnumSize(2, network_.getNumber());
+            .computeEnumSize(2, oBSOLETENetwork_.getNumber());
         }
         for (int i = 0; i < oBSOLETEPortMappings_.size(); i++) {
           size += com.google.protobuf.CodedOutputStream
@@ -25396,7 +25412,7 @@ public final class Protos {
           super.clear();
           image_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
-          network_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
+          oBSOLETENetwork_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
           bitField0_ = (bitField0_ & ~0x00000002);
           if (oBSOLETEPortMappingsBuilder_ == null) {
             oBSOLETEPortMappings_ = java.util.Collections.emptyList();
@@ -25449,7 +25465,7 @@ public final class Protos {
           if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
             to_bitField0_ |= 0x00000002;
           }
-          result.network_ = network_;
+          result.oBSOLETENetwork_ = oBSOLETENetwork_;
           if (oBSOLETEPortMappingsBuilder_ == null) {
             if (((bitField0_ & 0x00000004) == 0x00000004)) {
               oBSOLETEPortMappings_ = java.util.Collections.unmodifiableList(oBSOLETEPortMappings_);
@@ -25497,8 +25513,8 @@ public final class Protos {
             image_ = other.image_;
             onChanged();
           }
-          if (other.hasNetwork()) {
-            setNetwork(other.getNetwork());
+          if (other.hasOBSOLETENetwork()) {
+            setOBSOLETENetwork(other.getOBSOLETENetwork());
           }
           if (oBSOLETEPortMappingsBuilder_ == null) {
             if (!other.oBSOLETEPortMappings_.isEmpty()) {
@@ -25675,38 +25691,54 @@ public final class Protos {
           return this;
         }
 
-        // optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];
-        private org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network network_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
+        // optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];
+        private org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network oBSOLETENetwork_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
         /**
-         * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+         * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+         *
+         * <pre>
+         * deprecated in favor of ServiceDefinition.networks since 1.5
+         * </pre>
          */
-        public boolean hasNetwork() {
+        public boolean hasOBSOLETENetwork() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
         /**
-         * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+         * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+         *
+         * <pre>
+         * deprecated in favor of ServiceDefinition.networks since 1.5
+         * </pre>
          */
-        public org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network getNetwork() {
-          return network_;
+        public org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network getOBSOLETENetwork() {
+          return oBSOLETENetwork_;
         }
         /**
-         * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+         * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+         *
+         * <pre>
+         * deprecated in favor of ServiceDefinition.networks since 1.5
+         * </pre>
          */
-        public Builder setNetwork(org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network value) {
+        public Builder setOBSOLETENetwork(org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network value) {
           if (value == null) {
             throw new NullPointerException();
           }
           bitField0_ |= 0x00000002;
-          network_ = value;
+          oBSOLETENetwork_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>optional .mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];</code>
+         * <code>optional .mesos.ContainerInfo.DockerInfo.Network OBSOLETE_network = 2 [default = HOST];</code>
+         *
+         * <pre>
+         * deprecated in favor of ServiceDefinition.networks since 1.5
+         * </pre>
          */
-        public Builder clearNetwork() {
+        public Builder clearOBSOLETENetwork() {
           bitField0_ = (bitField0_ & ~0x00000002);
-          network_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
+          oBSOLETENetwork_ = org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network.HOST;
           onChanged();
           return this;
         }
@@ -25728,7 +25760,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping> getOBSOLETEPortMappingsList() {
@@ -25742,7 +25774,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public int getOBSOLETEPortMappingsCount() {
@@ -25756,7 +25788,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping getOBSOLETEPortMappings(int index) {
@@ -25770,7 +25802,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder setOBSOLETEPortMappings(
@@ -25791,7 +25823,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder setOBSOLETEPortMappings(
@@ -25809,7 +25841,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder addOBSOLETEPortMappings(mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping value) {
@@ -25829,7 +25861,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder addOBSOLETEPortMappings(
@@ -25850,7 +25882,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder addOBSOLETEPortMappings(
@@ -25868,7 +25900,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder addOBSOLETEPortMappings(
@@ -25886,7 +25918,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder addAllOBSOLETEPortMappings(
@@ -25904,7 +25936,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder clearOBSOLETEPortMappings() {
@@ -25921,7 +25953,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public Builder removeOBSOLETEPortMappings(int index) {
@@ -25938,7 +25970,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping.Builder getOBSOLETEPortMappingsBuilder(
@@ -25949,7 +25981,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMappingOrBuilder getOBSOLETEPortMappingsOrBuilder(
@@ -25963,7 +25995,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public java.util.List<? extends mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMappingOrBuilder> 
@@ -25978,7 +26010,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping.Builder addOBSOLETEPortMappingsBuilder() {
@@ -25989,7 +26021,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping.Builder addOBSOLETEPortMappingsBuilder(
@@ -26001,7 +26033,7 @@ public final class Protos {
          * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping OBSOLETE_port_mappings = 3;</code>
          *
          * <pre>
-         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.4
+         * deprecated in favor of ExtendedContainerInfo.port_mappings, since 1.5
          * </pre>
          */
         public java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.DockerInfo.ObsoleteDockerPortMapping.Builder> 
@@ -30186,7 +30218,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     public java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping> getPortMappingsList() {
@@ -30196,7 +30228,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     public java.util.List<? extends mesosphere.marathon.Protos.ExtendedContainerInfo.PortMappingOrBuilder> 
@@ -30207,7 +30239,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     public int getPortMappingsCount() {
@@ -30217,7 +30249,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping getPortMappings(int index) {
@@ -30227,7 +30259,7 @@ public final class Protos {
      * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
      *
      * <pre>
-     * since 1.4
+     * since 1.5
      * </pre>
      */
     public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMappingOrBuilder getPortMappingsOrBuilder(
@@ -31072,7 +31104,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping> getPortMappingsList() {
@@ -31086,7 +31118,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public int getPortMappingsCount() {
@@ -31100,7 +31132,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping getPortMappings(int index) {
@@ -31114,7 +31146,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder setPortMappings(
@@ -31135,7 +31167,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder setPortMappings(
@@ -31153,7 +31185,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder addPortMappings(mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping value) {
@@ -31173,7 +31205,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder addPortMappings(
@@ -31194,7 +31226,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder addPortMappings(
@@ -31212,7 +31244,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder addPortMappings(
@@ -31230,7 +31262,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder addAllPortMappings(
@@ -31248,7 +31280,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder clearPortMappings() {
@@ -31265,7 +31297,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public Builder removePortMappings(int index) {
@@ -31282,7 +31314,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping.Builder getPortMappingsBuilder(
@@ -31293,7 +31325,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMappingOrBuilder getPortMappingsOrBuilder(
@@ -31307,7 +31339,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public java.util.List<? extends mesosphere.marathon.Protos.ExtendedContainerInfo.PortMappingOrBuilder> 
@@ -31322,7 +31354,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping.Builder addPortMappingsBuilder() {
@@ -31333,7 +31365,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping.Builder addPortMappingsBuilder(
@@ -31345,7 +31377,7 @@ public final class Protos {
        * <code>repeated .mesosphere.marathon.ExtendedContainerInfo.PortMapping port_mappings = 6;</code>
        *
        * <pre>
-       * since 1.4
+       * since 1.5
        * </pre>
        */
       public java.util.List<mesosphere.marathon.Protos.ExtendedContainerInfo.PortMapping.Builder> 
@@ -47476,7 +47508,7 @@ public final class Protos {
       "\n\013MarathonApp\022\014\n\004name\030\001 \001(\t\0220\n\005tasks\030\002 \003" +
       "(\0132!.mesosphere.marathon.MarathonTask\"1\n" +
       "\rContainerInfo\022\017\n\005image\030\001 \002(\014:\000\022\017\n\007optio" +
-      "ns\030\002 \003(\014\"\305\t\n\025ExtendedContainerInfo\022\'\n\004ty" +
+      "ns\030\002 \003(\014\"\316\t\n\025ExtendedContainerInfo\022\'\n\004ty" +
       "pe\030\001 \002(\0162\031.mesos.ContainerInfo.Type\022,\n\007v" +
       "olumes\030\002 \003(\0132\033.mesosphere.marathon.Volum",
       "e\022M\n\rport_mappings\030\006 \003(\01326.mesosphere.ma" +
@@ -47486,85 +47518,85 @@ public final class Protos {
       "Docker\030\004 \001(\0132:.mesosphere.marathon.Exten" +
       "dedContainerInfo.MesosDockerInfo\022K\n\tmeso" +
       "sAppC\030\005 \001(\01328.mesosphere.marathon.Extend" +
-      "edContainerInfo.MesosAppCInfo\032\307\003\n\nDocker" +
-      "Info\022\r\n\005image\030\001 \002(\t\022>\n\007network\030\002 \001(\0162\'.m" +
-      "esos.ContainerInfo.DockerInfo.Network:\004H",
-      "OST\022o\n\026OBSOLETE_port_mappings\030\003 \003(\0132O.me" +
-      "sosphere.marathon.ExtendedContainerInfo." +
-      "DockerInfo.ObsoleteDockerPortMapping\022\031\n\n" +
-      "privileged\030\004 \001(\010:\005false\022$\n\nparameters\030\005 " +
-      "\003(\0132\020.mesos.Parameter\022\030\n\020force_pull_imag" +
-      "e\030\006 \001(\010\032\235\001\n\031ObsoleteDockerPortMapping\022\021\n" +
-      "\thost_port\030\001 \001(\r\022\026\n\016container_port\030\002 \002(\r" +
-      "\022\020\n\010protocol\030\003 \001(\t\022\014\n\004name\030\004 \001(\t\022\034\n\006labe" +
-      "ls\030\005 \003(\0132\014.mesos.Label\022\027\n\014service_port\030d" +
-      " \001(\r:\0010\032a\n\017MesosDockerInfo\022\r\n\005image\030\001 \002(",
-      "\t\022%\n\ncredential\030\002 \001(\0132\021.mesos.Credential" +
-      "\022\030\n\020force_pull_image\030\003 \001(\010\032b\n\rMesosAppCI" +
-      "nfo\022\r\n\005image\030\001 \002(\t\022\n\n\002id\030\002 \001(\t\022\034\n\006labels" +
-      "\030\003 \003(\0132\014.mesos.Label\022\030\n\020force_pull_image" +
-      "\030\004 \001(\010\032\217\001\n\013PortMapping\022\021\n\thost_port\030\001 \001(" +
-      "\r\022\026\n\016container_port\030\002 \002(\r\022\020\n\010protocol\030\003 " +
-      "\001(\t\022\014\n\004name\030\004 \001(\t\022\034\n\006labels\030\005 \003(\0132\014.meso" +
-      "s.Label\022\027\n\014service_port\030d \001(\r:\0010\"\377\003\n\006Vol" +
-      "ume\022 \n\004mode\030\003 \002(\0162\022.mesos.Volume.Mode\022\026\n" +
-      "\016container_path\030\001 \002(\t\022\021\n\thost_path\030\002 \001(\t",
-      "\022\033\n\005image\030\004 \001(\0132\014.mesos.Image\022D\n\npersist" +
-      "ent\030\005 \001(\01320.mesosphere.marathon.Volume.P" +
-      "ersistentVolumeInfo\022@\n\010external\030\006 \001(\0132.." +
-      "mesosphere.marathon.Volume.ExternalVolum" +
-      "eInfo\032\237\001\n\024PersistentVolumeInfo\022\014\n\004size\030\001" +
-      " \002(\004\0222\n\004type\030\002 \001(\0162$.mesos.Resource.Disk" +
-      "Info.Source.Type\0224\n\013constraints\030\003 \003(\0132\037." +
-      "mesosphere.marathon.Constraint\022\017\n\007maxSiz" +
-      "e\030\004 \001(\004\032a\n\022ExternalVolumeInfo\022\014\n\004size\030\001 " +
-      "\001(\004\022\014\n\004name\030\002 \002(\t\022\020\n\010provider\030\003 \002(\t\022\035\n\007o",
-      "ptions\030\004 \003(\0132\014.mesos.Label\")\n\020EventSubsc" +
-      "ribers\022\025\n\rcallback_urls\030\001 \003(\t\"\274\001\n\016Storag" +
-      "eVersion\022\r\n\005major\030\001 \002(\r\022\r\n\005minor\030\002 \002(\r\022\r" +
-      "\n\005patch\030\003 \002(\r\022I\n\006format\030\004 \001(\01621.mesosphe" +
-      "re.marathon.StorageVersion.StorageFormat" +
-      ":\006LEGACY\"2\n\rStorageFormat\022\n\n\006LEGACY\020\000\022\025\n" +
-      "\021PERSISTENCE_STORE\020\001\"Z\n\031UpgradeStrategyD" +
-      "efinition\022\035\n\025minimumHealthCapacity\030\001 \002(\001" +
-      "\022\036\n\023maximumOverCapacity\030\002 \001(\001:\0011\"\236\003\n\017Gro" +
-      "upDefinition\022\n\n\002id\030\001 \002(\t\022\017\n\007version\030\002 \002(",
-      "\t\022?\n\017deprecated_apps\030\003 \003(\0132&.mesosphere." +
-      "marathon.ServiceDefinition\0222\n\017deprecated" +
-      "_pods\030\010 \003(\0132\031.mesosphere.marathon.Json\0224" +
-      "\n\006groups\030\004 \003(\0132$.mesosphere.marathon.Gro" +
-      "upDefinition\022\024\n\014dependencies\030\005 \003(\t\022?\n\004ap" +
-      "ps\030\006 \003(\01321.mesosphere.marathon.GroupDefi" +
-      "nition.AppReference\022?\n\004pods\030\007 \003(\01321.meso" +
-      "sphere.marathon.GroupDefinition.AppRefer" +
-      "ence\032+\n\014AppReference\022\n\n\002id\030\001 \002(\t\022\017\n\007vers" +
-      "ion\030\002 \002(\t\"\371\001\n\030DeploymentPlanDefinition\022\n",
-      "\n\002id\030\001 \002(\t\022\021\n\ttimestamp\030\002 \001(\t\022A\n\023depreca" +
-      "ted_original\030\004 \001(\0132$.mesosphere.marathon" +
-      ".GroupDefinition\022?\n\021deprecated_target\030\005 " +
-      "\001(\0132$.mesosphere.marathon.GroupDefinitio" +
-      "n\022\035\n\025original_root_version\030\006 \001(\t\022\033\n\023targ" +
-      "et_root_version\030\007 \001(\t\"\306\001\n\013TaskFailure\022\016\n" +
-      "\006app_id\030\001 \002(\t\022\036\n\007task_id\030\002 \002(\0132\r.mesos.T" +
-      "askID\022\037\n\005state\030\003 \002(\0162\020.mesos.TaskState\022\021" +
-      "\n\007message\030\004 \001(\t:\000\022\016\n\004host\030\005 \001(\t:\000\022\017\n\007ver" +
-      "sion\030\006 \002(\t\022\021\n\ttimestamp\030\007 \002(\t\022\037\n\007slaveId",
-      "\030\010 \001(\0132\016.mesos.SlaveID\"T\n\014ZKStoreEntry\022\014" +
-      "\n\004name\030\001 \002(\t\022\014\n\004uuid\030\002 \002(\014\022\r\n\005value\030\003 \002(" +
-      "\014\022\031\n\ncompressed\030\004 \001(\010:\005false\"\326\001\n\023Residen" +
-      "cyDefinition\022(\n relaunchEscalationTimeou" +
-      "tSeconds\030\001 \001(\003\022S\n\020taskLostBehavior\030\002 \001(\016" +
-      "29.mesosphere.marathon.ResidencyDefiniti" +
-      "on.TaskLostBehavior\"@\n\020TaskLostBehavior\022" +
-      "\032\n\026RELAUNCH_AFTER_TIMEOUT\020\000\022\020\n\014WAIT_FORE" +
-      "VER\020\001\"$\n\006Secret\022\n\n\002id\030\001 \002(\t\022\016\n\006source\030\002 " +
-      "\002(\t\"\262\001\n\017EnvVarReference\0227\n\004type\030\001 \002(\0162).",
-      "mesosphere.marathon.EnvVarReference.Type" +
-      "\022\014\n\004name\030\002 \002(\t\0227\n\tsecretRef\030\003 \001(\0132$.meso" +
-      "sphere.marathon.EnvVarSecretRef\"\037\n\004Type\022" +
-      "\013\n\007UNKNOWN\020\000\022\n\n\006SECRET\020\001\"#\n\017EnvVarSecret" +
-      "Ref\022\020\n\010secretId\030\001 \002(\tB\035\n\023mesosphere.mara" +
-      "thonB\006Protos"
+      "edContainerInfo.MesosAppCInfo\032\320\003\n\nDocker" +
+      "Info\022\r\n\005image\030\001 \002(\t\022G\n\020OBSOLETE_network\030" +
+      "\002 \001(\0162\'.mesos.ContainerInfo.DockerInfo.N",
+      "etwork:\004HOST\022o\n\026OBSOLETE_port_mappings\030\003" +
+      " \003(\0132O.mesosphere.marathon.ExtendedConta" +
+      "inerInfo.DockerInfo.ObsoleteDockerPortMa" +
+      "pping\022\031\n\nprivileged\030\004 \001(\010:\005false\022$\n\npara" +
+      "meters\030\005 \003(\0132\020.mesos.Parameter\022\030\n\020force_" +
+      "pull_image\030\006 \001(\010\032\235\001\n\031ObsoleteDockerPortM" +
+      "apping\022\021\n\thost_port\030\001 \001(\r\022\026\n\016container_p" +
+      "ort\030\002 \002(\r\022\020\n\010protocol\030\003 \001(\t\022\014\n\004name\030\004 \001(" +
+      "\t\022\034\n\006labels\030\005 \003(\0132\014.mesos.Label\022\027\n\014servi" +
+      "ce_port\030d \001(\r:\0010\032a\n\017MesosDockerInfo\022\r\n\005i",
+      "mage\030\001 \002(\t\022%\n\ncredential\030\002 \001(\0132\021.mesos.C" +
+      "redential\022\030\n\020force_pull_image\030\003 \001(\010\032b\n\rM" +
+      "esosAppCInfo\022\r\n\005image\030\001 \002(\t\022\n\n\002id\030\002 \001(\t\022" +
+      "\034\n\006labels\030\003 \003(\0132\014.mesos.Label\022\030\n\020force_p" +
+      "ull_image\030\004 \001(\010\032\217\001\n\013PortMapping\022\021\n\thost_" +
+      "port\030\001 \001(\r\022\026\n\016container_port\030\002 \002(\r\022\020\n\010pr" +
+      "otocol\030\003 \001(\t\022\014\n\004name\030\004 \001(\t\022\034\n\006labels\030\005 \003" +
+      "(\0132\014.mesos.Label\022\027\n\014service_port\030d \001(\r:\001" +
+      "0\"\377\003\n\006Volume\022 \n\004mode\030\003 \002(\0162\022.mesos.Volum" +
+      "e.Mode\022\026\n\016container_path\030\001 \002(\t\022\021\n\thost_p",
+      "ath\030\002 \001(\t\022\033\n\005image\030\004 \001(\0132\014.mesos.Image\022D" +
+      "\n\npersistent\030\005 \001(\01320.mesosphere.marathon" +
+      ".Volume.PersistentVolumeInfo\022@\n\010external" +
+      "\030\006 \001(\0132..mesosphere.marathon.Volume.Exte" +
+      "rnalVolumeInfo\032\237\001\n\024PersistentVolumeInfo\022" +
+      "\014\n\004size\030\001 \002(\004\0222\n\004type\030\002 \001(\0162$.mesos.Reso" +
+      "urce.DiskInfo.Source.Type\0224\n\013constraints" +
+      "\030\003 \003(\0132\037.mesosphere.marathon.Constraint\022" +
+      "\017\n\007maxSize\030\004 \001(\004\032a\n\022ExternalVolumeInfo\022\014" +
+      "\n\004size\030\001 \001(\004\022\014\n\004name\030\002 \002(\t\022\020\n\010provider\030\003",
+      " \002(\t\022\035\n\007options\030\004 \003(\0132\014.mesos.Label\")\n\020E" +
+      "ventSubscribers\022\025\n\rcallback_urls\030\001 \003(\t\"\274" +
+      "\001\n\016StorageVersion\022\r\n\005major\030\001 \002(\r\022\r\n\005mino" +
+      "r\030\002 \002(\r\022\r\n\005patch\030\003 \002(\r\022I\n\006format\030\004 \001(\01621" +
+      ".mesosphere.marathon.StorageVersion.Stor" +
+      "ageFormat:\006LEGACY\"2\n\rStorageFormat\022\n\n\006LE" +
+      "GACY\020\000\022\025\n\021PERSISTENCE_STORE\020\001\"Z\n\031Upgrade" +
+      "StrategyDefinition\022\035\n\025minimumHealthCapac" +
+      "ity\030\001 \002(\001\022\036\n\023maximumOverCapacity\030\002 \001(\001:\001" +
+      "1\"\236\003\n\017GroupDefinition\022\n\n\002id\030\001 \002(\t\022\017\n\007ver",
+      "sion\030\002 \002(\t\022?\n\017deprecated_apps\030\003 \003(\0132&.me" +
+      "sosphere.marathon.ServiceDefinition\0222\n\017d" +
+      "eprecated_pods\030\010 \003(\0132\031.mesosphere.marath" +
+      "on.Json\0224\n\006groups\030\004 \003(\0132$.mesosphere.mar" +
+      "athon.GroupDefinition\022\024\n\014dependencies\030\005 " +
+      "\003(\t\022?\n\004apps\030\006 \003(\01321.mesosphere.marathon." +
+      "GroupDefinition.AppReference\022?\n\004pods\030\007 \003" +
+      "(\01321.mesosphere.marathon.GroupDefinition" +
+      ".AppReference\032+\n\014AppReference\022\n\n\002id\030\001 \002(" +
+      "\t\022\017\n\007version\030\002 \002(\t\"\371\001\n\030DeploymentPlanDef",
+      "inition\022\n\n\002id\030\001 \002(\t\022\021\n\ttimestamp\030\002 \001(\t\022A" +
+      "\n\023deprecated_original\030\004 \001(\0132$.mesosphere" +
+      ".marathon.GroupDefinition\022?\n\021deprecated_" +
+      "target\030\005 \001(\0132$.mesosphere.marathon.Group" +
+      "Definition\022\035\n\025original_root_version\030\006 \001(" +
+      "\t\022\033\n\023target_root_version\030\007 \001(\t\"\306\001\n\013TaskF" +
+      "ailure\022\016\n\006app_id\030\001 \002(\t\022\036\n\007task_id\030\002 \002(\0132" +
+      "\r.mesos.TaskID\022\037\n\005state\030\003 \002(\0162\020.mesos.Ta" +
+      "skState\022\021\n\007message\030\004 \001(\t:\000\022\016\n\004host\030\005 \001(\t" +
+      ":\000\022\017\n\007version\030\006 \002(\t\022\021\n\ttimestamp\030\007 \002(\t\022\037",
+      "\n\007slaveId\030\010 \001(\0132\016.mesos.SlaveID\"T\n\014ZKSto" +
+      "reEntry\022\014\n\004name\030\001 \002(\t\022\014\n\004uuid\030\002 \002(\014\022\r\n\005v" +
+      "alue\030\003 \002(\014\022\031\n\ncompressed\030\004 \001(\010:\005false\"\326\001" +
+      "\n\023ResidencyDefinition\022(\n relaunchEscalat" +
+      "ionTimeoutSeconds\030\001 \001(\003\022S\n\020taskLostBehav" +
+      "ior\030\002 \001(\01629.mesosphere.marathon.Residenc" +
+      "yDefinition.TaskLostBehavior\"@\n\020TaskLost" +
+      "Behavior\022\032\n\026RELAUNCH_AFTER_TIMEOUT\020\000\022\020\n\014" +
+      "WAIT_FOREVER\020\001\"$\n\006Secret\022\n\n\002id\030\001 \002(\t\022\016\n\006" +
+      "source\030\002 \002(\t\"\262\001\n\017EnvVarReference\0227\n\004type",
+      "\030\001 \002(\0162).mesosphere.marathon.EnvVarRefer" +
+      "ence.Type\022\014\n\004name\030\002 \002(\t\0227\n\tsecretRef\030\003 \001" +
+      "(\0132$.mesosphere.marathon.EnvVarSecretRef" +
+      "\"\037\n\004Type\022\013\n\007UNKNOWN\020\000\022\n\n\006SECRET\020\001\"#\n\017Env" +
+      "VarSecretRef\022\020\n\010secretId\030\001 \002(\tB\035\n\023mesosp" +
+      "here.marathonB\006Protos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -47678,7 +47710,7 @@ public final class Protos {
           internal_static_mesosphere_marathon_ExtendedContainerInfo_DockerInfo_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_mesosphere_marathon_ExtendedContainerInfo_DockerInfo_descriptor,
-              new java.lang.String[] { "Image", "Network", "OBSOLETEPortMappings", "Privileged", "Parameters", "ForcePullImage", });
+              new java.lang.String[] { "Image", "OBSOLETENetwork", "OBSOLETEPortMappings", "Privileged", "Parameters", "ForcePullImage", });
           internal_static_mesosphere_marathon_ExtendedContainerInfo_DockerInfo_ObsoleteDockerPortMapping_descriptor =
             internal_static_mesosphere_marathon_ExtendedContainerInfo_DockerInfo_descriptor.getNestedTypes().get(0);
           internal_static_mesosphere_marathon_ExtendedContainerInfo_DockerInfo_ObsoleteDockerPortMapping_fieldAccessorTable = new
