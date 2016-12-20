@@ -174,11 +174,11 @@ types:
       executor?:
         type: string
         pattern: ^(//cmd)|(/?[^/]+(/[^/]+)*)|$
-        default: "//cmd"
+        default: ""
         description: |
           The executor to use to launch this application.
           Different executors are available.
-          The simplest one (and the default if none is given) is //cmd,
+          The simplest one (and the one configured by default if none is given) is `//cmd`,
           which takes the cmd and executes that on the shell level.
       fetch?:
         type: artifact.Artifact[]

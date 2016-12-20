@@ -92,7 +92,7 @@ class TaskUnreachableIntegrationTest extends AkkaIntegrationFunTest with Embedde
 
     val strategy = UnreachableStrategy(5.minutes.toSeconds, 10.minutes.toSeconds)
     val app = appProxy(testBasePath / "app", "v1", instances = 2, healthCheck = None)
-      .copy(constraints = Seq(constraint), unreachableStrategy = Some(strategy))
+      .copy(constraints = Set(constraint), unreachableStrategy = Some(strategy))
 
     waitForDeployment(marathon.createAppV2(app))
     val enrichedTasks = waitForTasks(app.id.toPath, 2)

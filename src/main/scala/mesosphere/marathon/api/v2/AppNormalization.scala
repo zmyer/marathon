@@ -15,7 +15,7 @@ trait AppNormalization {
     * In the past, healthCheck.portIndex was required and had a default value 0. When we introduced healthCheck.port, we
     * made it optional (also with ip-per-container in mind) and we have to re-add it in cases where it makes sense.
     */
-  def normalizeHealthChecks(healthChecks: Seq[AppHealthCheck]): Seq[AppHealthCheck] = {
+  def normalizeHealthChecks(healthChecks: Set[AppHealthCheck]): Set[AppHealthCheck] = {
     def withPort(check: AppHealthCheck): AppHealthCheck = {
       def needsDefaultPortIndex = check.port.isEmpty && check.portIndex.isEmpty
       if (needsDefaultPortIndex) check.copy(portIndex = Some(0)) else check

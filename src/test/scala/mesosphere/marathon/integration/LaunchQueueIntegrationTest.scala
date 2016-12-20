@@ -26,7 +26,7 @@ class LaunchQueueIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMar
     Given("a new app with constraints that cannot be fulfilled")
     val c = Seq("nonExistent", "CLUSTER", "na")
     val appId = testBasePath / "app"
-    val app = App(appId.toString, constraints = Seq(c), cmd = Some("na"), instances = 5, portDefinitions = None)
+    val app = App(appId.toString, constraints = Set(c), cmd = Some("na"), instances = 5, portDefinitions = None)
     val create = marathon.createAppV2(app)
     create.code should be (201) // Created
 

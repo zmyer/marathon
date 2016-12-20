@@ -1,11 +1,10 @@
 package mesosphere.marathon
 package api.v2.json
 
-import mesosphere.marathon.ValidationFailedException
 import mesosphere.marathon.api.v2.AppNormalization
 import mesosphere.marathon.api.v2.validation.AppValidation
 import mesosphere.marathon.raml.AppUpdate
-import mesosphere.marathon.state.{ KillSelection, ResourceRole }
+import mesosphere.marathon.state.ResourceRole
 import mesosphere.marathon.test.MarathonSpec
 import org.scalatest.Matchers
 import play.api.libs.json.Json
@@ -53,7 +52,7 @@ class AppUpdateFormatTest extends MarathonSpec with Matchers {
   test("FromJSON should parse kill selection") {
     val json = Json.parse(""" { "id": "test", "killSelection": "OldestFirst" }""")
     val appUpdate = json.as[AppUpdate]
-    appUpdate.killSelection should be(Some(KillSelection.OldestFirst))
+    appUpdate.killSelection should be(Some(raml.KillSelection.Oldestfirst))
   }
 
   test("FromJSON should default to empty kill selection") {

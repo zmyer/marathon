@@ -94,7 +94,7 @@ class VolumeConversionTest extends UnitTest {
 
   "RAML persistent volume conversion" when {
     val volume = AppVolume("/container", None,
-      Some(PersistentVolume(None, size = 123L, maxSize = Some(1234L), constraints = Nil)), None, ReadMode.Rw)
+      Some(PersistentVolume(None, size = 123L, maxSize = Some(1234L), constraints = Set.empty)), None, ReadMode.Rw)
     "converting from RAML" should {
       val persistent = Some(volume.fromRaml).collect {
         case v: state.PersistentVolume => v

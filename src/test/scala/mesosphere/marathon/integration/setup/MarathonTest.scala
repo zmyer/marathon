@@ -325,7 +325,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
       executor = "//cmd",
       instances = instances,
       cpus = 0.5, mem = 128.0,
-      healthChecks = healthCheck.to[Seq],
+      healthChecks = healthCheck.to[Set],
       dependencies = dependencies.map(_.toString)
     )
   }
@@ -375,7 +375,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
       instances = instances,
       cpus = 0.5,
       mem = 128.0,
-      healthChecks = healthCheck.to[Seq],
+      healthChecks = healthCheck.to[Set],
       dependencies = dependencies.map(_.toString)
     )
   }

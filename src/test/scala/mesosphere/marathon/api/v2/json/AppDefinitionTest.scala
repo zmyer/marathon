@@ -491,7 +491,7 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
       cpus = 5.0,
       mem = 55.0,
       disk = 550.0,
-      constraints = Seq(Seq("attribute", "GROUP_BY", "1")),
+      constraints = Set(Seq("attribute", "GROUP_BY", "1")),
       storeUrls = Seq("http://my.org.com/artifacts/foo.bar"),
       portDefinitions = Some(Seq(raml.PortDefinition(9001), raml.PortDefinition(9002))),
       requirePorts = Some(true),
@@ -499,7 +499,7 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
       backoffFactor = 1.5,
       maxLaunchDelaySeconds = 180,
       container = Some(raml.Container(`type` = raml.EngineType.Docker, docker = Some(raml.DockerContainer(image = "group/image")))),
-      healthChecks = Seq(raml.AppHealthCheck(protocol = raml.AppHealthCheckProtocol.Http, portIndex = Some(0))),
+      healthChecks = Set(raml.AppHealthCheck(protocol = raml.AppHealthCheckProtocol.Http, portIndex = Some(0))),
       dependencies = Set("/prod/product/backend"),
       upgradeStrategy = Some(raml.UpgradeStrategy(minimumHealthCapacity = 0.75, maximumOverCapacity = 1.0))
     )
@@ -516,7 +516,7 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
       id = "/prod/product/frontend/my-app",
       cmd = Some("sleep 30"),
       portDefinitions = Some(Seq(raml.PortDefinition(9001), raml.PortDefinition(9002))),
-      healthChecks = Seq(raml.AppHealthCheck(protocol = raml.AppHealthCheckProtocol.Http, portIndex = Some(1)))
+      healthChecks = Set(raml.AppHealthCheck(protocol = raml.AppHealthCheckProtocol.Http, portIndex = Some(1)))
     )
     JsonTestHelper.assertSerializationRoundtripWorks(app3, appNormalization)
   }

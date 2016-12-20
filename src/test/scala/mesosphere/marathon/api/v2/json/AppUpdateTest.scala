@@ -114,7 +114,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
       mem = Some(256.0),
       disk = Some(1024.0),
       executor = Some("/opt/executors/bin/some.executor"),
-      constraints = Some(Nil),
+      constraints = Some(Set.empty),
       fetch = Some(Seq(Artifact(uri = "http://dl.corp.org/prodX-1.2.3.tgz"))),
       backoffSeconds = Some(2),
       backoffFactor = Some(1.2),
@@ -128,7 +128,7 @@ class AppUpdateTest extends MarathonSpec with Matchers {
           ContainerPortMapping(containerPort = 80, name = Some("http"))
         )
       )),
-      healthChecks = Some(Seq.empty),
+      healthChecks = Some(Set.empty),
       taskKillGracePeriodSeconds = Some(2),
       dependencies = Some(Set.empty),
       upgradeStrategy = Some(UpgradeStrategy(1, 1)),
@@ -572,8 +572,8 @@ class AppUpdateTest extends MarathonSpec with Matchers {
 
   test("app update changes kill selection") {
     val appDef = AppDefinition(id = runSpecId, killSelection = KillSelection.YoungestFirst)
-    val update = AppUpdate(killSelection = Some(KillSelection.OldestFirst))
-    val result = update(appDef)
-    result.killSelection should be(KillSelection.OldestFirst)
+    val update = AppUpdate(killSelection = Some(raml.KillSelection.Oldestfirst))
+    val result = Raml.fromRaml((update, appDef))
+    result.killSelection should be(Some(raml.KillSelection.Oldestfirst))
   }
 }

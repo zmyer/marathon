@@ -45,7 +45,7 @@ class AppDeployWithLeaderAbdicationIntegrationTest extends AkkaIntegrationFunTes
     marathon.updateApp(appId, AppUpdate(
       cmd = Some(s"""$serviceMockScript '$plan'"""),
       portDefinitions = Some(Seq(PortDefinition(name = Some("http")))),
-      healthChecks = Some(Seq(ramlHealthCheck)),
+      healthChecks = Some(Set(ramlHealthCheck)),
       upgradeStrategy = Some(raml.UpgradeStrategy(minimumHealthCapacity = 1.0, maximumOverCapacity = 1.0))))
 
     And("new and updated task is started successfully")

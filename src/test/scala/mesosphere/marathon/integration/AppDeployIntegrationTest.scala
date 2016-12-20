@@ -168,7 +168,7 @@ class AppDeployIntegrationTest
   test("create a simple app with a Marathon HTTP health check") {
     Given("a new app")
     val app = appProxy(testBasePath / "http-app", "v1", instances = 1, healthCheck = None).
-      copy(healthChecks = Seq(ramlHealthCheck))
+      copy(healthChecks = Set(ramlHealthCheck))
     val check = appProxyCheck(PathId(app.id), "v1", state = true)
 
     When("The app is deployed")
@@ -184,7 +184,7 @@ class AppDeployIntegrationTest
   test("create a simple app with a Mesos HTTP health check") {
     Given("a new app")
     val app = appProxy(testBasePath / "mesos-http-app", "v1", instances = 1, healthCheck = None).
-      copy(healthChecks = Seq(ramlHealthCheck.copy(protocol = AppHealthCheckProtocol.MesosHttp)))
+      copy(healthChecks = Set(ramlHealthCheck.copy(protocol = AppHealthCheckProtocol.MesosHttp)))
     val check = appProxyCheck(app.id.toPath, "v1", state = true)
 
     When("The app is deployed")
@@ -203,7 +203,7 @@ class AppDeployIntegrationTest
       copy(
         portDefinitions = Some(PortDefinitions(31000)),
         requirePorts = Some(true),
-        healthChecks = Seq(ramlHealthCheck.copy(port = Some(31000), portIndex = None))
+        healthChecks = Set(ramlHealthCheck.copy(port = Some(31000), portIndex = None))
       )
     val check = appProxyCheck(app.id.toPath, "v1", state = true)
 
@@ -220,7 +220,7 @@ class AppDeployIntegrationTest
   test("create a simple app with a Marathon TCP health check") {
     Given("a new app")
     val app = appProxy(testBasePath / "tcp-app", "v1", instances = 1, healthCheck = None).
-      copy(healthChecks = Seq(ramlHealthCheck.copy(protocol = AppHealthCheckProtocol.Tcp)))
+      copy(healthChecks = Set(ramlHealthCheck.copy(protocol = AppHealthCheckProtocol.Tcp)))
 
     When("The app is deployed")
     val result = marathon.createAppV2(app)
@@ -234,7 +234,7 @@ class AppDeployIntegrationTest
   test("create a simple app with a Mesos TCP healh check") {
     Given("a new app")
     val app = appProxy(testBasePath / "tcp-app", "v1", instances = 1, healthCheck = None).
-      copy(healthChecks = Seq(ramlHealthCheck.copy(protocol = AppHealthCheckProtocol.Tcp)))
+      copy(healthChecks = Set(ramlHealthCheck.copy(protocol = AppHealthCheckProtocol.Tcp)))
 
     When("The app is deployed")
     val result = marathon.createAppV2(app)
@@ -248,7 +248,7 @@ class AppDeployIntegrationTest
   test("create a simple app with a COMMAND health check") {
     Given("a new app")
     val app = appProxy(testBasePath / "command-app", "v1", instances = 1, healthCheck = None).
-      copy(healthChecks = Seq(AppHealthCheck(
+      copy(healthChecks = Set(AppHealthCheck(
         protocol = AppHealthCheckProtocol.Command,
         command = Some(CommandCheck("true")))))
 
@@ -564,7 +564,7 @@ class AppDeployIntegrationTest
     Given("a new app with constraints that cannot be fulfilled")
     val c = Seq("nonExistent", "CLUSTER", "na")
     val appId = testBasePath / "app"
-    val app = App(appId.toString, constraints = Seq(c), cmd = Some("na"), instances = 5, portDefinitions = None)
+    val app = App(appId.toString, constraints = Set(c), cmd = Some("na"), instances = 5, portDefinitions = None)
 
     val create = marathon.createAppV2(app)
     create.code should be (201) // Created
@@ -589,7 +589,7 @@ class AppDeployIntegrationTest
     Given("a new app with constraints that cannot be fulfilled")
     val c = Seq("nonExistent", "CLUSTER", "na")
     val appId = testBasePath / "app"
-    val app = App(appId.toString, constraints = Seq(c), cmd = Some("na"), instances = 5, portDefinitions = None)
+    val app = App(appId.toString, constraints = Set(c), cmd = Some("na"), instances = 5, portDefinitions = None)
 
     val create = marathon.createAppV2(app)
     create.code should be (201) // Created

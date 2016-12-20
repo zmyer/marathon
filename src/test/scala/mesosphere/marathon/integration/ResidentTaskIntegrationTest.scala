@@ -51,7 +51,7 @@ class ResidentTaskIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMa
     val app = f.residentApp(
       containerPath = containerPath,
       cmd = """sleep 1""",
-      constraints = Seq(unique))
+      constraints = Set(unique))
 
     When("A task is launched")
     val result = f.createAsynchronously(app)
@@ -270,7 +270,7 @@ class ResidentTaskIntegrationTest extends AkkaIntegrationFunTest with EmbeddedMa
       instances: Int = 1,
       backoffDuration: FiniteDuration = 1.hour,
       portDefinitions: Seq[PortDefinition] = PortDefinitions(0),
-      constraints: Seq[Seq[String]] = Nil): App = {
+      constraints: Set[Seq[String]] = Set.empty): App = {
 
       val appId: PathId = PathId(s"/$testBasePath/app-${IdGenerator.generate()}")
 

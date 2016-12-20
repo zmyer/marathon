@@ -36,7 +36,7 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
     App(
       id = app.id.toString,
       acceptedResourceRoles = if (app.acceptedResourceRoles.nonEmpty) Some(app.acceptedResourceRoles) else None,
-      args = if (app.args.nonEmpty) Some(app.args) else None,
+      args = app.args,
       backoffFactor = app.backoffStrategy.factor,
       backoffSeconds = app.backoffStrategy.backoff.toSeconds.toInt,
       cmd = app.cmd,
@@ -147,7 +147,7 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
     val result: AppDefinition = AppDefinition(
       id = PathId(app.id),
       cmd = app.cmd,
-      args = app.args.getOrElse(Nil),
+      args = app.args,
       user = app.user,
       env = Raml.fromRaml(app.env),
       instances = app.instances,
@@ -160,7 +160,7 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
       requirePorts = app.requirePorts.getOrElse(AppDefinition.DefaultRequirePorts),
       backoffStrategy = backoffStrategy,
       container = app.container.map(Raml.fromRaml(_)),
-      healthChecks = app.healthChecks.map(Raml.fromRaml(_)).toSet,
+      healthChecks = app.healthChecks.map(Raml.fromRaml(_)),
       readinessChecks = app.readinessChecks.map(Raml.fromRaml(_)),
       taskKillGracePeriod = app.taskKillGracePeriodSeconds.map(_.second),
       dependencies = app.dependencies.map(PathId(_))(collection.breakOut),
@@ -184,7 +184,7 @@ trait AppConversion extends ConstraintConversion with EnvVarConversion with Heal
     app.copy(
       // id stays the same
       cmd = update.cmd.orElse(app.cmd),
-      args = update.args.orElse(app.args),
+      args = update.args.getOrElse(app.args),
       user = update.user.orElse(app.user),
       env = update.env.getOrElse(app.env),
       instances = update.instances.getOrElse(app.instances),
