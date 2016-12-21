@@ -3,13 +3,13 @@ package storage.migration
 
 import akka.Done
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import com.google.protobuf.MessageOrBuilder
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.Protos._
 import mesosphere.marathon.stream._
 import mesosphere.marathon.api.serialization.ContainerSerializer
-import mesosphere.marathon.state.{ AppDefinition, PathId, Timestamp }
+import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.storage.repository.GroupRepository
 
 import scala.async.Async.{ async, await }
@@ -23,12 +23,14 @@ case class MigrationTo1_5(
 
   import MigrationTo1_5._
 
+  @SuppressWarnings(Array("all")) // async/await
   def migrate(): Future[Done] = async {
     val summary = await(migrateGroups(migration.serviceDefinitionRepo, migration.groupRepository))
     logger.info(s"Migrated $summary to 1.5")
     Done
   }
 
+  @SuppressWarnings(Array("all")) // async/await
   def migrateGroups(serviceRepository: ServiceDefinitionRepository, groupRepository: GroupRepository): Future[(String, Int)] = async {
     val result: Future[(String, Int)] = groupRepository.rootVersions().mapAsync(Int.MaxValue) { version =>
       groupRepository.rootVersion(version)
@@ -36,27 +38,17 @@ case class MigrationTo1_5(
       case Some(root) => root
     }.concat { Source.fromFuture(groupRepository.root()) }.mapAsync(1) { root =>
       // store roots one at a time with current root last
-      val appIds = root.transitiveApps.map(app => app.id -> app.version)
-      migrateApps(appIds.to[Seq], serviceRepository).flatMap { apps =>
+      val appIds = root.transitiveApps.map(app => app.id -> app.version.toOffsetDateTime)
+      serviceRepository.getVersions(appIds).map { service =>
+        AppDefinition.fromProto(migrateApp(service))
+      }.runWith(Sink.seq).map { apps =>
         groupRepository.storeRoot(root, apps, Nil, Nil, Nil).map(_ => apps.size)
       }
-    }.runFold(0) { case (acc, apps) => acc + apps + 1 }.map("root + app versions" -> _)
+    }.flatMapConcat(f => Source.fromFuture(f)).runFold(0) {
+      case (acc, apps) => acc + apps + 1
+    }.map("root + app versions" -> _)
     await(result)
   }
-
-  def migrateApps(ids: Seq[(PathId, Timestamp)], serviceRepository: ServiceDefinitionRepository): Future[Seq[AppDefinition]] =
-    async {
-      // 1. read raw app protobuf
-      // 2. convert/migrate from old proto fields to new
-      // 3. convert app proto to AppDefinition
-      val rawApps: Seq[Option[ServiceDefinition]] = await(Future.sequence(ids.map {
-        case (id, version) =>
-          serviceRepository.getVersion(id, version.toOffsetDateTime)
-      }))
-      rawApps.flatten.map { service =>
-        AppDefinition.fromProto(migrateApp(service))
-      }
-    }
 
   def migrateApp(service: ServiceDefinition): ServiceDefinition = {
     val network = migrateNetworks(service, migration.defaultNetworkName)
