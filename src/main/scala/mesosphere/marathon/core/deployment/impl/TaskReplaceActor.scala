@@ -1,4 +1,5 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.actor._
 import akka.event.EventStream
@@ -8,11 +9,11 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.instance.Instance.Id
 import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
+import mesosphere.marathon.core.task.termination.InstanceChangedPredicates.considerTerminal
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
-import mesosphere.marathon.core.task.termination.InstanceChangedPredicates.considerTerminal
 import mesosphere.marathon.state.RunSpec
-import mesosphere.marathon.upgrade.TaskReplaceActor._
+import mesosphere.marathon.core.deployment.impl.TaskReplaceActor._
 import org.slf4j.LoggerFactory
 
 import scala.collection.{ SortedSet, mutable }
@@ -183,9 +184,9 @@ object TaskReplaceActor {
   )
 
   /** Encapsulates the logic how to get a Restart going */
-  private[upgrade] case class RestartStrategy(nrToKillImmediately: Int, maxCapacity: Int)
+  private[impl] case class RestartStrategy(nrToKillImmediately: Int, maxCapacity: Int)
 
-  private[upgrade] def computeRestartStrategy(runSpec: RunSpec, runningInstancesCount: Int): RestartStrategy = {
+  private[impl] def computeRestartStrategy(runSpec: RunSpec, runningInstancesCount: Int): RestartStrategy = {
     // in addition to a spec which passed validation, we require:
     require(runSpec.instances > 0, s"instances must be > 0 but is ${runSpec.instances}")
     require(runningInstancesCount >= 0, s"running instances count must be >=0 but is $runningInstancesCount")

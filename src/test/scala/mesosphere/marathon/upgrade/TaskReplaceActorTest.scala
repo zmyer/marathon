@@ -1,8 +1,9 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.actor.{ Actor, Props }
 import akka.testkit.TestActorRef
+import mesosphere.marathon.TaskUpgradeCanceledException
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.condition.Condition.Running
 import mesosphere.marathon.core.event._

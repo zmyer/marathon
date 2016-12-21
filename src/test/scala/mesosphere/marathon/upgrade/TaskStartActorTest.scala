@@ -1,8 +1,9 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.testkit.{ TestActorRef, TestProbe }
 import com.codahale.metrics.MetricRegistry
+import mesosphere.marathon.{ SchedulerActions, TaskUpgradeCanceledException }
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.condition.Condition.{ Failed, Running }
 import mesosphere.marathon.core.event.{ DeploymentStatus, _ }

@@ -1,10 +1,15 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import java.net.URL
 
+import akka.Done
 import akka.actor._
 import akka.event.EventStream
+import com.typesafe.scalalogging.StrictLogging
+import mesosphere.marathon.SchedulerActions
+import mesosphere.marathon.core.deployment.impl.DeploymentActor._
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor.DeploymentFinished
 import mesosphere.marathon.core.event.{ DeploymentStatus, DeploymentStepFailure, DeploymentStepSuccess }
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.instance.Instance
@@ -15,17 +20,16 @@ import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.state.{ AppDefinition, RunSpec }
-import mesosphere.marathon.upgrade.DeploymentManager.{ DeploymentFailed, DeploymentFinished, DeploymentStepInfo }
 import mesosphere.mesos.Constraints
-import com.typesafe.scalalogging.StrictLogging
 
+import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
 
 private class DeploymentActor(
     deploymentManager: ActorRef,
-    receiver: ActorRef,
+    promise: Promise[Done],
     killService: KillService,
     scheduler: SchedulerActions,
     plan: DeploymentPlan,
@@ -37,7 +41,6 @@ private class DeploymentActor(
     readinessCheckExecutor: ReadinessCheckExecutor) extends Actor with StrictLogging {
 
   import context.dispatcher
-  import mesosphere.marathon.upgrade.DeploymentActor._
 
   val steps = plan.steps.iterator
   var currentStepNr: Int = 0
@@ -65,16 +68,16 @@ private class DeploymentActor(
     case NextStep =>
       // no more steps, we're done
       logger.debug(s"No more deployment steps to process: planId=${plan.id}")
-      receiver ! DeploymentFinished(plan)
+      promise.success(Done)
       context.stop(self)
 
     case Cancel(t) =>
-      receiver ! DeploymentFailed(plan, t)
+      promise.failure(t)
       context.stop(self)
 
     case Fail(t) =>
       logger.debug(s"Deployment failed: planId=${plan.id}", t)
-      receiver ! DeploymentFailed(plan, t)
+      promise.failure(t)
       context.stop(self)
 
     case Shutdown =>
@@ -216,7 +219,7 @@ object DeploymentActor {
   @SuppressWarnings(Array("MaxParameters"))
   def props(
     deploymentManager: ActorRef,
-    receiver: ActorRef,
+    promise: Promise[Done],
     killService: KillService,
     scheduler: SchedulerActions,
     plan: DeploymentPlan,
@@ -229,7 +232,7 @@ object DeploymentActor {
 
     Props(new DeploymentActor(
       deploymentManager,
-      receiver,
+      promise,
       killService,
       scheduler,
       plan,

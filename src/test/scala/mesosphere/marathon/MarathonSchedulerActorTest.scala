@@ -1,18 +1,20 @@
 package mesosphere.marathon
 
 import akka.Done
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ActorRef, Props}
 import akka.event.EventStream
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import akka.util.Timeout
 import mesosphere.marathon.MarathonSchedulerActor._
 import mesosphere.marathon.core.condition.Condition
-import mesosphere.marathon.core.election.{ ElectionService, LocalLeadershipEvent }
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor
+import mesosphere.marathon.core.deployment.{DeploymentConfig, DeploymentPlan, DeploymentStep, StopApplication}
+import mesosphere.marathon.core.election.{ElectionService, LocalLeadershipEvent}
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.history.impl.HistoryActor
-import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
+import mesosphere.marathon.core.instance.{Instance, TestInstanceBuilder}
 import mesosphere.marathon.core.launcher.impl.LaunchQueueTestHelper
 import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
@@ -21,18 +23,17 @@ import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._
-import mesosphere.marathon.storage.repository.{ DeploymentRepository, FrameworkIdRepository, GroupRepository, TaskFailureRepository }
+import mesosphere.marathon.storage.repository.{DeploymentRepository, FrameworkIdRepository, GroupRepository, TaskFailureRepository}
 import mesosphere.marathon.stream._
-import mesosphere.marathon.test.{ GroupCreation, MarathonActorSupport, MarathonSpec, Mockito }
-import mesosphere.marathon.upgrade._
-import org.apache.mesos.Protos.{ Status, TaskStatus }
+import mesosphere.marathon.test.{GroupCreation, MarathonActorSupport, MarathonSpec, Mockito}
+import org.apache.mesos.Protos.{Status, TaskStatus}
 import org.apache.mesos.SchedulerDriver
 import org.mockito
-import org.scalatest.{ BeforeAndAfter, FunSuiteLike, GivenWhenThen, Matchers }
+import org.scalatest.{BeforeAndAfter, FunSuiteLike, GivenWhenThen, Matchers}
 
 import scala.collection.immutable.Set
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class MarathonSchedulerActorTest extends MarathonActorSupport
     with FunSuiteLike
@@ -560,9 +561,9 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
       new SchedulerActions(
         groupRepo, hcManager, instanceTracker, queue, new EventStream(system), ref, killService)(system.dispatcher)
     }
-    val conf: UpgradeConfig = mock[UpgradeConfig]
+    val conf: DeploymentConfig = mock[DeploymentConfig]
     val readinessCheckExecutor: ReadinessCheckExecutor = mock[ReadinessCheckExecutor]
-    val deploymentManagerProps: SchedulerActions => Props = schedulerActions => Props(new DeploymentManager(
+    val deploymentManagerProps: SchedulerActions => Props = schedulerActions => Props(new DeploymentManagerActor(
       instanceTracker,
       killService,
       queue,

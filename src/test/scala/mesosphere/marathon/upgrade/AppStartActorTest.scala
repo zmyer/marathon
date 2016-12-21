@@ -1,4 +1,4 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment.impl
 
 import akka.testkit.{ TestActorRef, TestProbe }
 import mesosphere.marathon.core.condition.Condition

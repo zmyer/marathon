@@ -21,7 +21,7 @@ import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.storage.repository.{ DeploymentRepository, GroupRepository }
-import mesosphere.marathon.upgrade.DeploymentManager
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor
 import mesosphere.util.state._
 import org.apache.mesos.Scheduler
 import org.slf4j.LoggerFactory
@@ -134,7 +134,7 @@ class MarathonModule(conf: MarathonConf, http: HttpConf)
 
     def deploymentManagerProps(schedulerActions: SchedulerActions): Props = {
       Props(
-        new DeploymentManager(
+        new DeploymentManagerActor(
           instanceTracker,
           killService,
           launchQueue,

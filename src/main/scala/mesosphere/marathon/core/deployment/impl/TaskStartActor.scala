@@ -1,5 +1,5 @@
-
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.event.EventStream

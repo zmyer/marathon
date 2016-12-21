@@ -1,10 +1,10 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment.impl
 
 import akka.actor.{ ActorRef, Props }
 import akka.testkit.TestActor.{ AutoPilot, NoAutoPilot }
 import akka.testkit.TestProbe
+import mesosphere.marathon.core.deployment.impl.DeploymentActor.Cancel
 import mesosphere.marathon.test.MarathonActorSupport
-import mesosphere.marathon.upgrade.DeploymentActor.Cancel
 import org.scalatest.{ FunSuiteLike, Matchers }
 
 import scala.concurrent.duration._

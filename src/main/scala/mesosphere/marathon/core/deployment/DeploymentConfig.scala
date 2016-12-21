@@ -1,14 +1,19 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment
 
 import org.rogach.scallop.ScallopConf
-import scala.concurrent.duration._
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
   * Config parameters for the upgrade module.
   */
-trait UpgradeConfig extends ScallopConf {
+trait DeploymentConfig extends ScallopConf {
+
+  lazy val deploymentManagerRequestTimeout = opt[Int](
+    "deployment_manager_request_timeout",
+    descr = "INTERNAL TUNING PARAMETER: Timeout (in ms) for requests to the deployment manager actor.",
+    hidden = true,
+    default = Some(1000))
 
   lazy val killsPerBatch = opt[Int](
     "killsPerBatch",

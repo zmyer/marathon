@@ -1,5 +1,5 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import java.util.concurrent.LinkedBlockingDeque
 
@@ -12,6 +12,8 @@ import akka.testkit.{ ImplicitSender, TestActor, TestActorRef, TestProbe }
 import akka.util.Timeout
 import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.MarathonSchedulerActor.{ CommandFailed, DeploymentStarted, LoadedDeploymentsOnLeaderElection }
+import mesosphere.marathon.core.deployment.impl.DeploymentActor.Cancel
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor._
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.leadership.AlwaysElectedLeadershipModule
@@ -25,8 +27,7 @@ import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.storage.repository.{ AppRepository, DeploymentRepository }
 import mesosphere.marathon.test.{ GroupCreation, MarathonActorSupport, MarathonTestHelper, Mockito }
-import mesosphere.marathon.upgrade.DeploymentActor.Cancel
-import mesosphere.marathon.upgrade.DeploymentManager._
+import mesosphere.marathon.{ MarathonConf, SchedulerActions }
 import org.apache.mesos.SchedulerDriver
 import org.rogach.scallop.ScallopConf
 import org.scalatest.concurrent.Eventually
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 
-class DeploymentManagerTest
+class DeploymentManagerActorTest
     extends MarathonActorSupport
     with FunSuiteLike
     with Matchers
@@ -253,8 +254,8 @@ class DeploymentManagerTest
     // and depending on when DeploymentActor sends DeploymentFinished message.
     val deploymentActorProps: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any) => Props = (_, _, _, _, _, _, _, _, _, _, _) => TestActor.props(new LinkedBlockingDeque())
 
-    def deploymentManager(): TestActorRef[DeploymentManager] = TestActorRef (
-      DeploymentManager.props(
+    def deploymentManager(): TestActorRef[DeploymentManagerActor] = TestActorRef (
+      DeploymentManagerActor.props(
         taskTracker,
         taskKillService,
         launchQueue,

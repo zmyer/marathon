@@ -1,4 +1,5 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import java.net.URL
 
@@ -6,6 +7,7 @@ import akka.actor.Status.Failure
 import akka.actor.{ Actor, Props }
 import akka.pattern.pipe
 import mesosphere.marathon.ResolveArtifactsCanceledException
+import mesosphere.marathon.core.deployment.impl.ResolveArtifactsActor.DownloadFinished
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.io.{ CancelableDownload, PathFun }
 import mesosphere.util.Logging
@@ -19,8 +21,6 @@ private[this] class ResolveArtifactsActor(
     extends Actor
     with PathFun
     with Logging {
-
-  import mesosphere.marathon.upgrade.ResolveArtifactsActor.DownloadFinished
 
   // all downloads that have to be performed by this actor
   var downloads = url2Path.map { case (url, path) => new CancelableDownload(url, storage, path) }

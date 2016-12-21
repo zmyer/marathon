@@ -11,6 +11,8 @@ import akka.util.Timeout
 import com.google.common.util.concurrent.AbstractExecutionThreadService
 import mesosphere.marathon.MarathonSchedulerActor._
 import mesosphere.marathon.core.base.toRichRuntime
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor.CancelDeployment
+import mesosphere.marathon.core.deployment.{ DeploymentPlan, DeploymentStepInfo }
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService }
 import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.heartbeat._
@@ -19,8 +21,6 @@ import mesosphere.marathon.core.leadership.LeadershipCoordinator
 import mesosphere.marathon.state.{ AppDefinition, PathId, Timestamp }
 import mesosphere.marathon.storage.migration.Migration
 import mesosphere.marathon.stream.Sink
-import mesosphere.marathon.upgrade.DeploymentManager.{ CancelDeployment, DeploymentStepInfo }
-import mesosphere.marathon.upgrade.DeploymentPlan
 import mesosphere.util.PromiseActor
 import org.apache.mesos.SchedulerDriver
 import org.slf4j.LoggerFactory
