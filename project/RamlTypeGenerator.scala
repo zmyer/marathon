@@ -76,6 +76,17 @@ object RamlTypeGenerator {
 
   val PlayJsNull = REF("play.api.libs.json.JsNull")
 
+  /**
+    * we don't support unit test generation for RAML-generated scala code. to subvert the
+    * code coverage calculator this string may be inserted as a comment at the top of a
+    * scala file, just before the package declaration(s).
+    *
+    * order of operations is important: COVERAGE-OFF should appear at the top of the file,
+    * before package declarations. so `withComment` should be applied directly to package
+    * declarations (`inPackage`)
+    */
+  val NoCodeCoverageReporting = "$COVERAGE-OFF$"
+
   def camelify(name: String): String = name.toLowerCase.capitalize
 
   def underscoreToCamel(name: String) = "(/|_|\\,)([a-z\\d])".r.replaceAllIn(name, { m =>
@@ -737,7 +748,7 @@ object RamlTypeGenerator {
 
   def generateBuiltInTypes(pkg: String): Map[String, Tree] = {
     val baseType = TRAITDEF("RamlGenerated").tree.withDoc("Marker trait indicating generated code.")
-      .inPackage(pkg)
+      .inPackage(pkg).withComment(NoCodeCoverageReporting)
     Map("RamlGenerated" -> baseType)
   }
 
@@ -749,9 +760,9 @@ object RamlTypeGenerator {
     generateBuiltInTypes(pkg) ++ types.map { tpe =>
       val tree = tpe.toTree()
       if (tree.nonEmpty) {
-        tpe.name -> BLOCK(tree).inPackage(pkg)
+        tpe.name -> BLOCK(tree).inPackage(pkg).withComment(NoCodeCoverageReporting)
       } else {
-        tpe.name -> BLOCK().withComment(s"Unsupported: $tpe").inPackage(pkg)
+        tpe.name -> BLOCK().withComment(s"Unsupported: $tpe").inPackage(pkg).withComment(NoCodeCoverageReporting)
       }
     }(collection.breakOut)
   }
