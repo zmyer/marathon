@@ -127,11 +127,8 @@ def get_current_app_tasks(starting_tasks):
 
 def count_test_app_instances(test_obj):
     # make sure no apps currently
-    try:
-        delete_all_apps_wait2()
-    except Exception as e:
-        test_obj.add_event('test setup failure')
-        assert False
+    delete_all_apps_wait2()
+
     test_obj.start = time.time()
     starting_tasks = get_current_tasks()
 
@@ -154,11 +151,7 @@ def count_test_app_instances(test_obj):
     test_obj.add_event('undeploying {} tasks'.format(current_tasks))
 
     # delete apps
-    try:
-        delete_all_apps_wait2(test_obj)
-    except:
-        test_obj.add_event('undeployment failure')
-        assert False
+    delete_all_apps_wait2(test_obj)
 
     assert launch_complete
 
@@ -182,11 +175,7 @@ def launch_apps2(test_obj):
 def scale_test_app_instances(test_obj):
 
     # make sure no apps currently
-    try:
-        delete_all_apps_wait2()
-    except Exception as e:
-        test_obj.failed('test setup failure')
-        assert False
+    delete_all_apps_wait2()
 
     test_obj.start = time.time()
     starting_tasks = get_current_tasks()
@@ -209,18 +198,18 @@ def scale_test_app_instances(test_obj):
     test_obj.add_event('undeploying {} tasks'.format(current_tasks))
 
     # delete apps
-    try:
-        delete_all_apps_wait2(test_obj)
-    except:
-        test_obj.add_event('undeployment failure')
-        assert False
+    delete_all_apps_wait2(test_obj)
 
     assert launch_complete
 
 
-def delete_all_apps_wait2(test_obj=None):
-    delete_all_apps()
-    undeployment_wait(test_obj)
+def delete_all_apps_wait2(test_obj=None, msg='undeployment failure'):
+    try:
+        delete_all_apps()
+        undeployment_wait(test_obj)
+    except Exception as e:
+        test_obj.add_event(msg)
+        assert False, msg
 
 
 def undeployment_wait(test_obj=None):
