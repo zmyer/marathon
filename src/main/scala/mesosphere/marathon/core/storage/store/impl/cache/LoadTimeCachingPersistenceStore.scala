@@ -153,6 +153,11 @@ class LoadTimeCachingPersistenceStore[K, Category, Serialized](
     um: Unmarshaller[Serialized, V]): Future[Option[V]] =
     store.get(id, version)
 
+  override def versioned[Id, V](list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)])(implicit
+    ir: IdResolver[Id, V, Category, K],
+    um: Unmarshaller[Serialized, V]): Source[V, NotUsed] =
+    store.versioned(list)
+
   @SuppressWarnings(Array("all")) // async/await
   override def store[Id, V](id: Id, v: V)(implicit
     ir: IdResolver[Id, V, Category, K],

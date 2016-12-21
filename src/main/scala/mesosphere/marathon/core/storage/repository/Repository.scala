@@ -37,6 +37,7 @@ trait Repository[Id, T] extends ReadOnlyRepository[Id, T] {
 trait ReadOnlyVersionedRepository[Id, T] extends ReadOnlyRepository[Id, T] {
   def versions(id: Id): Source[OffsetDateTime, NotUsed]
   def getVersion(id: Id, version: OffsetDateTime): Future[Option[T]]
+  def getVersions(list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)]): Source[T, NotUsed]
 }
 
 /**

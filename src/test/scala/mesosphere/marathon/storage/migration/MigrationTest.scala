@@ -122,6 +122,7 @@ class MigrationTest extends AkkaUnitTest with Mockito with GivenWhenThen {
       mockedStore.versions(any)(any) returns Source.empty
       mockedStore.ids()(any) returns Source.empty
       mockedStore.get(any)(any, any) returns Future.successful(None)
+      mockedStore.versioned(any)(any, any) returns Source.empty
       mockedStore.get(any, any)(any, any) returns Future.successful(None)
       mockedStore.store(any, any)(any, any) returns Future.successful(Done)
       mockedStore.store(any, any, any)(any, any) returns Future.successful(Done)

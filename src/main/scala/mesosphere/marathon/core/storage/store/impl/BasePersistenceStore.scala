@@ -105,6 +105,18 @@ abstract class BasePersistenceStore[K, Category, Serialized](implicit
     }
   }
 
+  override def versioned[Id, V](list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)])(implicit
+    ir: IdResolver[Id, V, Category, K],
+    um: Unmarshaller[Serialized, V]): Source[V, NotUsed] = {
+
+    Source(list).mapAsync[Option[Serialized]](Int.MaxValue) { (src: (Id, OffsetDateTime)) =>
+      val storageId = ir.toStorageId(src._1, Some(src._2))
+      rawGet(storageId)
+    }.collect {
+      case Some(v) => Source.fromFuture(Unmarshal(v).to[V])
+    }.flatMapConcat(identity)
+  }
+
   protected def rawStore[V](k: K, v: Serialized): Future[Done]
 
   @SuppressWarnings(Array("all")) // async/await
