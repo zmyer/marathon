@@ -14,8 +14,6 @@ import mesosphere.marathon.core.storage.store.impl.zk.{ ZkId, ZkSerialized }
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.storage.store.{ InMemoryStoreSerialization, ZkStoreSerialization }
 
-import scala.concurrent.ExecutionContext
-
 trait ServiceDefinitionRepository extends ReadOnlyVersionedRepository[PathId, ServiceDefinition]
 
 object ServiceDefinitionRepository {
@@ -37,7 +35,7 @@ object ServiceDefinitionRepository {
   )(ir, marshaller, unmarshaller) with ServiceDefinitionRepository
 
   def inMemRepository(
-    persistenceStore: PersistenceStore[RamId, String, Identity])(implicit ctx: ExecutionContext): ServiceDefinitionRepositoryImpl[RamId, String, Identity] = {
+    persistenceStore: PersistenceStore[RamId, String, Identity]): ServiceDefinitionRepositoryImpl[RamId, String, Identity] = {
 
     // not needed for now
     implicit val memMarshaler: Marshaller[ServiceDefinition, Identity] = ???
@@ -49,7 +47,7 @@ object ServiceDefinitionRepository {
   }
 
   def zkRepository(
-    persistenceStore: PersistenceStore[ZkId, String, ZkSerialized])(implicit ctx: ExecutionContext): ServiceDefinitionRepositoryImpl[ZkId, String, ZkSerialized] = {
+    persistenceStore: PersistenceStore[ZkId, String, ZkSerialized]): ServiceDefinitionRepositoryImpl[ZkId, String, ZkSerialized] = {
 
     // not needed for now
     implicit val zkMarshaler: Marshaller[ServiceDefinition, ZkSerialized] = ???
