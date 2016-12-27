@@ -27,7 +27,7 @@ object ServiceDefinitionRepository {
   implicit val zkServiceDefResolver: IdResolver[PathId, ServiceDefinition, String, ZkId] =
     new ZkStoreSerialization.ZkPathIdResolver[ServiceDefinition]("apps", true, v => OffsetDateTime.parse(v.getVersion))
 
-  class ServiceDefinitionRepositoryImpl[K, C, S](persistenceStore: PersistenceStore[K, C, S])(implicit
+  private[this] class ServiceDefinitionRepositoryImpl[K, C, S](persistenceStore: PersistenceStore[K, C, S])(implicit
     ir: IdResolver[PathId, ServiceDefinition, C, K],
     marshaller: Marshaller[ServiceDefinition, S],
     unmarshaller: Unmarshaller[S, ServiceDefinition]) extends PersistenceStoreVersionedRepository[PathId, ServiceDefinition, K, C, S](
@@ -35,7 +35,7 @@ object ServiceDefinitionRepository {
   )(ir, marshaller, unmarshaller) with ServiceDefinitionRepository
 
   def inMemRepository(
-    persistenceStore: PersistenceStore[RamId, String, Identity]): ServiceDefinitionRepositoryImpl[RamId, String, Identity] = {
+    persistenceStore: PersistenceStore[RamId, String, Identity]): ServiceDefinitionRepository = {
 
     // not needed for now
     implicit val memMarshaler: Marshaller[ServiceDefinition, Identity] = ???
@@ -47,7 +47,7 @@ object ServiceDefinitionRepository {
   }
 
   def zkRepository(
-    persistenceStore: PersistenceStore[ZkId, String, ZkSerialized]): ServiceDefinitionRepositoryImpl[ZkId, String, ZkSerialized] = {
+    persistenceStore: PersistenceStore[ZkId, String, ZkSerialized]): ServiceDefinitionRepository = {
 
     // not needed for now
     implicit val zkMarshaler: Marshaller[ServiceDefinition, ZkSerialized] = ???

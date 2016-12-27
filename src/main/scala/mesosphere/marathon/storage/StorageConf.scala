@@ -1,6 +1,7 @@
 package mesosphere.marathon.storage
 
 import mesosphere.marathon.ZookeeperConf
+import org.rogach.scallop.ScallopOption
 
 trait StorageConf extends ZookeeperConf {
   lazy val internalStoreBackend = opt[String](
@@ -42,11 +43,7 @@ trait StorageConf extends ZookeeperConf {
     prefix = "disable_"
   )
 
-  lazy val defaultNetworkName = opt[String](
-    "default_network_name",
-    descr = "Network name, injected into applications' container-mode network{} specs that do not define their own name.",
-    noshort = true
-  )
+  def defaultNetworkName: ScallopOption[String]
 
   def availableFeatures: Set[String]
 }

@@ -119,10 +119,10 @@ case class LazyCachingPersistenceStore[K, Category, Serialized](
     um: Unmarshaller[Serialized, V]): Future[Option[V]] =
     store.get(id, version)
 
-  override def versioned[Id, V](list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)])(implicit
+  override def getVersions[Id, V](list: Seq[(Id, OffsetDateTime)])(implicit
     ir: IdResolver[Id, V, Category, K],
     um: Unmarshaller[Serialized, V]): Source[V, NotUsed] =
-    store.versioned(list)
+    store.getVersions(list)
 
   @SuppressWarnings(Array("all")) // async/await
   override def store[Id, V](id: Id, v: V)(implicit
@@ -266,10 +266,10 @@ case class LazyVersionCachingPersistentStore[K, Category, Serialized](
   /**
     * TODO: no caching here yet, intended only for migration (for now)
     */
-  override def versioned[Id, V](list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)])(implicit
+  override def getVersions[Id, V](list: Seq[(Id, OffsetDateTime)])(implicit
     ir: IdResolver[Id, V, Category, K],
     um: Unmarshaller[Serialized, V]): Source[V, NotUsed] =
-    store.versioned(list)
+    store.getVersions(list)
 
   @SuppressWarnings(Array("all")) // async/await
   override def store[Id, V](id: Id, v: V)(implicit

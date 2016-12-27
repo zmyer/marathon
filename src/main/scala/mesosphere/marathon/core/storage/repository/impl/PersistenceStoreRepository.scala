@@ -1,4 +1,5 @@
-package mesosphere.marathon.core.storage.repository.impl
+package mesosphere.marathon
+package core.storage.repository.impl
 
 import java.time.OffsetDateTime
 
@@ -52,8 +53,8 @@ class PersistenceStoreVersionedRepository[Id, V, K, C, S](
 
   override def versions(id: Id): Source[OffsetDateTime, NotUsed] = persistenceStore.versions(id)
 
-  override def getVersions(list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)]): Source[V, NotUsed] =
-    persistenceStore.versioned(list)
+  override def getVersions(list: Seq[(Id, OffsetDateTime)]): Source[V, NotUsed] =
+    persistenceStore.getVersions(list)
 
   override def getVersion(id: Id, version: OffsetDateTime): Future[Option[V]] =
     persistenceStore.get(id, version)

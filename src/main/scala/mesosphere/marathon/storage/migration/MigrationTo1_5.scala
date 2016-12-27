@@ -1,6 +1,8 @@
 package mesosphere.marathon
 package storage.migration
 
+import java.time.OffsetDateTime
+
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.scaladsl.{ Sink, Source }
@@ -9,7 +11,7 @@ import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.Protos._
 import mesosphere.marathon.stream._
 import mesosphere.marathon.api.serialization.ContainerSerializer
-import mesosphere.marathon.state.AppDefinition
+import mesosphere.marathon.state.{ AppDefinition, PathId }
 import mesosphere.marathon.storage.repository.GroupRepository
 
 import scala.async.Async.{ async, await }
@@ -30,6 +32,10 @@ case class MigrationTo1_5(
     Done
   }
 
+  /**
+    * for each root version (+ current) load all apps from the service-definition-repository, migrate them,
+    * then save changes for each root (and all of its apps) via the group-repository API.
+    */
   @SuppressWarnings(Array("all")) // async/await
   def migrateGroups(serviceRepository: ServiceDefinitionRepository, groupRepository: GroupRepository): Future[(String, Int)] = async {
     val result: Future[(String, Int)] = groupRepository.rootVersions().mapAsync(Int.MaxValue) { version =>
@@ -38,7 +44,9 @@ case class MigrationTo1_5(
       case Some(root) => root
     }.concat { Source.fromFuture(groupRepository.root()) }.mapAsync(1) { root =>
       // store roots one at a time with current root last
-      val appIds = root.transitiveApps.map(app => app.id -> app.version.toOffsetDateTime)
+      val appIds: Seq[(PathId, OffsetDateTime)] = root.transitiveApps.map { app =>
+        app.id -> app.version.toOffsetDateTime
+      }(collection.breakOut)
       serviceRepository.getVersions(appIds).map { service =>
         AppDefinition.fromProto(migrateApp(service))
       }.runWith(Sink.seq).map { apps =>

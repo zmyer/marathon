@@ -280,6 +280,12 @@ trait MarathonConf
     noshort = true
   )
 
+  lazy val defaultNetworkName = opt[String](
+    "default_network_name",
+    descr = "Network name, injected into applications' container-mode network{} specs that do not define their own name.",
+    noshort = true
+  )
+
   //Internal settings, that are not intended for external use
 
   lazy val maxApps = opt[Int](

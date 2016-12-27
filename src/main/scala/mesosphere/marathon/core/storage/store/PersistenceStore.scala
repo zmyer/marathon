@@ -1,4 +1,5 @@
-package mesosphere.marathon.core.storage.store
+package mesosphere.marathon
+package core.storage.store
 
 import java.time.OffsetDateTime
 
@@ -129,7 +130,7 @@ trait PersistenceStore[K, Category, Serialized] {
     *         If there is an underlying storage problem, the future should fail with
     *         [[mesosphere.marathon.StoreCommandFailedException]]
     */
-  def versioned[Id, V](list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)])(implicit
+  def getVersions[Id, V](list: Seq[(Id, OffsetDateTime)])(implicit
     ir: IdResolver[Id, V, Category, K],
     um: Unmarshaller[Serialized, V]): Source[V, NotUsed]
 

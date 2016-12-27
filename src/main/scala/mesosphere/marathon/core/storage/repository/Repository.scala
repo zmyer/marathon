@@ -1,4 +1,5 @@
-package mesosphere.marathon.core.storage.repository
+package mesosphere.marathon
+package core.storage.repository
 
 import java.time.OffsetDateTime
 
@@ -37,7 +38,7 @@ trait Repository[Id, T] extends ReadOnlyRepository[Id, T] {
 trait ReadOnlyVersionedRepository[Id, T] extends ReadOnlyRepository[Id, T] {
   def versions(id: Id): Source[OffsetDateTime, NotUsed]
   def getVersion(id: Id, version: OffsetDateTime): Future[Option[T]]
-  def getVersions(list: scala.collection.immutable.Iterable[(Id, OffsetDateTime)]): Source[T, NotUsed]
+  def getVersions(list: Seq[(Id, OffsetDateTime)]): Source[T, NotUsed]
 }
 
 /**
