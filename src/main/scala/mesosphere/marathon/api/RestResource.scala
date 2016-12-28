@@ -1,4 +1,5 @@
-package mesosphere.marathon.api
+package mesosphere.marathon
+package api
 
 import java.net.URI
 import javax.ws.rs.core.Response
@@ -60,6 +61,8 @@ trait RestResource {
 
   /**
     * Checks if the implicit validator yields a valid result.
+    * See [[assumeValid]], which is preferred to this.
+    *
     * @param t object to validate
     * @param description optional description which might be injected into the failure message
     * @param fn function to execute after successful validation
@@ -76,6 +79,12 @@ trait RestResource {
     }
   }
 
+  /**
+    * Execute the given function and if any validation errors crop up, generate an UnprocessableEntity
+    * HTTP status code and send the validation error as the response body (in JSON form).
+    * @param f
+    * @return
+    */
   protected def assumeValid(f: => Response): Response =
     try {
       f

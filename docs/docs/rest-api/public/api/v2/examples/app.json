@@ -76,7 +76,7 @@
   ],
   "readinessChecks": [
     {
-      "name": "myReadyCheck",
+      "name": "my-ready-check",
       "protocol": "HTTP",
       "path": "/v1/plan",
       "portName": "http",

@@ -20,6 +20,7 @@ import mesosphere.marathon.state._
 import mesosphere.marathon.stream._
 import mesosphere.marathon.upgrade.DeploymentPlan
 import play.api.libs.json.Json
+import Validation._
 
 import scala.concurrent.Future
 
@@ -36,21 +37,6 @@ class GroupsResource @Inject() (
 
   val appNormalizationConfig = AppNormalization.Config(config.defaultNetworkName.get)
   val appsResourceContext = AppsResourceContext(config.availableFeatures, appNormalizationConfig)
-
-  /**
-    * For backward compatibility, we embed always apps, pods, and groups if nothing is specified.
-    */
-  val defaultEmbeds = Set(EmbedApps, EmbedPods, EmbedGroups)
-
-  /**
-    * Path matchers. Needed since Jersey is not able to handle parameters with slashes.
-    */
-  val ListApps = """^((?:.+/)|)apps$""".r
-  val ListRootApps = """^apps$""".r
-  val ListVersionsRE = """^(.+)/versions$""".r
-  val ListRootVersionRE = """^versions$""".r
-  val GetVersionRE = """^(.+)/versions/(.+)$""".r
-  val GetRootVersionRE = """^versions/(.+)$""".r
 
   /**
     * Get root group.
@@ -130,11 +116,29 @@ class GroupsResource @Inject() (
     body: Array[Byte],
     @Context req: HttpServletRequest): Response = createWithPath("", force, body, req)
 
-  def normalize(update: raml.GroupUpdate): raml.GroupUpdate = {
-    // TODO(jdef): recursion without tailrec
-    // apps need to be in canonical form here
-    val apps = update.apps.map(_.map(appsResourceContext.preprocessor))
-    val groups = update.groups.map(_.map(normalize))
+  /**
+    * performs basic app validation and normalization for all apps (transitively) for the given group-update.
+    */
+  def normalizeApps(basePath: PathId, update: raml.GroupUpdate): raml.GroupUpdate = {
+    // note: we take special care to:
+    // (a) canonize and rewrite the app ID before normalization, and;
+    // (b) canonize BUT NOT REWRITE the group ID while iterating (validation has special rules re: number of set fields)
+
+    // convert apps to canonical form here
+    val apps = update.apps.map(_.map { a =>
+      appsResourceContext.preprocessor(a.copy(id = a.id.toPath.canonicalPath(basePath).toString))
+    })
+
+    val groups = update.groups.map(_.map { g =>
+      // TODO: this "getOrElse" logic seems funny, but it's what nested group validation does;
+      // funny because all child groups that contain apps should probably specify an ID -- default to the parent's
+      // base seems wrong.
+      val groupBase = g.id.map(_.toPath.canonicalPath(basePath)).getOrElse(basePath)
+
+      // TODO(jdef): recursion without tailrec
+      normalizeApps(groupBase, g)
+    })
+
     update.copy(apps = apps, groups = groups)
   }
 
@@ -155,9 +159,18 @@ class GroupsResource @Inject() (
     body: Array[Byte],
     @Context req: HttpServletRequest): Response = authenticated(req) { implicit identity =>
 
-    val raw = Json.parse(body).as[raml.GroupUpdate]
-    withValid(normalize(raw)){ groupUpdate =>
-      val effectivePath = groupUpdate.id.map(PathId(_).canonicalPath(id.toRootPath)).getOrElse(id.toRootPath)
+    assumeValid {
+      val validatedId = validateOrThrow(id.toRootPath)
+      val raw = Json.parse(body).as[raml.GroupUpdate]
+      val effectivePath = raw.id.map(id => validateOrThrow(PathId(id)).canonicalPath(validatedId)).getOrElse(validatedId)
+
+      val groupValidator = Group.validNestedGroupUpdateWithBase(effectivePath)
+      val groupUpdate = validateOrThrow(
+        normalizeApps(
+          effectivePath,
+          raw
+        ))(groupValidator)
+
       val rootGroup = result(groupManager.rootGroup())
 
       def throwIfConflicting[A](conflict: Option[Any], msg: String) = {
@@ -167,13 +180,14 @@ class GroupsResource @Inject() (
       throwIfConflicting(
         rootGroup.group(effectivePath),
         s"Group $effectivePath is already created. Use PUT to change this group.")
+
       throwIfConflicting(
         rootGroup.transitiveAppsById.get(effectivePath),
         s"An app with the path $effectivePath already exists.")
 
-      val (deployment, path) = updateOrCreate(id.toRootPath, groupUpdate, force)
+      val (deployment, path) = updateOrCreate(effectivePath, groupUpdate, force)
       deploymentResult(deployment, Response.created(new URI(path.toString)))
-    }(Group.validNestedGroupUpdateWithBase(id.toRootPath, config.availableFeatures))
+    }
   }
 
   @PUT
@@ -204,12 +218,21 @@ class GroupsResource @Inject() (
     body: Array[Byte],
     @Context req: HttpServletRequest): Response = authenticated(req) { implicit identity =>
 
-    val raw = Json.parse(body).as[raml.GroupUpdate]
-    withValid(normalize(raw)) { groupUpdate =>
+    assumeValid {
+      val validatedId = validateOrThrow(id.toRootPath)
+      val raw = Json.parse(body).as[raml.GroupUpdate]
+      val effectivePath = raw.id.map(id => validateOrThrow(PathId(id)).canonicalPath(validatedId)).getOrElse(validatedId)
+
+      val groupValidator = Group.validNestedGroupUpdateWithBase(effectivePath)
+      val groupUpdate = validateOrThrow(
+        normalizeApps(
+          effectivePath,
+          raw
+        ))(groupValidator)
+
       val newVersion = Timestamp.now()
 
       if (dryRun) {
-        val effectivePath = groupUpdate.id.fold(id.toRootPath)(_.toPath.canonicalPath(id.toRootPath))
 
         val originalGroup = result(groupManager.rootGroup())
         val updatedGroup = applyGroupUpdate(originalGroup, effectivePath, groupUpdate, newVersion)
@@ -220,10 +243,10 @@ class GroupsResource @Inject() (
           ).toString()
         )
       } else {
-        val (deployment, _) = updateOrCreate(id.toRootPath, groupUpdate, force)
+        val (deployment, _) = updateOrCreate(effectivePath, groupUpdate, force)
         deploymentResult(deployment)
       }
-    }(Group.validNestedGroupUpdateWithBase(id.toRootPath, config.availableFeatures))
+    }
   }
 
   @DELETE
@@ -332,7 +355,22 @@ class GroupsResource @Inject() (
 
 object GroupsResource {
 
-  def authzSelector(implicit authz: Authorizer, identity: Identity) = Selector[Group] { g =>
+  /**
+    * For backward compatibility, we embed always apps, pods, and groups if nothing is specified.
+    */
+  private val defaultEmbeds = Set(EmbedApps, EmbedPods, EmbedGroups)
+
+  /**
+    * Path matchers. Needed since Jersey is not able to handle parameters with slashes.
+    */
+  private val ListApps = """^((?:.+/)|)apps$""".r
+  private val ListRootApps = """^apps$""".r
+  private val ListVersionsRE = """^(.+)/versions$""".r
+  private val ListRootVersionRE = """^versions$""".r
+  private val GetVersionRE = """^(.+)/versions/(.+)$""".r
+  private val GetRootVersionRE = """^versions/(.+)$""".r
+
+  private def authzSelector(implicit authz: Authorizer, identity: Identity) = Selector[Group] { g =>
     authz.isAuthorized(identity, ViewGroup, g)
   }
 

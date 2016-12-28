@@ -48,14 +48,11 @@ class AppsResource @Inject() (
 
   private val normalizationConfig = AppNormalization.Config(config.defaultNetworkName.get)
 
-  private def validateAndNormalizeApp(app: raml.App): raml.App = AppsResource.preprocessor(config.availableFeatures, normalizationConfig)(app)
+  private def validateAndNormalizeApp(app: raml.App): raml.App =
+    AppsResource.preprocessor(config.availableFeatures, normalizationConfig)(app)
 
-  private def validateAndNormalizeAppUpdate(app: raml.AppUpdate): raml.AppUpdate = {
-    validateOrThrow(app)(AppValidation.validateOldAppUpdateAPI)
-    val migrated = AppNormalization.forDeprecatedFields(app)
-    validateOrThrow(app)(validateCanonicalAppUpdateAPI)
-    AppNormalization(migrated, normalizationConfig)
-  }
+  private def validateAndNormalizeAppUpdate(app: raml.AppUpdate): raml.AppUpdate =
+    AppsResource.updatePreprocessor(config.availableFeatures, normalizationConfig)(app)
 
   @GET
   @Timed
@@ -82,32 +79,30 @@ class AppsResource @Inject() (
 
     assumeValid {
       val rawApp = Raml.fromRaml(validateAndNormalizeApp(Json.parse(body).as[raml.App]))
-      withValid(rawApp.withCanonizedIds()) { appDef =>
-        val now = clock.now()
-        val app = appDef.copy(versionInfo = VersionInfo.OnlyVersion(now))
+      val now = clock.now()
+      val app = validateOrThrow(rawApp.withCanonizedIds()).copy(versionInfo = VersionInfo.OnlyVersion(now))
 
-        checkAuthorization(CreateRunSpec, app)
+      checkAuthorization(CreateRunSpec, app)
 
-        def createOrThrow(opt: Option[AppDefinition]) = opt
-          .map(_ => throw ConflictingChangeException(s"An app with id [${app.id}] already exists."))
-          .getOrElse(app)
+      def createOrThrow(opt: Option[AppDefinition]) = opt
+        .map(_ => throw ConflictingChangeException(s"An app with id [${app.id}] already exists."))
+        .getOrElse(app)
 
-        val plan = result(groupManager.updateApp(app.id, createOrThrow, app.version, force))
+      val plan = result(groupManager.updateApp(app.id, createOrThrow, app.version, force))
 
-        val appWithDeployments = AppInfo(
-          app,
-          maybeCounts = Some(TaskCounts.zero),
-          maybeTasks = Some(Seq.empty),
-          maybeDeployments = Some(Seq(Identifiable(plan.id)))
-        )
+      val appWithDeployments = AppInfo(
+        app,
+        maybeCounts = Some(TaskCounts.zero),
+        maybeTasks = Some(Seq.empty),
+        maybeDeployments = Some(Seq(Identifiable(plan.id)))
+      )
 
-        maybePostEvent(req, appWithDeployments.app)
-        Response
-          .created(new URI(app.id.toString))
-          .header(RestResource.DeploymentHeader, plan.id)
-          .entity(jsonString(appWithDeployments))
-          .build()
-      }
+      maybePostEvent(req, appWithDeployments.app)
+      Response
+        .created(new URI(app.id.toString))
+        .header(RestResource.DeploymentHeader, plan.id)
+        .entity(jsonString(appWithDeployments))
+        .build()
     }
   }
 
@@ -161,18 +156,16 @@ class AppsResource @Inject() (
     val now = clock.now()
 
     assumeValid {
-      val appUpdate = validateAndNormalizeAppUpdate(Json.parse(body).as[raml.AppUpdate])
-      withValid(appUpdate.copy(id = Some(appId.toString))) { appUpdate =>
-        val plan = result(groupManager.updateApp(appId, updateOrCreate(appId, _, appUpdate), now, force))
+      val appUpdate = validateAndNormalizeAppUpdate(Json.parse(body).as[raml.AppUpdate].copy(id = Some(appId.toString)))
+      val plan = result(groupManager.updateApp(appId, updateOrCreate(appId, _, appUpdate), now, force))
 
-        val response = plan.original.app(appId)
-          .map(_ => Response.ok())
-          .getOrElse(Response.created(new URI(appId.toString)))
-        plan.target.app(appId).foreach { appDef =>
-          maybePostEvent(req, appDef)
-        }
-        deploymentResult(plan, response)
+      val response = plan.original.app(appId)
+        .map(_ => Response.ok())
+        .getOrElse(Response.created(new URI(appId.toString)))
+      plan.target.app(appId).foreach { appDef =>
+        maybePostEvent(req, appDef)
       }
+      deploymentResult(plan, response)
     }
   }
 
@@ -184,19 +177,20 @@ class AppsResource @Inject() (
     @Context req: HttpServletRequest): Response = authenticated(req) { implicit identity =>
 
     assumeValid {
-      val appUpdates = Json.parse(body).as[Seq[raml.AppUpdate]].map(upd => withCanonizedIds(validateAndNormalizeAppUpdate(upd)))
-      withValid(appUpdates) { updates =>
-        val version = clock.now()
+      val updates = validateOrThrow(Json.parse(body).as[Seq[raml.AppUpdate]].map { upd =>
+        withCanonizedIds(validateAndNormalizeAppUpdate(upd))
+      })
 
-        def updateGroup(rootGroup: RootGroup): RootGroup = updates.foldLeft(rootGroup) { (group, update) =>
-          update.id.map(PathId(_)) match {
-            case Some(id) => group.updateApp(id, updateOrCreate(id, _, update), version)
-            case None => group
-          }
+      val version = clock.now()
+
+      def updateGroup(rootGroup: RootGroup): RootGroup = updates.foldLeft(rootGroup) { (group, update) =>
+        update.id.map(PathId(_)) match {
+          case Some(id) => group.updateApp(id, updateOrCreate(id, _, update), version)
+          case None => group
         }
-
-        deploymentResult(result(groupManager.updateRoot(updateGroup, version, force)))
       }
+
+      deploymentResult(result(groupManager.updateRoot(updateGroup, version, force)))
     }
   }
 
@@ -312,6 +306,13 @@ object AppsResource {
     validateOrThrow(app)(AppValidation.validateOldAppAPI)
     val migrated = AppNormalization.forDeprecatedFields(app)
     validateOrThrow(migrated)(AppValidation.validateCanonicalAppAPI(enabledFeatures))
+    AppNormalization(migrated, config)
+  }
+
+  def updatePreprocessor(enabledFeatures: Set[String], config: AppNormalization.Config): (raml.AppUpdate => raml.AppUpdate) = { app =>
+    validateOrThrow(app)(AppValidation.validateOldAppUpdateAPI)
+    val migrated = AppNormalization.forDeprecatedFields(app)
+    validateOrThrow(app)(AppValidation.validateCanonicalAppUpdateAPI(enabledFeatures))
     AppNormalization(migrated, config)
   }
 

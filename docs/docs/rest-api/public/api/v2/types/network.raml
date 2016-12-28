@@ -68,9 +68,8 @@ types:
         description: The port number
         default: 0
       name:
-        type: string
+        type: strings.LegacyName
         description: Name of the port
-        pattern: ^[a-z][a-z0-9-]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp
@@ -132,11 +131,10 @@ types:
         type: label.KVLabels
         (pragma.omitEmpty):
       name?:
-        type: strings.Name
+        type: strings.LegacyName
         description: |
           Name of the service hosted on this port.
           If provided, it must be unique over all port definitions.
-        pattern: ^[a-z][-a-z0-9]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp

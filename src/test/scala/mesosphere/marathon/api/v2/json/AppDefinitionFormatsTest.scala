@@ -351,7 +351,7 @@ class AppDefinitionFormatsTest
         |}""".stripMargin).as[raml.App])
 
     appDef.networks should be(Seq(ContainerNetwork(name = "foo")))
-    appDef.container should be(Some(Container.Mesos()))
+    appDef.container should be(Some(Container.Mesos(portMappings = Seq(Container.PortMapping()))))
   }
 
   test("FromJSON should parse ipAddress.networkName with DOCKER container w/o port mappings") {
@@ -372,7 +372,7 @@ class AppDefinitionFormatsTest
           |}""".stripMargin).as[raml.App])
 
       appDef.networks should be(Seq(ContainerNetwork(name = "foo")))
-      appDef.container should be(Some(Container.Docker(image = "busybox")))
+      appDef.container should be(Some(Container.Docker(image = "busybox", portMappings = Seq(Container.PortMapping()))))
       Done
     }
   }
@@ -427,7 +427,8 @@ class AppDefinitionFormatsTest
     appDef.networks should be(Seq(ContainerNetwork(name = "foo")))
     appDef.container should be(Some(Container.MesosDocker(
       image = "busybox",
-      credential = Some(Container.Credential("aPrincipal", Some("aSecret")))
+      credential = Some(Container.Credential("aPrincipal", Some("aSecret"))),
+      portMappings = Seq(Container.PortMapping())
     )))
   }
 
@@ -460,7 +461,8 @@ class AppDefinitionFormatsTest
         "version" -> "1.2.0",
         "arch" -> "amd64",
         "os" -> "linux"
-      )
+      ),
+      portMappings = Seq(Container.PortMapping())
     )))
   }
 

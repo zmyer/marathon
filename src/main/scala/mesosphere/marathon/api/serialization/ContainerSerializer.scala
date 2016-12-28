@@ -21,7 +21,7 @@ object ContainerSerializer {
       val pms = proto.getPortMappingsList
       Container.Mesos(
         volumes = proto.getVolumesList.map(Volume(_))(collection.breakOut),
-        portMappings = if (pms.nonEmpty) pms.map(PortMappingSerializer.fromProto)(collection.breakOut) else Nil
+        portMappings = pms.map(PortMappingSerializer.fromProto)(collection.breakOut)
       )
     }
   }
@@ -68,7 +68,7 @@ object ContainerSerializer {
     }
 
     container.volumes.foreach {
-      case pv: PersistentVolume => // PersistentVolumes are handled differently
+      case _: PersistentVolume => // PersistentVolumes are handled differently
       case ev: ExternalVolume => ExternalVolumes.build(builder, ev) // this also adds the volume
       case dv: DockerVolume => builder.addVolumes(VolumeSerializer.toMesos(dv))
     }
@@ -77,7 +77,7 @@ object ContainerSerializer {
       val (networkName, networkLabels) = network match {
         case cnet: ContainerNetwork => cnet.name -> cnet.labels.toMesosLabels
         case bnet: BridgeNetwork => MesosBridgeName -> bnet.labels.toMesosLabels
-        case unsupported => throw new IllegalStateException(s"unsupported networking mode ${unsupported}")
+        case unsupported => throw new IllegalStateException(s"unsupported networking mode $unsupported")
       }
 
       mesos.Protos.NetworkInfo.newBuilder()
@@ -178,7 +178,7 @@ object DockerSerializer {
     Container.Docker(
       volumes = proto.getVolumesList.map(Volume(_))(collection.breakOut),
       image = d.getImage,
-      portMappings = if (pms.nonEmpty) pms.map(PortMappingSerializer.fromProto)(collection.breakOut) else Nil,
+      portMappings = pms.map(PortMappingSerializer.fromProto)(collection.breakOut),
       privileged = d.getPrivileged,
       parameters = d.getParametersList.map(Parameter(_))(collection.breakOut),
       forcePullImage = if (d.hasForcePullImage) d.getForcePullImage else false
@@ -318,7 +318,7 @@ object MesosDockerSerializer {
     val pms = proto.getPortMappingsList
     Container.MesosDocker(
       volumes = proto.getVolumesList.map(Volume(_))(collection.breakOut),
-      portMappings = if (pms.nonEmpty) pms.map(PortMappingSerializer.fromProto).to[Seq] else Nil,
+      portMappings = pms.map(PortMappingSerializer.fromProto)(collection.breakOut),
       image = d.getImage,
       credential = if (d.hasCredential) Some(CredentialSerializer.fromMesos(d.getCredential)) else None,
       forcePullImage = if (d.hasForcePullImage) d.getForcePullImage else false
@@ -360,7 +360,7 @@ object MesosAppCSerializer {
     val pms = proto.getPortMappingsList
     Container.MesosAppC(
       volumes = proto.getVolumesList.map(Volume(_))(collection.breakOut),
-      portMappings = if (pms.nonEmpty) pms.map(PortMappingSerializer.fromProto).to[Seq] else Nil,
+      portMappings = pms.map(PortMappingSerializer.fromProto)(collection.breakOut),
       image = appc.getImage,
       id = if (appc.hasId) Some(appc.getId) else None,
       labels = appc.getLabelsList.map { p => p.getKey -> p.getValue }(collection.breakOut),

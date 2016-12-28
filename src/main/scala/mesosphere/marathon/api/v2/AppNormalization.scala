@@ -124,6 +124,9 @@ trait AppNormalization {
 
     // no container specified in JSON but ipAddress is ==> implies empty Mesos container
     val container = update.container.orElse(update.ipAddress.map(_ => Container(EngineType.Mesos))).map { c =>
+      // we explicitly make the decision here to not try implementing default port-mappings.
+      // after applying the app-update to an app, the system should normalize the app definition -- and at that
+      // point we'll calculate defaults if needed.
       dropDockerNetworks(
         migrateIpDiscovery(
           migrateDockerPortMappings(c),
@@ -132,6 +135,7 @@ trait AppNormalization {
       )
     }
 
+    // no default port calculations, as per the port-mappings comment above.
     val portDefinitions = update.portDefinitions.orElse(
       update.ports.map(_.map(port => PortDefinition(port))))
 
@@ -178,6 +182,22 @@ trait AppNormalization {
     // empty networks Seq defaults to host-mode later on, so consider it now as indicating host-mode networking
     if (networks.exists(_.mode == NetworkMode.Host) || networks.isEmpty) c.copy(portMappings = Nil) else c
 
+  def applyDefaultPortMappings(c: Container, networks: Seq[Network]): Container =
+    if (networks.exists(_.mode == NetworkMode.Host) || networks.isEmpty || c.portMappings.nonEmpty) c
+    else c.copy(portMappings = Seq(ContainerPortMapping(0)))
+
+  def applyDefaultPortDefinitions(app: App, networks: Seq[Network]): Option[Seq[PortDefinition]] =
+    // Normally, our default is one port. If an non-host networks are defined that would lead to an error
+    // if left unchanged.
+    if (networks.exists(_.mode != NetworkMode.Host))
+      None
+    else
+      Some(app.portDefinitions.getOrElse(
+        app.ports.map(p => PortDefinitions(p: _*)).getOrElse(
+          DefaultPortDefinitions
+        )
+      ))
+
   /**
     * only deprecated fields and their interaction with canonical fields have been validated so far,
     * so we limit normalization here to translating from the deprecated API to the canonical one.
@@ -197,35 +217,29 @@ trait AppNormalization {
     // canonical validation doesn't allow both portDefinitions and container.portMappings:
     // container and portDefinitions normalization (below) deal with dropping unsupported port configs.
 
-    // no container specified in JSON but ipAddress is ==> implies empty Mesos container
-    val container = app.container.orElse(app.ipAddress.map(_ => Container(EngineType.Mesos))).map { c =>
-      maybeDropPortMappings(
-        dropDockerNetworks(
-          migrateIpDiscovery(
-            migrateDockerPortMappings(c),
-            app.ipAddress.flatMap(_.discovery)
-          )
-        ),
-        networks
-      )
-    }
+    val container = app.container.orElse(
+      // no container specified in JSON but ipAddress is ==> implies empty Mesos container
+      app.ipAddress.map(_ => Container(EngineType.Mesos))
+    ).map { c =>
+        applyDefaultPortMappings(
+          maybeDropPortMappings(
+            dropDockerNetworks(
+              migrateIpDiscovery(
+                migrateDockerPortMappings(c),
+                app.ipAddress.flatMap(_.discovery)
+              )
+            ),
+            networks
+          ),
+          networks
+        )
+      }
 
-    // Normally, our default is one port. If an non-host networks are defined that would lead to an error
-    // if left unchanged.
-    // TODO(jdef) what about bridge networks? they were not traditionally considered IP/CT but really they **are**
-    def portDefinitions: Option[Seq[PortDefinition]] =
-      if (networks.exists(_.mode != NetworkMode.Host))
-        None
-      else
-        Some(app.portDefinitions.getOrElse(
-          app.ports.map(p => PortDefinitions(p: _*)).getOrElse(
-            DefaultPortDefinitions
-          )
-        ))
+    val portDefinitions = applyDefaultPortDefinitions(app, networks)
 
     val healthChecks =
       // for an app (not an update) only normalize if there are ports defined somewhere.
-      // intentionally consider the non-normalized portDefinitions since that's what the old Formats code did
+      // ??? intentionally consider the non-normalized portDefinitions since that's what the old Formats code did
       if (app.portDefinitions.exists(_.nonEmpty) || container.exists(_.portMappings.nonEmpty)) normalizeHealthChecks(app.healthChecks)
       else app.healthChecks
 
@@ -279,7 +293,7 @@ object AppNormalization extends AppNormalization {
     */
   val DefaultNetworks = Seq(Network(mode = NetworkMode.Host))
 
-  val DefaultPortDefinitions = Seq(PortDefinition(0))
+  val DefaultPortDefinitions = Seq(PortDefinition())
 
   val DefaultAppResidency = Some(AppResidency())
 

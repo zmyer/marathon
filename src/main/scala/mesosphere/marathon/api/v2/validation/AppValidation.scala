@@ -343,10 +343,10 @@ trait AppValidation {
     !(app.networks.exists(_.mode != NetworkMode.Host) && app.portDefinitions.exists(_.nonEmpty))
   }
 
-  /** expects that app is already in canonical form */
-  def validNestedApp(base: PathId, enabledFeatures: Set[String]): Validator[App] = validator[App] { app =>
+  /** expects that app is already in canonical form and that someone else is (or will) handle basic app validation */
+  def validNestedApp(base: PathId): Validator[App] = validator[App] { app =>
     PathId(app.id) as "id" is PathId.validPathWithBase(base)
-  } and validBasicAppDefinition(enabledFeatures)
+  }
 
   def portIndices(app: App): Range = {
     // should be kept in sync with AppDefinition.portIndices

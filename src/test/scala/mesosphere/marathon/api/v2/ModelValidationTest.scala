@@ -16,7 +16,7 @@ import scala.collection.immutable.Seq
 
 object ModelValidationTest {
 
-  implicit val groupUpdateValidator: Validator[GroupUpdate] = Group.groupUpdateValid(Set.empty[String])
+  implicit val groupUpdateValidator: Validator[GroupUpdate] = Group.validNestedGroupUpdateWithBase(PathId.empty)
 
   case class ImportantTitle(name: String)
 

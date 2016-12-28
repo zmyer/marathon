@@ -128,20 +128,20 @@ object Group {
   def emptyUpdate(id: PathId): raml.GroupUpdate = raml.GroupUpdate(Some(id.toString))
 
   /** requires that apps are in canonical form */
-  def validNestedGroupUpdateWithBase(base: PathId, enabledFeatures: Set[String]): Validator[raml.GroupUpdate] =
+  def validNestedGroupUpdateWithBase(base: PathId): Validator[raml.GroupUpdate] =
     validator[raml.GroupUpdate] { group =>
       group is notNull
 
       group.version is theOnlyDefinedOptionIn(group)
       group.scaleBy is theOnlyDefinedOptionIn(group)
 
+      // this is funny: id is "optional" only because version and scaleBy can't be used in conjunction with other
+      // fields. it feels like we should make an exception for "id" and always require it for non-root groups.
       group.id.map(_.toPath) as "id" is optional(valid)
-      group.apps is optional(every(
-        AppValidation.validNestedApp(group.id.fold(base)(PathId(_).canonicalPath(base)), enabledFeatures)))
-      group.groups is optional(every(
-        validNestedGroupUpdateWithBase(group.id.fold(base)(PathId(_).canonicalPath(base)), enabledFeatures)))
-    }
 
-  def groupUpdateValid(enabledFeatures: Set[String]): Validator[raml.GroupUpdate] =
-    validNestedGroupUpdateWithBase(PathId.empty, enabledFeatures)
+      group.apps is optional(every(
+        AppValidation.validNestedApp(group.id.fold(base)(PathId(_).canonicalPath(base)))))
+      group.groups is optional(every(
+        validNestedGroupUpdateWithBase(group.id.fold(base)(PathId(_).canonicalPath(base)))))
+    }
 }

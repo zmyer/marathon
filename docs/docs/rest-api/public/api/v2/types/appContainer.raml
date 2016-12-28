@@ -70,11 +70,10 @@ types:
           This can be used to add metadata to be interpreted by external
           applications such as firewalls.
       name?:
-        type: strings.Name
+        type: strings.LegacyName
         description:
           Name of the service hosted on this port.
           If provided, it must be unique over all port mappings.
-        pattern: ^[a-z][-a-z0-9]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp

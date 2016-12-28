@@ -819,7 +819,7 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
     val app = AppDefinition(
       id = "app-with-ip-address".toRootPath,
       cmd = Some("python3 -m http.server 8080"),
-      container = Some(state.Container.Mesos()),
+      container = Some(state.Container.Mesos(portMappings = Seq(Container.PortMapping()))),
       portDefinitions = Nil,
       networks = Seq(ContainerNetwork("whatever", labels = Map("foo" -> "bar", "baz" -> "buzz"))),
       backoffStrategy = BackoffStrategy(maxLaunchDelay = 3600.seconds)
@@ -849,8 +849,7 @@ class AppDefinitionTest extends MarathonSpec with Matchers {
     val app = AppDefinition(
       id = "app-with-network-isolation".toRootPath,
       cmd = Some("python3 -m http.server 8080"),
-      container = Some(state.Container.Mesos()),
-      portDefinitions = Nil,
+      container = Some(state.Container.Mesos(portMappings = Seq(Container.PortMapping()))),
       networks = Seq(ContainerNetwork("whatever"))
     )
 
