@@ -1,6 +1,6 @@
-package mesosphere.marathon.core.auth
+package mesosphere.marathon
+package core.auth
 
-import mesosphere.marathon.WrongConfigurationException
 import mesosphere.marathon.core.auth.impl.AuthAllowEverything
 import mesosphere.marathon.core.plugin.PluginManager
 import mesosphere.marathon.plugin.auth.{ Authenticator, Authorizer }
@@ -17,6 +17,6 @@ class AuthModule(pluginManager: PluginManager) {
     plugins.headOption
   }
 
-  lazy val authorizer: Authorizer = pluginOption[Authorizer].getOrElse(AuthAllowEverything)
-  lazy val authenticator: Authenticator = pluginOption[Authenticator].getOrElse(AuthAllowEverything)
+  implicit lazy val authorizer: Authorizer = pluginOption[Authorizer].getOrElse(AuthAllowEverything)
+  implicit lazy val authenticator: Authenticator = pluginOption[Authenticator].getOrElse(AuthAllowEverything)
 }

@@ -1,4 +1,7 @@
-package mesosphere.marathon.core.launchqueue.impl
+package mesosphere.marathon
+package core.launchqueue.impl
+
+import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorRef
@@ -23,9 +26,9 @@ private[launchqueue] class LaunchQueueDelegate(
 
   // When purging, we wait for the TaskLauncherActor to shut down. This actor will wait for
   // in-flight task op notifications before complying, therefore we need to adjust the timeout accordingly.
-  val purgeTimeout: Timeout = config.launchQueueRequestTimeout().milliseconds + config.taskOpNotificationTimeout().millisecond
+  val purgeTimeout: Timeout = Duration(config.requestTimeout.toMillis + config.taskOpNotificationTimeout.toMillis, TimeUnit.MILLISECONDS)
 
-  val launchQueueRequestTimeout: Timeout = config.launchQueueRequestTimeout().milliseconds
+  val launchQueueRequestTimeout: Timeout = Duration(config.requestTimeout.toMillis, TimeUnit.MILLISECONDS)
 
   override def list: Seq[QueuedInstanceInfo] = {
     askQueueActor[LaunchQueueDelegate.Request, Seq[QueuedInstanceInfo]]("list")(LaunchQueueDelegate.List)

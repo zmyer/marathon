@@ -3,6 +3,7 @@ package mesosphere.mesos
 import mesosphere.marathon._
 import mesosphere.marathon.api.serialization.{ ContainerSerializer, PortDefinitionSerializer, PortMappingSerializer }
 import mesosphere.marathon.core.health.MesosHealthCheck
+import mesosphere.marathon.core.launcher.LauncherConfig
 import mesosphere.marathon.core.task
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.plugin.task.RunSpecTaskProcessor
@@ -18,7 +19,7 @@ import scala.collection.immutable.Seq
 class TaskBuilder(
     runSpec: AppDefinition,
     newTaskId: PathId => Task.Id,
-    config: MarathonConf,
+    config: LauncherConfig,
     runSpecTaskProc: RunSpecTaskProcessor = RunSpecTaskProcessor.empty) {
 
   import TaskBuilder.log
@@ -57,7 +58,7 @@ class TaskBuilder(
     volumeMatchOpt.foreach(_.persistentVolumeResources.foreach(builder.addResources))
 
     val containerProto = computeContainerInfo(resourceMatch.hostPorts, taskId)
-    val envPrefix: Option[String] = config.envVarsPrefix.get
+    val envPrefix: Option[String] = config.envVarsPrefix
 
     executor match {
       case CommandExecutor =>

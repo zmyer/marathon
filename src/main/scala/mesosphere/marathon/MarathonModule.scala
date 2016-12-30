@@ -19,7 +19,7 @@ import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
 import mesosphere.marathon.core.task.termination.KillService
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
-import mesosphere.marathon.metrics.Metrics
+import mesosphere.marathon.metrics.{ Metrics, MetricsModule, MetricsReporterService }
 import mesosphere.marathon.storage.repository.{ DeploymentRepository, GroupRepository }
 import mesosphere.marathon.upgrade.DeploymentManager
 import mesosphere.util.state._
@@ -38,14 +38,15 @@ object ModuleNames {
   final val MESOS_HEARTBEAT_ACTOR = "MesosHeartbeatActor"
 }
 
-class MarathonModule(conf: MarathonConf, http: HttpConf)
+class MarathonModule(conf: MarathonConf)
     extends AbstractModule {
 
   val log = LoggerFactory.getLogger(getClass.getName)
+  lazy val metricsModule = MetricsModule(conf)
 
   def configure(): Unit = {
     bind(classOf[MarathonConf]).toInstance(conf)
-    bind(classOf[HttpConf]).toInstance(http)
+    bind(classOf[HttpConf]).toInstance(conf)
     bind(classOf[LeaderProxyConf]).toInstance(conf)
     bind(classOf[ZookeeperConf]).toInstance(conf)
 
@@ -64,9 +65,15 @@ class MarathonModule(conf: MarathonConf, http: HttpConf)
     bind(classOf[String])
       .annotatedWith(Names.named(ModuleNames.SERVER_SET_PATH))
       .toInstance(conf.zooKeeperServerSetPath)
-
-    bind(classOf[Metrics]).in(Scopes.SINGLETON)
   }
+
+  @Provides
+  @Singleton
+  def provideMetrics: Metrics = metricsModule.metrics
+
+  @Provides
+  @Singleton
+  def provideMetricsReporterService: MetricsReporterService = metricsModule.metricsReporterService
 
   @Named(ModuleNames.MESOS_HEARTBEAT_ACTOR)
   @Provides
@@ -159,7 +166,7 @@ class MarathonModule(conf: MarathonConf, http: HttpConf)
   @Provides
   @Singleton
   def provideHostPort: String = {
-    val port = if (http.disableHttp()) http.httpsPort() else http.httpPort()
+    val port = if (conf.disableHttp()) conf.httpsPort() else conf.httpPort()
     "%s:%d".format(conf.hostname(), port)
   }
 

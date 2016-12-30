@@ -6,7 +6,7 @@ import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.instance.update.{ InstanceUpdateEffect, InstanceUpdateOperation }
 import mesosphere.marathon.core.launcher.{ InstanceOpFactory, OfferMatchResult }
 import mesosphere.marathon.core.launcher.impl.InstanceOpFactoryHelper
-import mesosphere.marathon.core.launchqueue.LaunchQueueModule
+import mesosphere.marathon.core.launchqueue.{ LaunchQueueConfig, LaunchQueueModule }
 import mesosphere.marathon.core.leadership.AlwaysElectedLeadershipModule
 import mesosphere.marathon.core.matcher.DummyOfferMatcherManager
 import mesosphere.marathon.core.matcher.base.util.OfferMatcherSpec
@@ -268,7 +268,7 @@ class LaunchQueueModuleTest
     lazy val instanceOpFactory: InstanceOpFactory = mock[InstanceOpFactory]
     lazy val config = MarathonTestHelper.defaultConfig()
     lazy val module: LaunchQueueModule = new LaunchQueueModule(
-      config,
+      LaunchQueueConfig(config),
       AlwaysElectedLeadershipModule(shutdownHooks),
       clock,
       subOfferMatcherManager = offerMatcherManager,

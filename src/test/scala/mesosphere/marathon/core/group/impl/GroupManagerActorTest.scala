@@ -18,7 +18,6 @@ import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.{ AppRepository, GroupRepository }
 import mesosphere.marathon.test.{ GroupCreation, MarathonSpec, Mockito }
-import mesosphere.marathon.util.WorkQueue
 import org.mockito.Mockito.when
 import org.rogach.scallop.ScallopConf
 import org.scalatest.Matchers
@@ -318,12 +317,13 @@ class GroupManagerActorTest extends Mockito with Matchers with MarathonSpec with
 
   class Fixture {
     implicit val system = ActorSystem()
+    implicit val akkaScheduler = system.scheduler
     implicit val mat = ActorMaterializer()
-    lazy val scheduler = mock[MarathonSchedulerService]
-    lazy val appRepo = mock[AppRepository]
-    lazy val groupRepo = mock[GroupRepository]
-    lazy val eventBus = mock[EventStream]
-    lazy val provider = mock[StorageProvider]
+    implicit lazy val scheduler = mock[MarathonSchedulerService]
+    implicit lazy val appRepo = mock[AppRepository]
+    implicit lazy val groupRepo = mock[GroupRepository]
+    implicit lazy val eventBus = mock[EventStream]
+    implicit lazy val provider = mock[StorageProvider]
     lazy val config = {
       new ScallopConf(Seq("--master", "foo")) with MarathonConf {
         verify()
@@ -331,19 +331,15 @@ class GroupManagerActorTest extends Mockito with Matchers with MarathonSpec with
     }
 
     lazy val metricRegistry = new MetricRegistry()
-    lazy val metrics = new Metrics(metricRegistry)
+    implicit lazy val metrics = new Metrics(metricRegistry)
 
-    val schedulerProvider = new Provider[DeploymentService] {
+    implicit val schedulerProvider = new Provider[DeploymentService] {
       override def get() = scheduler
     }
 
     val props = GroupManagerActor.props(
-      WorkQueue("GroupManager", 1, 10),
-      schedulerProvider,
-      groupRepo,
-      provider,
-      config,
-      eventBus)
+      config.internalMaxQueuedRootGroupUpdates(),
+      config.availableFeatures, config.localPortMin(), config.localPortMax())
 
     lazy val manager = system.actorOf(props)
   }

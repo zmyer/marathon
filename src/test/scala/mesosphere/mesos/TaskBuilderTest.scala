@@ -12,6 +12,7 @@ import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.VersionInfo.OnlyVersion
 import mesosphere.marathon.state.{ AppDefinition, Container, PathId, Timestamp, _ }
 import mesosphere.marathon._
+import mesosphere.marathon.core.launcher.LauncherConfig
 import mesosphere.marathon.stream._
 import mesosphere.marathon.test.{ MarathonSpec, MarathonTestHelper }
 import mesosphere.mesos.protos.{ Resource, _ }
@@ -1221,7 +1222,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
 
     val builder = new TaskBuilder(
       app,
-      s => Task.Id(s.toString), MarathonTestHelper.defaultConfig())
+      s => Task.Id(s.toString), LauncherConfig(MarathonTestHelper.defaultConfig()))
 
     val config = MarathonTestHelper.defaultConfig()
     val resourceMatch = RunSpecOfferMatcher.matchOffer(app, offer, s, config.defaultAcceptedResourceRolesSet)
@@ -1246,7 +1247,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
 
     val builder = new TaskBuilder(
       app,
-      s => Task.Id.forRunSpec(s), config)
+      s => Task.Id.forRunSpec(s), LauncherConfig(config))
 
     def shouldBuildTask(message: String, offer: Offer): Unit = {
       val resourceMatch = RunSpecOfferMatcher.matchOffer(app, offer, runningInstances.toIndexedSeq, config.defaultAcceptedResourceRolesSet)
@@ -1310,7 +1311,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
     val config = MarathonTestHelper.defaultConfig()
     val builder = new TaskBuilder(
       app,
-      s => Task.Id.forRunSpec(s), config)
+      s => Task.Id.forRunSpec(s), LauncherConfig(config))
 
     def shouldBuildTask(offer: Offer): Unit = {
       val resourceMatch = RunSpecOfferMatcher.matchOffer(app, offer, runningInstances.toIndexedSeq, config.defaultAcceptedResourceRolesSet)
@@ -1786,7 +1787,7 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
 
     val offer = MarathonTestHelper.makeBasicOffer(1.0, 128.0, 31000, 32000).build
     val config = MarathonTestHelper.defaultConfig()
-    val builder = new TaskBuilder(app, s => Task.Id(s.toString), config)
+    val builder = new TaskBuilder(app, s => Task.Id(s.toString), LauncherConfig(config))
     val runningInstances = Set.empty[Instance]
 
     val resourceMatch = RunSpecOfferMatcher.matchOffer(app, offer, runningInstances.toIndexedSeq, config.defaultAcceptedResourceRolesSet)
@@ -1813,10 +1814,10 @@ class TaskBuilderTest extends MarathonSpec with Matchers {
     val builder = new TaskBuilder(
       app,
       newTaskId,
-      MarathonTestHelper.defaultConfig(
+      LauncherConfig(MarathonTestHelper.defaultConfig(
         mesosRole = mesosRole,
         acceptedResourceRoles = acceptedResourceRoles,
-        envVarsPrefix = envVarsPrefix))
+        envVarsPrefix = envVarsPrefix)))
 
     val config = MarathonTestHelper.defaultConfig()
     val resourceMatch = RunSpecOfferMatcher.matchOffer(app, offer, Seq.empty, acceptedResourceRoles.getOrElse(config.defaultAcceptedResourceRolesSet))

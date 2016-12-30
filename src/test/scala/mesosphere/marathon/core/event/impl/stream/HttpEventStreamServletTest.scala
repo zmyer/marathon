@@ -41,8 +41,8 @@ class HttpEventStreamServletTest extends FunTest {
   class Fixture {
     val actor = mock[ActorRef]
     val auth = new TestAuthFixture
-    val config = AllConf.withTestConfig()
-    def streamServlet() = new HttpEventStreamServlet(actor, config, auth.auth, auth.auth)
+    import scala.concurrent.ExecutionContext.Implicits.global
+    def streamServlet() = new HttpEventStreamServlet(actor, auth.auth, auth.auth)
   }
 }
 

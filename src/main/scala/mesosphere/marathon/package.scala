@@ -1,5 +1,7 @@
 package mesosphere
 
+import pureconfig.{ CamelCase, ConfigFieldMapping, KebabCase }
+
 /**
   * Scala stupidly defines Seq/Indexed as "a generic sequence" which can be _mutable_
   *
@@ -16,4 +18,6 @@ package object marathon {
 
   type IndexedSeq[+A] = scala.collection.immutable.IndexedSeq[A]
   val IndexedSeq = scala.collection.immutable.IndexedSeq
+
+  implicit def conv[T] = ConfigFieldMapping.apply[T](CamelCase, KebabCase)
 }

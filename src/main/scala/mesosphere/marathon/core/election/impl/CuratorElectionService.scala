@@ -5,9 +5,8 @@ import java.util
 import java.util.Collections
 import java.util.concurrent.Executors
 
-import akka.actor.ActorSystem
+import akka.actor.Scheduler
 import akka.event.EventStream
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.core.base._
 import mesosphere.marathon.metrics.Metrics
 import org.apache.curator.framework.api.ACLProvider
@@ -21,15 +20,13 @@ import org.slf4j.LoggerFactory
 import scala.util.control.NonFatal
 
 class CuratorElectionService(
-  config: MarathonConf,
-  system: ActorSystem,
-  eventStream: EventStream,
-  metrics: Metrics = new Metrics(new MetricRegistry),
-  hostPort: String,
-  backoff: ExponentialBackoff,
-  shutdownHooks: ShutdownHooks) extends ElectionServiceBase(
-  system, eventStream, metrics, backoff, shutdownHooks
-) {
+    config: ZookeeperConfig,
+    hostPort: String)(implicit
+  scheduler: Scheduler,
+    eventStream: EventStream,
+    metrics: Metrics,
+    backoff: Backoff,
+    shutdownHooks: ShutdownHooks) extends ElectionServiceBase {
   private lazy val log = LoggerFactory.getLogger(getClass.getName)
 
   private val callbackExecutor = Executors.newSingleThreadExecutor()
@@ -58,7 +55,7 @@ class CuratorElectionService(
     }
 
     try {
-      val latch = new LeaderLatch(client, config.zooKeeperLeaderPath + "-curator", hostPort, LeaderLatch.CloseMode.NOTIFY_LEADER)
+      val latch = new LeaderLatch(client, config.leaderPath, hostPort, LeaderLatch.CloseMode.NOTIFY_LEADER)
       latch.addListener(Listener, callbackExecutor)
       latch.start()
       maybeLatch = Some(latch)
@@ -90,7 +87,7 @@ class CuratorElectionService(
   }
 
   def provideCuratorClient(): CuratorFramework = {
-    log.info(s"Will do leader election through ${config.zkHosts}")
+    log.info(s"Will do leader election through ${config.hosts}")
 
     // let the world read the leadership information as some setups depend on that to find Marathon
     val acl = new util.ArrayList[ACL]()
@@ -98,9 +95,9 @@ class CuratorElectionService(
     acl.addAll(ZooDefs.Ids.READ_ACL_UNSAFE)
 
     val builder = CuratorFrameworkFactory.builder().
-      connectString(config.zkHosts).
-      sessionTimeoutMs(config.zooKeeperSessionTimeout().toInt).
-      connectionTimeoutMs(config.zooKeeperTimeout().toInt).
+      connectString(config.hosts).
+      sessionTimeoutMs(config.sessionTimeout.toMillis.toInt).
+      connectionTimeoutMs(config.connectionTimeout.toMillis.toInt).
       aclProvider(new ACLProvider {
         val rootAcl = {
           val acls = new util.ArrayList[ACL]()
@@ -111,7 +108,7 @@ class CuratorElectionService(
 
         override def getDefaultAcl: util.List[ACL] = acl
 
-        override def getAclForPath(path: String): util.List[ACL] = if (path != config.zkPath) {
+        override def getAclForPath(path: String): util.List[ACL] = if (path != config.path) {
           acl
         } else {
           rootAcl
@@ -126,7 +123,7 @@ class CuratorElectionService(
       })
 
     // optionally authenticate
-    val client = (config.zkUsername, config.zkPassword) match {
+    val client = (config.username, config.password) match {
       case (Some(user), Some(pass)) =>
         builder.authorization(Collections.singletonList(
           new AuthInfo("digest", (user + ":" + pass).getBytes("UTF-8"))

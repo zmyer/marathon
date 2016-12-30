@@ -1,18 +1,19 @@
-package mesosphere.marathon.core.event.impl.stream
+package mesosphere.marathon
+package core.event.impl.stream
 
 import java.util.UUID
 import javax.servlet.http.{ Cookie, HttpServletRequest, HttpServletResponse }
 
 import akka.actor.ActorRef
 import mesosphere.marathon.api.RequestFacade
-import mesosphere.marathon.core.event.EventConf
 import mesosphere.marathon.core.event.impl.stream.HttpEventStreamActor._
 import mesosphere.marathon.plugin.auth._
 import mesosphere.marathon.plugin.http.HttpResponse
 import org.eclipse.jetty.servlets.EventSource.Emitter
 import org.eclipse.jetty.servlets.{ EventSource, EventSourceServlet }
 
-import scala.concurrent.{ Await, blocking }
+import scala.async.Async._
+import scala.concurrent.{ ExecutionContext, blocking }
 
 /**
   * The Stream handle implementation for SSE.
@@ -46,14 +47,11 @@ class HttpEventSSEHandle(request: HttpServletRequest, emitter: Emitter) extends 
   */
 class HttpEventStreamServlet(
   streamActor: ActorRef,
-  conf: EventConf,
   val authenticator: Authenticator,
-  val authorizer: Authorizer)
+  val authorizer: Authorizer)(implicit ctx: ExecutionContext)
     extends EventSourceServlet {
 
-  override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
-    val requestFacade = new RequestFacade(request)
-    val maybeIdentity = Await.result(authenticator.authenticate(requestFacade), conf.zkTimeoutDuration)
+  override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = async {
     def withResponseFacade(fn: HttpResponse => Unit): Unit = {
       val facade = new HttpResponse {
         override def body(mediaType: String, bytes: Array[Byte]): Unit = {
@@ -85,7 +83,9 @@ class HttpEventStreamServlet(
     def isAuthorized(identity: Identity): Boolean = {
       authorizer.isAuthorized(identity, ViewResource, AuthorizedResource.Events)
     }
-    maybeIdentity match {
+
+    val requestFacade = new RequestFacade(request)
+    await(authenticator.authenticate(requestFacade)) match {
       case Some(identity) if isAuthorized(identity) =>
         super.doGet(request, response)
       case Some(identity) =>

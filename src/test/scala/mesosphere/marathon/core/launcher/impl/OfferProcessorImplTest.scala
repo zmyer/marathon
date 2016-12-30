@@ -7,7 +7,7 @@ import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.TestInstanceBuilder._
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
-import mesosphere.marathon.core.launcher.{ InstanceOp, OfferProcessor, OfferProcessorConfig, TaskLauncher }
+import mesosphere.marathon.core.launcher._
 import mesosphere.marathon.core.matcher.base.OfferMatcher
 import mesosphere.marathon.core.matcher.base.OfferMatcher.{ InstanceOpSource, InstanceOpWithSource, MatchedInstanceOps }
 import mesosphere.marathon.core.task.Task
@@ -16,6 +16,7 @@ import mesosphere.marathon.core.task.tracker.InstanceCreationHandler
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.test.{ MarathonSpec, MarathonTestHelper, Mockito }
+import org.rogach.scallop.ScallopOption
 import org.scalatest.GivenWhenThen
 
 import scala.collection.immutable.Seq
@@ -280,11 +281,19 @@ class OfferProcessorImplTest extends MarathonSpec with GivenWhenThen with Mockit
   private[this] var offerMatcher: OfferMatcher = _
   private[this] var taskLauncher: TaskLauncher = _
   private[this] var taskCreationHandler: InstanceCreationHandler = _
-  private[this] var conf: OfferProcessorConfig = _
+  private[this] var conf: LauncherConf = _
 
   private[this] def createProcessor(): OfferProcessor = {
-    conf = new OfferProcessorConfig {
+    conf = new LauncherConf {
       verify()
+
+      override def mesosRole: ScallopOption[String] = ???
+
+      override def mesosAuthenticationPrincipal: ScallopOption[String] = ???
+
+      override def defaultAcceptedResourceRolesSet: Set[String] = ???
+
+      override def envVarsPrefix: ScallopOption[String] = ???
     }
 
     clock = ConstantClock()
@@ -293,7 +302,7 @@ class OfferProcessorImplTest extends MarathonSpec with GivenWhenThen with Mockit
     taskCreationHandler = mock[InstanceCreationHandler]
 
     new OfferProcessorImpl(
-      conf, clock, new Metrics(new MetricRegistry), offerMatcher, taskLauncher, taskCreationHandler
+      LauncherConfig(conf), clock, new Metrics(new MetricRegistry), offerMatcher, taskLauncher, taskCreationHandler
     )
   }
 

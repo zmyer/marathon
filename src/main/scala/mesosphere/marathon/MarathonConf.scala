@@ -1,11 +1,13 @@
 package mesosphere.marathon
 
+import mesosphere.chaos.http.HttpConf
+import mesosphere.marathon.core.election.ElectionConf
 import mesosphere.marathon.core.event.EventConf
 import mesosphere.marathon.core.flow.{ LaunchTokenConfig, ReviveOffersConfig }
-import mesosphere.marathon.core.heartbeat.MesosHeartbeatMonitor
-import mesosphere.marathon.core.group.GroupManagerConfig
-import mesosphere.marathon.core.launcher.OfferProcessorConfig
-import mesosphere.marathon.core.launchqueue.LaunchQueueConfig
+import mesosphere.marathon.core.group.GroupManagerConf
+import mesosphere.marathon.core.heartbeat.HeartbeatConf
+import mesosphere.marathon.core.launcher.LauncherConf
+import mesosphere.marathon.core.launchqueue.LaunchQueueConf
 import mesosphere.marathon.core.matcher.manager.OfferMatcherManagerConfig
 import mesosphere.marathon.core.plugin.PluginManagerConfiguration
 import mesosphere.marathon.core.task.jobs.TaskJobsConfig
@@ -13,6 +15,7 @@ import mesosphere.marathon.core.task.termination.KillConfig
 import mesosphere.marathon.core.task.tracker.InstanceTrackerConfig
 import mesosphere.marathon.core.task.update.TaskStatusUpdateConfig
 import mesosphere.marathon.io.storage.StorageProvider
+import mesosphere.marathon.metrics.MetricsReporterConf
 import mesosphere.marathon.state.ResourceRole
 import mesosphere.marathon.storage.StorageConf
 import mesosphere.marathon.upgrade.UpgradeConfig
@@ -32,9 +35,10 @@ private[marathon] object MarathonConfHostNameCache {
 
 trait MarathonConf
     extends ScallopConf
-    with EventConf with GroupManagerConfig with LaunchQueueConfig with LaunchTokenConfig with LeaderProxyConf
-    with MarathonSchedulerServiceConfig with OfferMatcherManagerConfig with OfferProcessorConfig
+    with EventConf with GroupManagerConf with LaunchQueueConf with LaunchTokenConfig with LeaderProxyConf
+    with MarathonSchedulerServiceConfig with OfferMatcherManagerConfig with LauncherConf
     with PluginManagerConfiguration with ReviveOffersConfig with StorageConf with KillConfig
+    with MetricsReporterConf with HeartbeatConf with HttpConf with ElectionConf
     with TaskJobsConfig with TaskStatusUpdateConfig with InstanceTrackerConfig with UpgradeConfig with ZookeeperConf {
 
   lazy val mesosMaster = opt[String](
@@ -82,16 +86,6 @@ trait MarathonConf
     descr = "(Default: 1 week) The failover_timeout for mesos in seconds.",
     default = Some(604800L))
 
-  lazy val highlyAvailable = toggle(
-    "ha",
-    descrYes = "(Default) Run Marathon in HA mode with leader election. " +
-      "Allows starting an arbitrary number of other Marathons but all need " +
-      "to be started in HA mode. This mode requires a running ZooKeeper",
-    descrNo = "Run Marathon in single node mode.",
-    prefix = "disable_",
-    noshort = true,
-    default = Some(true))
-
   lazy val checkpoint = toggle(
     "checkpoint",
     descrYes = "(Default) Enable checkpointing of tasks. " +
@@ -111,11 +105,6 @@ trait MarathonConf
     "local_port_max",
     descr = "Max port number to use when assigning globally unique service ports to apps.",
     default = Some(20000))
-
-  lazy val defaultExecutor = opt[String](
-    "executor",
-    descr = "Executor to use when none is specified. If not defined the Mesos command executor is used by default.",
-    default = Some("//cmd"))
 
   lazy val hostname = opt[String](
     "hostname",
@@ -143,8 +132,6 @@ trait MarathonConf
       "\"http://localhost:8888, http://domain.com\"",
     noshort = true,
     default = None)
-
-  def executor: Executor = Executor.dispatch(defaultExecutor())
 
   lazy val mesosRole = opt[String](
     "mesos_role",
@@ -196,12 +183,6 @@ trait MarathonConf
     descr = "Time, in milliseconds, to wait for a task to enter " +
       "the TASK_RUNNING state before killing it.",
     default = Some(300000L)) // 300 seconds (5 minutes)
-
-  lazy val taskReservationTimeout = opt[Long](
-    "task_reservation_timeout",
-    descr = "Time, in milliseconds, to wait for a new reservation to be acknowledged " +
-      "via a received offer before deleting it.",
-    default = Some(20000L)) // 20 seconds
 
   lazy val reconciliationInitialDelay = opt[Long](
     "reconciliation_initial_delay",
@@ -300,37 +281,5 @@ trait MarathonConf
     default = Some(3 * 60 * 1000L) //3 minutes
   )
 
-  lazy val leaderElectionBackend = opt[String](
-    "leader_election_backend",
-    descr = "The backend for leader election to use.",
-    hidden = true,
-    validate = Set("curator").contains,
-    default = Some("curator")
-  )
-
-  lazy val internalMaxQueuedRootGroupUpdates = opt[Int](
-    "max_queued_root_group_updates",
-    descr = "INTERNAL TUNING PARAMETER: " +
-      "The maximum number of root group updates that we queue before rejecting updates.",
-    noshort = true,
-    hidden = true,
-    default = Some(500)
-  )
-
-  lazy val mesosHeartbeatInterval = opt[Long](
-    "mesos_heartbeat_interval",
-    descr = "(milliseconds) in the absence of receiving a message from the mesos master " +
-      "during a time window of this duration, attempt to coerce mesos into communicating with marathon.",
-    noshort = true,
-    hidden = true,
-    default = Some(MesosHeartbeatMonitor.DEFAULT_HEARTBEAT_INTERVAL_MS))
-
-  lazy val mesosHeartbeatFailureThreshold = opt[Int](
-    "mesos_heartbeat_failure_threshold",
-    descr = "after missing this number of expected communications from the mesos master, " +
-      "infer that marathon has become disconnected from the master.",
-    noshort = true,
-    hidden = true,
-    default = Some(MesosHeartbeatMonitor.DEFAULT_HEARTBEAT_FAILURE_THRESHOLD))
 }
 

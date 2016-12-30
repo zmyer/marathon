@@ -1,6 +1,7 @@
-package mesosphere.marathon.core.readiness.impl
+package mesosphere.marathon
+package core.readiness.impl
 
-import akka.actor.ActorSystem
+import akka.actor.ActorRefFactory
 import akka.util.Timeout
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor.ReadinessCheckSpec
 import mesosphere.marathon.core.readiness.{ HttpResponse, ReadinessCheckExecutor, ReadinessCheckResult }
@@ -10,18 +11,17 @@ import spray.client.pipelining._
 import spray.http.HttpHeaders.`Content-Type`
 import spray.http.{ HttpResponse => SprayHttpResponse, _ }
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 import scala.util.control.NonFatal
 
 /**
   * A Spray-based implementation of a ReadinessCheckExecutor.
   */
-private[readiness] class ReadinessCheckExecutorImpl(implicit actorSystem: ActorSystem)
+private[readiness] class ReadinessCheckExecutorImpl(implicit actorSystem: ActorRefFactory, ctx: ExecutionContext)
     extends ReadinessCheckExecutor {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   private[this] val log = LoggerFactory.getLogger(getClass)
 
   override def execute(readinessCheckSpec: ReadinessCheckSpec): Observable[ReadinessCheckResult] = {

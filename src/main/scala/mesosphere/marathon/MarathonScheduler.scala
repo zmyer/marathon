@@ -1,7 +1,5 @@
 package mesosphere.marathon
 
-import javax.inject.Inject
-
 import akka.event.EventStream
 import mesosphere.marathon.core.base._
 import mesosphere.marathon.core.event.{ SchedulerRegisteredEvent, _ }
@@ -19,7 +17,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent._
 import scala.util.control.NonFatal
 
-class MarathonScheduler @Inject() (
+class MarathonScheduler(
     eventBus: EventStream,
     offerProcessor: OfferProcessor,
     taskStatusProcessor: TaskStatusUpdateProcessor,

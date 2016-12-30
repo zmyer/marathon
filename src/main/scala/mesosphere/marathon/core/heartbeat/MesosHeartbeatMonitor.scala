@@ -2,7 +2,6 @@ package mesosphere.marathon
 package core.heartbeat
 
 import java.util.{ Collections, UUID }
-import javax.inject.{ Inject, Named }
 
 import akka.actor.ActorRef
 import org.apache.mesos.Protos._
@@ -22,9 +21,9 @@ import org.slf4j.LoggerFactory
   * @see org.apache.mesos.Scheduler
   * @see org.apache.mesos.SchedulerDriver
   */
-class MesosHeartbeatMonitor @Inject() (
-    @Named(MesosHeartbeatMonitor.BASE) scheduler: Scheduler,
-    @Named(ModuleNames.MESOS_HEARTBEAT_ACTOR) heartbeatActor: ActorRef
+class MesosHeartbeatMonitor(
+    scheduler: Scheduler,
+    heartbeatActor: ActorRef
 ) extends Scheduler {
 
   import MesosHeartbeatMonitor._

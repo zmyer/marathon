@@ -57,7 +57,7 @@ class MarathonHealthCheckManagerTest extends AkkaFunTest with MarathonShutdownHo
     eventStream = new EventStream(system)
 
     val killService = mock[KillService]
-    hcManager = new MarathonHealthCheckManager(
+    hcManager = MarathonHealthCheckManager()(
       system,
       killService,
       eventStream,

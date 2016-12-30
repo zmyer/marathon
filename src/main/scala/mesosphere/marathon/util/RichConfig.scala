@@ -87,5 +87,5 @@ class RichConfig(val config: Config) extends AnyVal {
   def string(path: String): String = config.getString(path)
   def string(path: String, default: String): String = optionalString(path).getOrElse(default)
   def optionalString(path: String): Option[String] = optional(path, _.getString(path))
-  def stringList(path: String, ifEmpty: Seq[String] = Nil): Seq[String] = list(path, _.getStringList(path), ifEmpty)
+  def stringList(path: String, ifEmpty: Seq[String] = Nil): Seq[String] = list(path, _.getStringList(path), ifEmpty)(identity)
 }

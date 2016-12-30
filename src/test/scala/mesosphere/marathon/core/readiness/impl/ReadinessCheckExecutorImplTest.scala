@@ -11,7 +11,7 @@ import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 import rx.lang.scala.Observable
 import spray.http.{ ContentType, HttpEntity, HttpHeaders, MediaTypes, StatusCodes, HttpResponse => SprayHttpResponse }
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.{ FiniteDuration, _ }
 
 class ReadinessCheckExecutorImplTest
@@ -120,7 +120,7 @@ class ReadinessCheckExecutorImplTest
     )
 
     lazy val ticks = Observable.from(Seq.fill(10000)(0))
-    lazy val executor: ReadinessCheckExecutorImpl = new ReadinessCheckExecutorImpl()(system) {
+    lazy val executor: ReadinessCheckExecutorImpl = new ReadinessCheckExecutorImpl()(system, ExecutionContext.global) {
       override private[impl] def intervalObservable(interval: FiniteDuration): Observable[_] = ticks
       override private[impl] def sprayHttpGet(check: ReadinessCheckSpec): Future[SprayHttpResponse] =
         testableSprayHttpGet(check)

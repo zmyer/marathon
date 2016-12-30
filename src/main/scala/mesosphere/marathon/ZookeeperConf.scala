@@ -2,10 +2,52 @@ package mesosphere.marathon
 
 import java.net.InetSocketAddress
 
+import com.typesafe.config.Config
 import org.apache.zookeeper.ZooDefs
 import org.rogach.scallop.ScallopConf
 
 import scala.concurrent.duration._
+import scala.util.matching.Regex
+
+case class ZookeeperConfig(
+  url: String,
+    sessionTimeout: FiniteDuration,
+    connectionTimeout: FiniteDuration) {
+  import ZookeeperConf._
+
+  def statePath: String = "%s/state".format(path)
+  def leaderPath: String = "%s/leader-curator".format(path)
+
+  def hostAddresses: Seq[InetSocketAddress] =
+    hosts.split(",").map { s =>
+      val splits = s.split(":")
+      require(splits.length == 2, "expected host:port for zk servers")
+      new InetSocketAddress(splits(0), splits(1).toInt)
+    }(collection.breakOut)
+
+  val hosts = url match { case ZKUrlPattern(_, _, server, _) => server }
+  val path = url match { case ZKUrlPattern(_, _, _, zkPath) => zkPath }
+  val username = url match { case ZKUrlPattern(u, _, _, _) => Option(u) }
+  val password = url match { case ZKUrlPattern(_, p, _, _) => Option(p) }
+
+  lazy val zkDefaultCreationACL = (username, password) match {
+    case (Some(_), Some(_)) => ZooDefs.Ids.CREATOR_ALL_ACL
+    case _ => ZooDefs.Ids.OPEN_ACL_UNSAFE
+  }
+}
+
+object ZookeeperConfig {
+  def apply(config: Config): ZookeeperConfig = {
+    pureconfig.loadConfig[ZookeeperConfig](config).get
+  }
+
+  def apply(conf: ZookeeperConf): ZookeeperConfig =
+    ZookeeperConfig(
+      url = conf.zkURL,
+      sessionTimeout = conf.zkSessionTimeoutDuration,
+      connectionTimeout = conf.zkTimeoutDuration
+    )
+}
 
 trait ZookeeperConf extends ScallopConf {
   import ZookeeperConf._
@@ -80,6 +122,12 @@ trait ZookeeperConf extends ScallopConf {
 
   lazy val zkTimeoutDuration = Duration(zooKeeperTimeout(), MILLISECONDS)
   lazy val zkSessionTimeoutDuration = Duration(zooKeeperSessionTimeout(), MILLISECONDS)
+
+  lazy val zkConfig = ZookeeperConfig(
+    url = zooKeeperUrl.get.get,
+    sessionTimeout = zkSessionTimeoutDuration,
+    connectionTimeout = zkTimeoutDuration
+  )
 }
 
 object ZookeeperConf {
@@ -87,5 +135,5 @@ object ZookeeperConf {
   private val pass = """[^@]+"""
   private val hostAndPort = """[A-z0-9-.]+(?::\d+)?"""
   private val zkNode = """[^/]+"""
-  val ZKUrlPattern = s"""^zk://(?:($user):($pass)@)?($hostAndPort(?:,$hostAndPort)*)(/$zkNode(?:/$zkNode)*)$$""".r
+  val ZKUrlPattern: Regex = s"""^zk://(?:($user):($pass)@)?($hostAndPort(?:,$hostAndPort)*)(/$zkNode(?:/$zkNode)*)$$""".r
 }

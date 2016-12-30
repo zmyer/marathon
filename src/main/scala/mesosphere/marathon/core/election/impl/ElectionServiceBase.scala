@@ -1,11 +1,10 @@
 package mesosphere.marathon.core.election.impl
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ ActorRef, Scheduler }
 import akka.event.EventStream
 import akka.pattern.after
-import com.codahale.metrics.{ Gauge, MetricRegistry }
-import mesosphere.marathon.core.base._
-import mesosphere.marathon.core.base.ShutdownHooks
+import com.codahale.metrics.Gauge
+import mesosphere.marathon.core.base.{ ShutdownHooks, _ }
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.metrics.Metrics.Timer
 import mesosphere.marathon.metrics.{ MetricPrefixes, Metrics }
@@ -37,10 +36,10 @@ private[impl] object ElectionServiceBase {
   case class Offered(candidate: ElectionCandidate) extends State
 }
 
-abstract class ElectionServiceBase(
-    system: ActorSystem,
+abstract class ElectionServiceBase(implicit
+  scheduler: Scheduler,
     eventStream: EventStream,
-    metrics: Metrics = new Metrics(new MetricRegistry),
+    metrics: Metrics,
     backoff: Backoff,
     shutdownHooks: ShutdownHooks) extends ElectionService {
   import ElectionServiceBase._
@@ -131,7 +130,7 @@ abstract class ElectionServiceBase(
         // backoff idle case
         log.info(s"Will offer leadership after ${backoff.value()} backoff")
         state = Offering(candidate)
-        after(backoff.value(), system.scheduler)(Future {
+        after(backoff.value(), scheduler)(Future {
           synchronized {
             setOfferState({
               // now after backoff actually set Offered state

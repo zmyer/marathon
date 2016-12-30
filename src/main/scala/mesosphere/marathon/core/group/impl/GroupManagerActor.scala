@@ -58,35 +58,29 @@ private[group] object GroupManagerActor {
   // Replies with Seq[Timestamp]
   case class GetAllVersions(id: PathId) extends Request
 
-  def props(
-    serializeUpdates: WorkQueue,
+  def props(maxQueuedUpdates: Int, availableFeatures: Set[String], localPortMin: Int, localPortMax: Int)(implicit
     scheduler: Provider[DeploymentService],
     groupRepo: GroupRepository,
-    storage: StorageProvider,
-    config: MarathonConf,
-    eventBus: EventStream)(implicit mat: Materializer): Props = {
-    Props(new GroupManagerActor(
-      serializeUpdates,
-      scheduler,
-      groupRepo,
-      storage,
-      config,
-      eventBus))
+    storage: StorageProvider, mat: Materializer,
+    eventBus: EventStream): Props = {
+    Props(new GroupManagerActor(maxQueuedUpdates, availableFeatures, localPortMin, localPortMax))
   }
 }
 
 private[impl] class GroupManagerActor(
-    serializeUpdates: WorkQueue,
-    // a Provider has to be used to resolve a cyclic dependency between CoreModule and MarathonModule.
-    // Once MarathonSchedulerService is in CoreModule, the Provider could be removed
-    schedulerProvider: Provider[DeploymentService],
+    maxQueuedUpdates: Int, availableFeatures: Set[String],
+    localPortMin: Int, localPortMax: Int)(implicit
+  // a Provider has to be used to resolve a cyclic dependency between CoreModule and MarathonModule.
+  // Once MarathonSchedulerService is in CoreModule, the Provider could be removed
+  schedulerProvider: Provider[DeploymentService],
     groupRepo: GroupRepository,
     storage: StorageProvider,
-    config: MarathonConf,
-    eventBus: EventStream)(implicit mat: Materializer) extends Actor with PathFun {
+    eventBus: EventStream,
+    mat: Materializer) extends Actor with PathFun {
   import GroupManagerActor._
   import context.dispatcher
 
+  private[this] val serializeUpdates = WorkQueue("GroupManager", maxConcurrent = 1, maxQueueLength = maxQueuedUpdates)
   private[this] val log = LoggerFactory.getLogger(getClass.getName)
   private var scheduler: DeploymentService = _
 
@@ -143,7 +137,7 @@ private[impl] class GroupManagerActor(
         from <- groupRepo.root()
         (toUnversioned, resolve) <- resolveStoreUrls(assignDynamicServicePorts(from, change(from)))
         to = GroupVersioningUtil.updateVersionInfoForChangedApps(version, from, toUnversioned)
-        _ = validateOrThrow(to)(RootGroup.valid(config.availableFeatures))
+        _ = validateOrThrow(to)(RootGroup.valid(availableFeatures))
         plan = DeploymentPlan(from, to, resolve, version, toKill)
         _ = validateOrThrow(plan)(DeploymentPlan.deploymentPlanValidator())
         _ = log.info(s"Computed new deployment plan:\n$plan")
@@ -205,14 +199,14 @@ private[impl] class GroupManagerActor(
   }
 
   private[impl] def assignDynamicServicePorts(from: RootGroup, to: RootGroup): RootGroup = {
-    val portRange = Range(config.localPortMin(), config.localPortMax())
+    val portRange = Range(localPortMin, localPortMax)
     var taken = from.transitiveApps.flatMap(_.servicePorts) ++ to.transitiveApps.flatMap(_.servicePorts)
 
     def nextGlobalFreePort: Int = {
       val port = portRange.find(!taken.contains(_))
         .getOrElse(throw new PortRangeExhaustedException(
-          config.localPortMin(),
-          config.localPortMax()
+          localPortMin,
+          localPortMax
         ))
       log.info(s"Take next configured free port: $port")
       taken += port

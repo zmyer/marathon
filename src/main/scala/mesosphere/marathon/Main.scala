@@ -8,10 +8,9 @@ import com.typesafe.scalalogging.StrictLogging
 import mesosphere.chaos.http.{ HttpModule, HttpService }
 import mesosphere.chaos.metrics.MetricsModule
 import mesosphere.marathon.api.MarathonRestModule
-import mesosphere.marathon.core.base._
 import mesosphere.marathon.core.CoreGuiceModule
 import mesosphere.marathon.core.base.toRichRuntime
-import mesosphere.marathon.metrics.{ MetricsReporterModule, MetricsReporterService }
+import mesosphere.marathon.metrics.MetricsReporterService
 import mesosphere.marathon.stream._
 import mesosphere.mesos.LibMesos
 import org.slf4j.LoggerFactory
@@ -36,8 +35,7 @@ class MarathonApp(args: Seq[String]) extends AutoCloseable with StrictLogging {
     Seq(
       new HttpModule(conf),
       new MetricsModule,
-      new MetricsReporterModule(conf),
-      new MarathonModule(conf, conf),
+      new MarathonModule(conf),
       new MarathonRestModule,
       new DebugModule(conf),
       new CoreGuiceModule

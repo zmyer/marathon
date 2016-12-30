@@ -1,6 +1,8 @@
 package mesosphere.marathon
 package core.launchqueue.impl
 
+import java.util.concurrent.TimeUnit
+
 import akka.Done
 import akka.actor._
 import akka.event.LoggingReceive
@@ -19,8 +21,8 @@ import mesosphere.marathon.core.matcher.base.util.{ ActorOfferMatcher, InstanceO
 import mesosphere.marathon.core.matcher.manager.OfferMatcherManager
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.state.{ RunSpec, Timestamp }
-import org.apache.mesos.{ Protos => Mesos }
 import mesosphere.marathon.stream._
+import org.apache.mesos.{ Protos => Mesos }
 
 import scala.concurrent.duration._
 
@@ -181,8 +183,10 @@ private class TaskLauncherActor(
       if (inFlightInstanceOperations.nonEmpty) {
         // try to stop gracefully but also schedule timeout
         import context.dispatcher
-        log.info("schedule timeout for stopping in " + config.taskOpNotificationTimeout().milliseconds)
-        context.system.scheduler.scheduleOnce(config.taskOpNotificationTimeout().milliseconds, self, PoisonPill)
+        log.info("schedule timeout for stopping in " + config.taskOpNotificationTimeout)
+        context.system.scheduler.scheduleOnce(
+          Duration(config.taskOpNotificationTimeout.toMillis, TimeUnit.MILLISECONDS),
+          self, PoisonPill)
       }
       waitForInFlightIfNecessary()
   }
@@ -431,7 +435,9 @@ private class TaskLauncherActor(
     message: InstanceOpSourceDelegate.InstanceOpRejected): Cancellable =
     {
       import context.dispatcher
-      context.system.scheduler.scheduleOnce(config.taskOpNotificationTimeout().milliseconds, self, message)
+      context.system.scheduler.scheduleOnce(
+        Duration(config.taskOpNotificationTimeout.toMillis, TimeUnit.MILLISECONDS),
+        self, message)
     }
 
   private[this] def backoffActive: Boolean = backOffUntil.forall(_ > clock.now())

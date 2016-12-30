@@ -1,10 +1,10 @@
-package mesosphere.marathon.metrics
+package mesosphere.marathon
+package metrics
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.codahale.metrics.{ Gauge, MetricRegistry }
-import com.google.inject.Inject
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.metrics.Metrics.{ Counter, Histogram, Meter, Timer }
 import org.aopalliance.intercept.MethodInvocation
@@ -17,7 +17,7 @@ import scala.util.control.NonFatal
 /**
   * Utils for timer metrics collection.
   */
-class Metrics @Inject() (val registry: MetricRegistry) extends StrictLogging {
+class Metrics(val registry: MetricRegistry) extends StrictLogging {
   private[this] val classNameCache = TrieMap[Class[_], String]()
 
   def timed[T](name: String)(block: => T): T = {

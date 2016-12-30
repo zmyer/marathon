@@ -6,7 +6,7 @@ import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.launcher.impl.InstanceOpFactoryImpl
-import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory, OfferMatchResult }
+import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory, LauncherConfig, OfferMatchResult }
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.Task.LocalVolumeId
 import mesosphere.marathon.core.task.state.NetworkInfo
@@ -196,7 +196,7 @@ class InstanceOpFactoryImplTest extends MarathonSpec with GivenWhenThen with Moc
     val instanceTracker = mock[InstanceTracker]
     val config: MarathonConf = MTH.defaultConfig(mesosRole = Some("test"))
     implicit val clock = ConstantClock()
-    val instanceOpFactory: InstanceOpFactory = new InstanceOpFactoryImpl(config)
+    val instanceOpFactory: InstanceOpFactory = new InstanceOpFactoryImpl(LauncherConfig(config))
     val hostName = "some_host"
 
     def normalApp = MTH.makeBasicApp()

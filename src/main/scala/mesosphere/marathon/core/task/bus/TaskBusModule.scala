@@ -1,4 +1,5 @@
-package mesosphere.marathon.core.task.bus
+package mesosphere.marathon
+package core.task.bus
 
 import mesosphere.marathon.core.task.bus.impl.{
   TaskStatusEmitterImpl,
@@ -12,7 +13,7 @@ import mesosphere.marathon.core.task.bus.impl.{
   *
   * The exported taskStatusProcessor has to be used to feed all events into the bus.
   */
-class TaskBusModule {
+case class TaskBusModule() {
   lazy val taskStatusEmitter: TaskStatusEmitter =
     new TaskStatusEmitterImpl(internalTaskStatusEventStream)
   lazy val taskStatusObservables: TaskChangeObservables =

@@ -6,7 +6,7 @@ import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.instance.Instance.{ AgentInfo, InstanceState }
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
 import mesosphere.marathon.core.instance.{ Instance, LegacyAppInstance }
-import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory, OfferMatchResult }
+import mesosphere.marathon.core.launcher.{ InstanceOp, InstanceOpFactory, LauncherConfig, OfferMatchResult }
 import mesosphere.marathon.core.plugin.PluginManager
 import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.core.task.Task
@@ -22,10 +22,8 @@ import org.apache.mesos.Protos.{ ExecutorInfo, TaskGroupInfo, TaskInfo }
 import org.apache.mesos.{ Protos => Mesos }
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.duration._
-
 class InstanceOpFactoryImpl(
-  config: MarathonConf,
+  config: LauncherConfig,
   pluginManager: PluginManager = PluginManager.None)(implicit clock: Clock)
     extends InstanceOpFactory {
 
@@ -33,8 +31,8 @@ class InstanceOpFactoryImpl(
 
   private[this] val log = LoggerFactory.getLogger(getClass)
   private[this] val taskOperationFactory = {
-    val principalOpt = config.mesosAuthenticationPrincipal.get
-    val roleOpt = config.mesosRole.get
+    val principalOpt = config.mesosAuthenticationPrincipal
+    val roleOpt = config.mesosRole
 
     new InstanceOpFactoryHelper(principalOpt, roleOpt)
   }
@@ -61,8 +59,8 @@ class InstanceOpFactoryImpl(
 
   protected def inferPodInstanceOp(request: InstanceOpFactory.Request, pod: PodDefinition): OfferMatchResult = {
     val builderConfig = TaskGroupBuilder.BuilderConfig(
-      config.defaultAcceptedResourceRolesSet,
-      config.envVarsPrefix.get)
+      config.defaultAcceptedResourceRoles,
+      config.envVarsPrefix)
 
     val matchedOffer =
       RunSpecOfferMatcher.matchOffer(pod, request.offer, request.instances, builderConfig.acceptedResourceRoles)
@@ -87,7 +85,7 @@ class InstanceOpFactoryImpl(
     val InstanceOpFactory.Request(runSpec, offer, instances, _) = request
 
     val matchResponse =
-      RunSpecOfferMatcher.matchOffer(app, offer, instances.values.toIndexedSeq, config.defaultAcceptedResourceRolesSet)
+      RunSpecOfferMatcher.matchOffer(app, offer, instances.values.toIndexedSeq, config.defaultAcceptedResourceRoles)
     matchResponse match {
       case matches: ResourceMatchResponse.Match =>
         val taskBuilder = new TaskBuilder(app, Task.Id.forRunSpec, config, runSpecTaskProc)
@@ -144,7 +142,7 @@ class InstanceOpFactoryImpl(
           instances.valuesIterator.toStream.filterNotAs(_.instanceId != volumeMatch.instance.instanceId)
 
         // resources are reserved for this role, so we only consider those resources
-        val rolesToConsider = config.mesosRole.get.toSet
+        val rolesToConsider = config.mesosRole.toSet
         val reservationLabels = TaskLabels.labelsForTask(request.frameworkId, volumeMatch.instance.appTask.taskId).labels
         val resourceMatchResponse =
           ResourceMatcher.matchResources(
@@ -164,7 +162,7 @@ class InstanceOpFactoryImpl(
 
     def maybeReserveAndCreateVolumes: Option[OfferMatchResult] = if (needToReserve) {
       val configuredRoles = if (runSpec.acceptedResourceRoles.isEmpty) {
-        config.defaultAcceptedResourceRolesSet
+        config.defaultAcceptedResourceRoles
       } else {
         runSpec.acceptedResourceRoles
       }
@@ -235,7 +233,7 @@ class InstanceOpFactoryImpl(
     val now = clock.now()
     val timeout = Task.Reservation.Timeout(
       initiated = now,
-      deadline = now + config.taskReservationTimeout().millis,
+      deadline = now + config.taskReservationTimeout,
       reason = Task.Reservation.Timeout.Reason.ReservationTimeout
     )
     val agentInfo = Instance.AgentInfo(offer)

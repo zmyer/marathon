@@ -6,7 +6,7 @@ import akka.pattern.AskTimeoutException
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
-import mesosphere.marathon.core.launcher.{ InstanceOp, OfferProcessor, OfferProcessorConfig, TaskLauncher }
+import mesosphere.marathon.core.launcher._
 import mesosphere.marathon.core.matcher.base.OfferMatcher
 import mesosphere.marathon.core.matcher.base.OfferMatcher.{ InstanceOpWithSource, MatchedInstanceOps }
 import mesosphere.marathon.core.task.tracker.InstanceCreationHandler
@@ -15,22 +15,20 @@ import mesosphere.marathon.state.Timestamp
 import org.apache.mesos.Protos.{ Offer, OfferID }
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 /**
   * Passes processed offers to the offerMatcher and launches the appropriate tasks.
   */
-private[launcher] class OfferProcessorImpl(
-    conf: OfferProcessorConfig, clock: Clock,
+private[launcher] class OfferProcessorImpl(config: LauncherConfig, clock: Clock,
     metrics: Metrics,
     offerMatcher: OfferMatcher,
     taskLauncher: TaskLauncher,
     taskCreationHandler: InstanceCreationHandler) extends OfferProcessor with StrictLogging {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private[this] val offerMatchingTimeout = conf.offerMatchingTimeout().millis
-  private[this] val saveTasksToLaunchTimeout = conf.saveTasksToLaunchTimeout().millis
+  private[this] val offerMatchingTimeout = config.offerMatchingTimeout
+  private[this] val saveTasksToLaunchTimeout = config.saveTasksToLaunchTimeout
 
   private[this] val incomingOffersMeter =
     metrics.meter(metrics.name(MetricPrefixes.SERVICE, getClass, "incomingOffers"))
@@ -82,7 +80,7 @@ private[launcher] class OfferProcessorImpl(
 
   private[this] def declineOffer(offerId: OfferID, resendThisOffer: Boolean): Future[Done] = {
     //if the offer should be resent, than we ignore the configured decline offer duration
-    val duration: Option[Long] = if (resendThisOffer) None else conf.declineOfferDuration.get
+    val duration: Option[Long] = if (resendThisOffer) None else Some(config.declineOfferDuration.toMillis)
     taskLauncher.declineOffer(offerId, duration)
     Future.successful(Done)
   }
@@ -145,8 +143,7 @@ private[launcher] class OfferProcessorImpl(
           savingTasksTimeoutMeter.mark(savedTasks.size.toLong)
           nextTask.reject("saving timeout reached")
           logger.info(
-            s"Timeout reached, skipping launch and save for ${nextTask.op.instanceId}. " +
-              s"You can reconfigure this with --${conf.saveTasksToLaunchTimeout.name}.")
+            s"Timeout reached, skipping launch and save for ${nextTask.op.instanceId}.")
           Future.successful(savedTasks)
         } else {
           val saveTaskFuture = saveTask(nextTask)

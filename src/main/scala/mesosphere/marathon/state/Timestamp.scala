@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 import org.apache.mesos
 import org.joda.time.{ DateTime, DateTimeZone }
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.implicitConversions
 import scala.math.Ordered
 
@@ -45,8 +45,8 @@ abstract case class Timestamp private (private val utcDateTime: DateTime) extend
     */
   def expired(other: Timestamp, by: FiniteDuration): Boolean = this.until(other) > by
 
-  def +(duration: FiniteDuration): Timestamp = Timestamp(utcDateTime.getMillis + duration.toMillis)
-  def -(duration: FiniteDuration): Timestamp = Timestamp(utcDateTime.getMillis - duration.toMillis)
+  def +(duration: Duration): Timestamp = Timestamp(utcDateTime.getMillis + duration.toMillis)
+  def -(duration: Duration): Timestamp = Timestamp(utcDateTime.getMillis - duration.toMillis)
 }
 
 object Timestamp {

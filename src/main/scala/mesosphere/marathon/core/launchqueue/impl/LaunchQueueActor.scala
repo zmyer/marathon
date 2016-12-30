@@ -1,16 +1,18 @@
 package mesosphere.marathon
 package core.launchqueue.impl
 
+import java.util.concurrent.TimeUnit
+
+import akka.Done
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{ Actor, ActorLogging, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
 import akka.event.LoggingReceive
 import akka.pattern.{ ask, pipe }
 import akka.util.Timeout
-import mesosphere.marathon.core.launchqueue.{ LaunchQueue, LaunchQueueConfig }
-import mesosphere.marathon.state.{ PathId, RunSpec }
-import LaunchQueue.QueuedInstanceInfo
-import akka.Done
 import mesosphere.marathon.core.instance.update.InstanceChange
+import mesosphere.marathon.core.launchqueue.LaunchQueue.QueuedInstanceInfo
+import mesosphere.marathon.core.launchqueue.LaunchQueueConfig
+import mesosphere.marathon.state.{ PathId, RunSpec }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,7 +30,7 @@ private[launchqueue] object LaunchQueueActor {
 }
 
 /**
-  * An actor-based implementation of the [[LaunchQueue]] interface.
+  * An actor-based implementation of the [[mesosphere.marathon.core.launchqueue.LaunchQueue]] interface.
   *
   * The methods of that interface are translated to messages in the [[LaunchQueueDelegate]] implementation.
   */
@@ -55,7 +57,7 @@ private[impl] class LaunchQueueActor(
   var suspendedLaunchersMessages = Map.empty[ActorRef, Vector[DeferredMessage]].withDefaultValue(Vector.empty)
 
   /** The timeout for asking any children of this actor. */
-  implicit val askTimeout: Timeout = launchQueueConfig.launchQueueRequestTimeout().milliseconds
+  implicit val askTimeout: Timeout = Duration(launchQueueConfig.requestTimeout.toMillis, TimeUnit.MILLISECONDS)
 
   override def receive: Receive = LoggingReceive {
     Seq(

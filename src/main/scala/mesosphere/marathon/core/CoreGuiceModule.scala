@@ -31,7 +31,6 @@ import mesosphere.marathon.plugin.http.HttpRequestHandler
 import mesosphere.marathon.storage.migration.Migration
 import mesosphere.marathon.storage.repository._
 import mesosphere.marathon.util.WorkQueue
-import mesosphere.marathon.{ MarathonConf, ModuleNames, PrePostDriverCallback }
 import org.eclipse.jetty.servlets.EventSourceServlet
 
 import scala.collection.immutable
@@ -44,7 +43,7 @@ class CoreGuiceModule extends AbstractModule {
 
   // Export classes used outside of core to guice
   @Provides @Singleton
-  def electionService(coreModule: CoreModule): ElectionService = coreModule.electionModule.service
+  def electionService(coreModule: CoreModule): ElectionService = coreModule.electionModule.electionService
 
   @Provides @Singleton
   def leadershipModule(coreModule: CoreModule): LeadershipModule = coreModule.leadershipModule
@@ -114,7 +113,7 @@ class CoreGuiceModule extends AbstractModule {
 
   @Provides
   @Singleton
-  def materializer(coreModule: CoreModule): Materializer = coreModule.actorsModule.materializer
+  def materializer(coreModule: CoreModule): Materializer = coreModule.baseModule.materializer
 
   @Provides
   @Singleton

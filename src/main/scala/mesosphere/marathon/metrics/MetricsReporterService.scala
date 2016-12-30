@@ -4,7 +4,6 @@ package metrics
 import java.net.{ InetAddress, InetSocketAddress, URI }
 import java.util
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.graphite.{ Graphite, GraphiteReporter }
@@ -26,7 +25,7 @@ object MetricsReporterService {
   }
 }
 
-class MetricsReporterService @Inject() (config: MetricsReporterConf, registry: MetricRegistry)
+class MetricsReporterService(config: MetricsReporterConf, registry: MetricRegistry)
     extends AbstractIdleService {
 
   private val log = Logger.getLogger(getClass.getName)

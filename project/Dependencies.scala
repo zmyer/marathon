@@ -54,6 +54,9 @@ object Dependencies {
     logstash % "compile",
     raven % "compile",
     akkaHttpPlayJson % "compile",
+    pureConfig % "compile",
+    refinedConfig % "compile",
+
 
     // test
     Test.diffson % "test",
@@ -158,6 +161,8 @@ object Dependency {
   val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % V.ScalaLogging
   val scalaxml = "org.scala-lang.modules" %% "scala-xml" % "1.0.5"
   val raven = "com.getsentry.raven" % "raven-logback" % V.Raven
+  val pureConfig = "com.github.melrief" %% "pureconfig" % "0.4.0"
+  val refinedConfig = "eu.timepit" %% "refined-pureconfig" % "0.6.1"
 
   object Test {
     val jmh = "org.openjdk.jmh" % "jmh-generator-annprocess" % V.JMH

@@ -2,16 +2,17 @@ package mesosphere.marathon
 package core.group.impl
 
 import java.time.OffsetDateTime
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
-import mesosphere.marathon.core.group.{ GroupManager, GroupManagerConfig }
+import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.pod.PodDefinition
-import mesosphere.marathon.state.{ AppDefinition, Group, PathId, RootGroup, RunSpec, Timestamp }
+import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.{ ReadOnlyAppRepository, ReadOnlyPodRepository }
 import mesosphere.marathon.upgrade.DeploymentPlan
 
@@ -20,7 +21,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 private[group] class GroupManagerDelegate(
-    config: GroupManagerConfig,
+    requestTimeout: Duration,
     appRepository: ReadOnlyAppRepository,
     podRepository: ReadOnlyPodRepository,
     actorRef: ActorRef) extends GroupManager {
@@ -173,9 +174,8 @@ private[group] class GroupManagerDelegate(
     askGroupManagerActor(GroupManagerActor.GetPodWithId(id)).mapTo[Option[PodDefinition]]
 
   private[this] def askGroupManagerActor[T](
-    message: T,
-    timeout: FiniteDuration = config.groupManagerRequestTimeout().milliseconds): Future[Any] = {
-    implicit val timeoutImplicit: Timeout = timeout
+    message: T): Future[Any] = {
+    implicit val timeoutImplicit: Timeout = Timeout(Duration(requestTimeout.toMillis, TimeUnit.MILLISECONDS))
 
     val answerFuture = actorRef ? message
     answerFuture

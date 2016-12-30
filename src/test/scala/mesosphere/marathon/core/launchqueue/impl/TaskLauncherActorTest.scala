@@ -13,7 +13,7 @@ import mesosphere.marathon.core.instance.TestInstanceBuilder._
 import mesosphere.marathon.core.launcher.{ InstanceOpFactory, OfferMatchResult }
 import mesosphere.marathon.core.launcher.impl.InstanceOpFactoryHelper
 import mesosphere.marathon.core.launchqueue.LaunchQueue.QueuedInstanceInfo
-import mesosphere.marathon.core.launchqueue.LaunchQueueConfig
+import mesosphere.marathon.core.launchqueue.{ LaunchQueueConf, LaunchQueueConfig }
 import mesosphere.marathon.core.matcher.base.OfferMatcher.MatchedInstanceOps
 import mesosphere.marathon.core.matcher.base.util.ActorOfferMatcher
 import mesosphere.marathon.core.matcher.base.util.InstanceOpSourceDelegate.InstanceOpRejected
@@ -232,7 +232,7 @@ class TaskLauncherActorTest extends MarathonSpec with GivenWhenThen {
     var scheduleCalled = false
     val props = Props(
       new TaskLauncherActor(
-        launchQueueConfig,
+        LaunchQueueConfig(launchQueueConfig),
         offerMatcherManager, clock, instanceOpFactory,
         maybeOfferReviver = None,
         instanceTracker, rateLimiterActor.ref, offerMatchStatisticsActor.ref,
@@ -465,7 +465,7 @@ class TaskLauncherActorTest extends MarathonSpec with GivenWhenThen {
 
   private[this] implicit val timeout: Timeout = 3.seconds
   private[this] implicit var actorSystem: ActorSystem = _
-  private[this] var launchQueueConfig: LaunchQueueConfig = _
+  private[this] var launchQueueConfig: LaunchQueueConf = _
   private[this] var offerMatcherManager: OfferMatcherManager = _
   private[this] var clock: ConstantClock = _
   private[this] var instanceOpFactory: InstanceOpFactory = _
@@ -476,7 +476,7 @@ class TaskLauncherActorTest extends MarathonSpec with GivenWhenThen {
 
   private[this] def createLauncherRef(instances: Int, appToLaunch: AppDefinition = f.app): ActorRef = {
     val props = TaskLauncherActor.props(
-      launchQueueConfig,
+      LaunchQueueConfig(launchQueueConfig),
       offerMatcherManager, clock, instanceOpFactory,
       maybeOfferReviver = Some(offerReviver),
       instanceTracker, rateLimiterActor.ref, offerMatchStatisticsActor.ref) _
@@ -489,7 +489,7 @@ class TaskLauncherActorTest extends MarathonSpec with GivenWhenThen {
   before {
     actorSystem = ActorSystem()
     offerMatcherManager = mock[OfferMatcherManager]
-    launchQueueConfig = new LaunchQueueConfig {
+    launchQueueConfig = new LaunchQueueConf {
       verify()
     }
     clock = ConstantClock()

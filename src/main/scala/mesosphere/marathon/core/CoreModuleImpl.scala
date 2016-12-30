@@ -3,11 +3,10 @@ package core
 
 import javax.inject.Named
 
-import akka.actor.ActorSystem
-import akka.event.EventStream
 import com.google.inject.{ Inject, Provider }
+import com.typesafe.config.Config
 import mesosphere.marathon.core.auth.AuthModule
-import mesosphere.marathon.core.base.{ ActorsModule, Clock, ShutdownHooks }
+import mesosphere.marathon.core.base.{ BaseModule, Clock, ShutdownHooks }
 import mesosphere.marathon.core.election._
 import mesosphere.marathon.core.event.EventModule
 import mesosphere.marathon.core.flow.FlowModule
@@ -16,7 +15,7 @@ import mesosphere.marathon.core.health.HealthModule
 import mesosphere.marathon.core.history.HistoryModule
 import mesosphere.marathon.core.instance.update.InstanceChangeHandler
 import mesosphere.marathon.core.launcher.LauncherModule
-import mesosphere.marathon.core.launchqueue.LaunchQueueModule
+import mesosphere.marathon.core.launchqueue.{ LaunchQueueConfig, LaunchQueueModule }
 import mesosphere.marathon.core.leadership.LeadershipModule
 import mesosphere.marathon.core.matcher.base.util.StopOnFirstMatchingOfferMatcher
 import mesosphere.marathon.core.matcher.manager.OfferMatcherManagerModule
@@ -31,7 +30,6 @@ import mesosphere.marathon.core.task.tracker.InstanceTrackerModule
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.storage.StorageModule
-import mesosphere.marathon.util.WorkQueue
 
 import scala.concurrent.ExecutionContext
 import scala.util.Random
@@ -44,51 +42,40 @@ import scala.util.Random
   */
 class CoreModuleImpl @Inject() (
   // external dependencies still wired by guice
+  config: Config,
+  actorSystemName: String,
   marathonConf: MarathonConf,
-  eventStream: EventStream,
   @Named(ModuleNames.HOST_PORT) hostPort: String,
-  metrics: Metrics,
-  actorSystem: ActorSystem,
   marathonSchedulerDriverHolder: MarathonSchedulerDriverHolder,
   clock: Clock,
   storage: StorageProvider,
-  scheduler: Provider[DeploymentService],
-  instanceUpdateSteps: Seq[InstanceChangeHandler])
+  deploymentScheduler: Provider[DeploymentService],
+  instanceUpdateSteps: Seq[InstanceChangeHandler])(implicit metrics: Metrics)
     extends CoreModule {
 
   // INFRASTRUCTURE LAYER
 
-  private[this] lazy val random = Random
-  private[this] lazy val shutdownHookModule = ShutdownHooks()
-  override lazy val actorsModule = new ActorsModule(shutdownHookModule, actorSystem)
+  private[this] lazy val random: Random = Random
+  implicit val ctx: ExecutionContext = ExecutionContext.global
+  private[this] implicit lazy val shutdownHookModule: ShutdownHooks = ShutdownHooks()
+  override lazy val baseModule = BaseModule(config, actorSystemName, shutdownHookModule)
+  import baseModule._
 
-  override lazy val leadershipModule = LeadershipModule(actorsModule.actorRefFactory)
-  override lazy val electionModule = new ElectionModule(
-    marathonConf,
-    actorSystem,
-    eventStream,
-    metrics,
-    hostPort,
-    shutdownHookModule
-  )
+  override lazy val leadershipModule = LeadershipModule()
+  override lazy val electionModule = ElectionModule(marathonConf, hostPort)
+  import electionModule._
 
   // TASKS
 
-  override lazy val taskBusModule = new TaskBusModule()
+  override lazy val taskBusModule = TaskBusModule()
   override lazy val taskTrackerModule =
     new InstanceTrackerModule(clock, metrics, marathonConf, leadershipModule,
-      storageModule.instanceRepository, instanceUpdateSteps)(actorsModule.materializer)
-  override lazy val taskJobsModule = new TaskJobsModule(marathonConf, leadershipModule, clock)
-  override lazy val storageModule = StorageModule(
-    marathonConf)(
-    metrics,
-    actorsModule.materializer,
-    ExecutionContext.global,
-    actorSystem.scheduler,
-    actorSystem)
+      storageModule.instanceRepository, instanceUpdateSteps)
+  override lazy val taskJobsModule = TaskJobsModule(marathonConf, leadershipModule, clock)
+  override lazy val storageModule = StorageModule(marathonConf)
 
   // READINESS CHECKS
-  override lazy val readinessModule = new ReadinessModule(actorSystem)
+  override lazy val readinessModule = ReadinessModule()
 
   // this one can't be lazy right now because it wouldn't be instantiated soon enough ...
   override val taskTerminationModule = new TaskTerminationModule(
@@ -106,16 +93,16 @@ class CoreModuleImpl @Inject() (
     new OfferMatcherReconciliationModule(
       marathonConf,
       clock,
-      actorSystem.eventStream,
+      baseModule.eventStream,
       taskTrackerModule.instanceTracker,
       storageModule.groupRepository,
       leadershipModule
     )
 
-  override lazy val launcherModule = new LauncherModule(
+  override lazy val launcherModule = LauncherModule(marathonConf)(
+    clock,
     // infrastructure
-    metrics, marathonConf,
-
+    metrics,
     // external guicedependencies
     taskTrackerModule.instanceCreationHandler,
     marathonSchedulerDriverHolder,
@@ -126,10 +113,10 @@ class CoreModuleImpl @Inject() (
       offerMatcherManagerModule.globalOfferMatcher
     ),
     pluginModule.pluginManager
-  )(clock)
+  )
 
   override lazy val appOfferMatcherModule = new LaunchQueueModule(
-    marathonConf,
+    LaunchQueueConfig(marathonConf),
     leadershipModule, clock,
 
     // internal core dependencies
@@ -146,6 +133,7 @@ class CoreModuleImpl @Inject() (
   override lazy val pluginModule = new PluginModule(marathonConf)
 
   override lazy val authModule: AuthModule = new AuthModule(pluginModule.pluginManager)
+  import authModule._
 
   // FLOW CONTROL GLUE
 
@@ -162,40 +150,37 @@ class CoreModuleImpl @Inject() (
 
   lazy val maybeOfferReviver = flowActors.maybeOfferReviver(
     clock, marathonConf,
-    actorSystem.eventStream,
+    baseModule.eventStream,
     offersWanted,
     marathonSchedulerDriverHolder)
 
   // EVENT
 
-  override lazy val eventModule: EventModule = new EventModule(
-    eventStream, actorSystem, marathonConf, metrics,
-    electionModule.service, authModule.authenticator, authModule.authorizer)
+  override lazy val eventModule: EventModule = EventModule(marathonConf)
 
   // HISTORY
 
   override lazy val historyModule: HistoryModule =
-    new HistoryModule(eventStream, storageModule.taskFailureRepository)
+    new HistoryModule(baseModule.eventStream, storageModule.taskFailureRepository)
 
   // HEALTH CHECKS
 
-  override lazy val healthModule: HealthModule = new HealthModule(
-    actorSystem, taskTerminationModule.taskKillService, eventStream,
+  override lazy val healthModule: HealthModule = HealthModule()(
+    baseModule.actorRefFactory, taskTerminationModule.taskKillService, baseModule.eventStream,
     taskTrackerModule.instanceTracker, groupManagerModule.groupManager)
 
   // GROUP MANAGER
 
-  override lazy val groupManagerModule: GroupManagerModule = new GroupManagerModule(
-    marathonConf,
+  override lazy val groupManagerModule: GroupManagerModule = GroupManagerModule(marathonConf)(
     leadershipModule,
-    WorkQueue("GroupManager", maxConcurrent = 1, maxQueueLength = marathonConf.internalMaxQueuedRootGroupUpdates()),
-    scheduler,
+    deploymentScheduler,
     storageModule.groupRepository,
     storageModule.appRepository,
     storageModule.podRepository,
     storage,
-    eventStream,
-    metrics)(actorsModule.materializer)
+    baseModule.eventStream,
+    baseModule.materializer,
+    metrics)
 
   // PODS
 

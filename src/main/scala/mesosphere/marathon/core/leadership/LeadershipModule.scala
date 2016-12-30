@@ -19,8 +19,7 @@ trait LeadershipModule {
 }
 
 object LeadershipModule {
-  def apply(
-    actorRefFactory: ActorRefFactory): LeadershipModule = {
+  def apply()(implicit actorRefFactory: ActorRefFactory): LeadershipModule = {
     new LeadershipModuleImpl(actorRefFactory)
   }
 }

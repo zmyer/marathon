@@ -25,8 +25,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.async.Async._
 
-class MarathonHealthCheckManager(
-    actorRefFactory: ActorRefFactory,
+case class MarathonHealthCheckManager(implicit
+  actorRefFactory: ActorRefFactory,
     killService: KillService,
     eventBus: EventStream,
     instanceTracker: InstanceTracker,
