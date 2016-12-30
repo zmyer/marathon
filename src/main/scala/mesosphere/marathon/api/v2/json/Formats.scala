@@ -64,7 +64,6 @@ trait Formats
     with ContainerFormats
     with DeploymentFormats
     with EventFormats
-    with EventSubscribersFormats
     with PluginFormats
     with IpAddressFormats
     with SecretFormats {
@@ -672,15 +671,6 @@ trait EventFormats {
     case event: InstanceHealthChanged => Json.toJson(event)
     case event: UnknownInstanceTerminated => Json.toJson(event)
     case event: PodEvent => Json.toJson(event)
-  }
-}
-
-trait EventSubscribersFormats {
-
-  implicit lazy val EventSubscribersWrites: Writes[EventSubscribers] = Writes { eventSubscribers =>
-    Json.obj(
-      "callbackUrls" -> eventSubscribers.urls
-    )
   }
 }
 

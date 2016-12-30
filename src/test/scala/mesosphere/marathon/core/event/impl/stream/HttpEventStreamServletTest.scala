@@ -1,14 +1,13 @@
-package mesosphere.marathon.core.event.impl.stream
+package mesosphere.marathon
+package core.event.impl.stream
 
 import javax.servlet.http.HttpServletResponse
 
 import akka.actor.ActorRef
-import mesosphere.marathon._
+import mesosphere.FunTest
 import mesosphere.marathon.api.TestAuthFixture
-import mesosphere.marathon.test.{ MarathonSpec, Mockito }
-import org.scalatest.{ GivenWhenThen, Matchers }
 
-class HttpEventStreamServletTest extends MarathonSpec with Matchers with Mockito with GivenWhenThen {
+class HttpEventStreamServletTest extends FunTest {
 
   test("access without authentication is denied") {
     Given("An unauthenticated request")
@@ -42,7 +41,7 @@ class HttpEventStreamServletTest extends MarathonSpec with Matchers with Mockito
   class Fixture {
     val actor = mock[ActorRef]
     val auth = new TestAuthFixture
-    val config = AllConf.withTestConfig("--event_subscriber", "http_callback")
+    val config = AllConf.withTestConfig()
     def streamServlet() = new HttpEventStreamServlet(actor, config, auth.auth, auth.auth)
   }
 }

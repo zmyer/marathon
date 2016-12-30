@@ -47,7 +47,7 @@ class LeaderResourceTest extends MarathonSpec with Matchers with Mockito with Gi
     val schedulerService = mock[MarathonSchedulerService]
     val electionService = mock[ElectionService]
     val auth = new TestAuthFixture
-    val config = AllConf.withTestConfig("--event_subscriber", "http_callback")
+    val config = AllConf.withTestConfig()
     def leaderResource() = new LeaderResource(electionService, config, auth.auth, auth.auth)
   }
 }

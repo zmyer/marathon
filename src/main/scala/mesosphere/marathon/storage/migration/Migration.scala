@@ -30,14 +30,13 @@ class Migration(
     private[migration] val taskRepo: TaskRepository,
     private[migration] val instanceRepo: InstanceRepository,
     private[migration] val taskFailureRepo: TaskFailureRepository,
-    private[migration] val frameworkIdRepo: FrameworkIdRepository,
-    private[migration] val eventSubscribersRepo: EventSubscribersRepository)(implicit
+    private[migration] val frameworkIdRepo: FrameworkIdRepository)(implicit
   mat: Materializer,
     metrics: Metrics) extends StrictLogging {
 
   import StorageVersions._
 
-  type MigrationAction = (StorageVersion, () => Future[Any])
+  type MigrationAction = (StorageVersion, () => Future[Done])
 
   private[migration] val minSupportedStorageVersion = StorageVersions(1, 4, 0, StorageVersion.StorageFormat.PERSISTENCE_STORE)
 
@@ -45,7 +44,9 @@ class Migration(
     * All the migrations, that have to be applied.
     * They get applied after the master has been elected.
     */
-  def migrations: List[MigrationAction] = List.empty
+  def migrations: List[MigrationAction] = List(
+    minSupportedStorageVersion -> { () => MigrationTo15(persistenceStore).migrate() }
+  )
 
   def applyMigrationSteps(from: StorageVersion): Future[Seq[StorageVersion]] = {
     migrations.filter(_._1 > from).sortBy(_._1).foldLeft(Future.successful(Seq.empty[StorageVersion])) {

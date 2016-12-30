@@ -24,7 +24,6 @@ trait StorageModule {
   val taskFailureRepository: TaskFailureRepository
   val groupRepository: GroupRepository
   val frameworkIdRepository: FrameworkIdRepository
-  val eventSubscribersRepository: EventSubscribersRepository
   val migration: Migration
   val leadershipInitializers: Seq[PrePostDriverCallback]
 }
@@ -55,7 +54,6 @@ object StorageModule {
           appRepository, podRepository, zk.maxVersions)
         val taskFailureRepository = TaskFailureRepository.zkRepository(store)
         val frameworkIdRepository = FrameworkIdRepository.zkRepository(store)
-        val eventSubscribersRepository = EventSubscribersRepository.zkRepository(store)
 
         val leadershipInitializers = store match {
           case s: LoadTimeCachingPersistenceStore[_, _, _] =>
@@ -66,7 +64,7 @@ object StorageModule {
 
         val migration = new Migration(zk.availableFeatures, store, appRepository, groupRepository,
           deploymentRepository, taskRepository, instanceRepository, taskFailureRepository,
-          frameworkIdRepository, eventSubscribersRepository)
+          frameworkIdRepository)
         StorageModuleImpl(
           appRepository,
           podRepository,
@@ -75,7 +73,6 @@ object StorageModule {
           taskFailureRepository,
           groupRepository,
           frameworkIdRepository,
-          eventSubscribersRepository,
           migration,
           leadershipInitializers)
       case mem: InMem =>
@@ -89,7 +86,6 @@ object StorageModule {
           appRepository, podRepository, mem.maxVersions)
         val taskFailureRepository = TaskFailureRepository.inMemRepository(store)
         val frameworkIdRepository = FrameworkIdRepository.inMemRepository(store)
-        val eventSubscribersRepository = EventSubscribersRepository.inMemRepository(store)
 
         val leadershipInitializers = store match {
           case s: LoadTimeCachingPersistenceStore[_, _, _] =>
@@ -100,7 +96,7 @@ object StorageModule {
 
         val migration = new Migration(mem.availableFeatures, store, appRepository, groupRepository,
           deploymentRepository, taskRepository, instanceRepository, taskFailureRepository,
-          frameworkIdRepository, eventSubscribersRepository)
+          frameworkIdRepository)
         StorageModuleImpl(
           appRepository,
           podRepository,
@@ -109,7 +105,6 @@ object StorageModule {
           taskFailureRepository,
           groupRepository,
           frameworkIdRepository,
-          eventSubscribersRepository,
           migration,
           leadershipInitializers)
     }
@@ -124,6 +119,5 @@ private[storage] case class StorageModuleImpl(
   taskFailureRepository: TaskFailureRepository,
   groupRepository: GroupRepository,
   frameworkIdRepository: FrameworkIdRepository,
-  eventSubscribersRepository: EventSubscribersRepository,
   migration: Migration,
   leadershipInitializers: Seq[PrePostDriverCallback]) extends StorageModule

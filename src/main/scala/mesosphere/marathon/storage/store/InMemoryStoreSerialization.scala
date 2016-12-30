@@ -4,7 +4,6 @@ import java.time.OffsetDateTime
 
 import akka.http.scaladsl.marshalling.Marshaller
 import akka.http.scaladsl.unmarshalling.Unmarshaller
-import mesosphere.marathon.core.event.EventSubscribers
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.instance.Instance.Id
 import mesosphere.marathon.core.pod.PodDefinition
@@ -84,15 +83,6 @@ trait InMemoryStoreSerialization {
     override def fromStorageId(key: RamId): String = key.id
     override val hasVersions = false
     override def version(v: FrameworkId): OffsetDateTime = OffsetDateTime.MIN
-  }
-
-  implicit val eventSubscribersResolver = new IdResolver[String, EventSubscribers, String, RamId] {
-    override def toStorageId(id: String, version: Option[OffsetDateTime]): RamId =
-      RamId(category, id, version)
-    override val category: String = "event-subscribers"
-    override def fromStorageId(key: RamId): String = key.id
-    override val hasVersions = true
-    override def version(v: EventSubscribers): OffsetDateTime = OffsetDateTime.MIN
   }
 }
 
