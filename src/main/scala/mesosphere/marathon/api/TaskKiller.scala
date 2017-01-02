@@ -3,7 +3,6 @@ package api
 
 import javax.inject.Inject
 
-import com.twitter.util.NonFatal
 import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory
 
 import scala.async.Async.{ async, await }
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.NonFatal
 
 class TaskKiller @Inject() (
     instanceTracker: InstanceTracker,
@@ -83,7 +83,12 @@ class TaskKiller @Inject() (
     force: Boolean)(implicit identity: Identity): Future[DeploymentPlan] = {
     def scaleApp(app: AppDefinition): AppDefinition = {
       checkAuthorization(UpdateRunSpec, app)
-      appTasks.get(app.id).fold(app) { toKill => app.copy(instances = app.instances - toKill.size) }
+      appTasks.get(app.id).fold(app) { tasks =>
+        // only count active tasks that did not already receive a kill request.
+        val toKillCount = tasks.count(i => i.isActive && !i.isKilling)
+        // make sure we never scale below zero instances.
+        app.copy(instances = math.max(0, app.instances - toKillCount))
+      }
     }
 
     val version = Timestamp.now()

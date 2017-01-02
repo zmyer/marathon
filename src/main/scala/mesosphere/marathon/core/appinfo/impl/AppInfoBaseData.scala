@@ -62,7 +62,7 @@ class AppInfoBaseData(
         }
       }
       deploymentsByAppId
-        .mapValues(_.map(deploymentPlan => Identifiable(deploymentPlan.id)))
+        .map { case (id, deployments) => id -> deployments.map(deploymentPlan => Identifiable(deploymentPlan.id)) }
         .withDefaultValue(Seq.empty)
     }
   }
@@ -148,7 +148,7 @@ class AppInfoBaseData(
       log.debug(s"assembling rich tasks for app [${app.id}]")
       def statusesToEnrichedTasks(instances: Seq[Instance], statuses: Map[Instance.Id, collection.Seq[Health]]): Seq[EnrichedTask] = {
         instances.map { instance =>
-          EnrichedTask(app.id, instance.firstTask, instance.agentInfo, statuses.getOrElse(instance.instanceId, Seq.empty[Health]))
+          EnrichedTask(app.id, instance.appTask, instance.agentInfo, statuses.getOrElse(instance.instanceId, Seq.empty[Health]))
         }
       }
 
