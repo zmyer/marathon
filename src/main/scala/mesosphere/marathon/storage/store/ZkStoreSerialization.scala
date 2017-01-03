@@ -1,13 +1,12 @@
-package mesosphere.marathon.storage.store
+package mesosphere.marathon
+package storage.store
 
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.marshalling.Marshaller
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.util.ByteString
-import mesosphere.marathon.Protos
 import mesosphere.marathon.Protos.{ DeploymentPlanDefinition, MarathonTask, ServiceDefinition }
-import mesosphere.marathon.core.event.EventSubscribers
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.instance.Instance.Id
 import mesosphere.marathon.core.pod.PodDefinition
@@ -173,24 +172,6 @@ trait ZkStoreSerialization {
     Unmarshaller.strict {
       case ZkSerialized(byteString) =>
         FrameworkId.fromProtoBytes(byteString.toArray)
-    }
-
-  implicit val eventSubscribersResolver = new IdResolver[String, EventSubscribers, String, ZkId] {
-    override def toStorageId(id: String, version: Option[OffsetDateTime]): ZkId =
-      ZkId(id, category, version)
-    override val category: String = "event-subscribers"
-    override def fromStorageId(key: ZkId): String = key.id
-    override val hasVersions = false
-    override def version(v: EventSubscribers): OffsetDateTime = OffsetDateTime.MIN
-  }
-
-  implicit val eventSubscribersMarshaller: Marshaller[EventSubscribers, ZkSerialized] =
-    Marshaller.opaque(es => ZkSerialized(ByteString(es.toProtoByteArray)))
-
-  implicit val eventSubscribersUnmarshaller: Unmarshaller[ZkSerialized, EventSubscribers] =
-    Unmarshaller.strict {
-      case ZkSerialized(byteString) =>
-        EventSubscribers().mergeFromProto(byteString.toArray)
     }
 }
 

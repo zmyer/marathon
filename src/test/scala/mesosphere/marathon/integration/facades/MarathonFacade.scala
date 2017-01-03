@@ -4,13 +4,19 @@ package integration.facades
 import java.io.File
 import java.util.Date
 
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import mesosphere.marathon.api.v2.json.{ AppUpdate, GroupUpdate }
-import mesosphere.marathon.core.event.{ EventSubscribers, Subscribe, Unsubscribe }
 import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.integration.setup.{ RestResult, SprayHttpResponse }
 import mesosphere.marathon.raml.{ Pod, PodConversion, PodInstanceStatus, PodStatus, Raml }
 import mesosphere.marathon.state._
+import mesosphere.marathon.stream._
 import mesosphere.marathon.util.Retry
 import org.slf4j.LoggerFactory
 import play.api.libs.functional.syntax._
@@ -23,8 +29,8 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Await.result
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import mesosphere.marathon.stream._
 
+case class ITEvent(eventType: String, info: Map[String, Any])
 /**
   * GET /apps will deliver something like Apps instead of List[App]
   * Needed for dumb jackson.
@@ -68,7 +74,7 @@ case class ITDeployment(id: String, affectedApps: Seq[String], affectedPods: Seq
   *
   * @param url the url of the remote marathon instance
   */
-class MarathonFacade(val url: String, baseGroup: PathId, waitTime: Duration = 30.seconds)(implicit val system: ActorSystem)
+class MarathonFacade(val url: String, baseGroup: PathId, waitTime: Duration = 30.seconds)(implicit val system: ActorSystem, mat: Materializer)
     extends PlayJsonSupport
     with PodConversion {
   implicit val scheduler = system.scheduler
@@ -119,6 +125,29 @@ class MarathonFacade(val url: String, baseGroup: PathId, waitTime: Duration = 30
 
   def marathonSendReceive: SendReceive = {
     addHeader("Accept", "*/*") ~> sendReceive
+  }
+
+  lazy val events: Source[ITEvent, NotUsed] = {
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.client.RequestBuilding.Get
+    import akka.http.scaladsl.model.MediaType
+    import akka.http.scaladsl.model.headers.Accept
+    import akka.http.scaladsl.unmarshalling.Unmarshal
+    import de.heikoseeberger.akkasse.ServerSentEvent
+    val mapper = new ObjectMapper() with ScalaObjectMapper
+    mapper.registerModule(DefaultScalaModule)
+
+    Source.fromFuture(
+      Http().singleRequest(Get(s"$url/v2/events").withHeaders(Accept(MediaType.text("event-stream")))).flatMap {
+        import de.heikoseeberger.akkasse.EventStreamUnmarshalling._
+        Unmarshal(_).to[Source[ServerSentEvent, Any]]
+      }).flatMapConcat(identity)
+      .map { event =>
+        event.data.map { d =>
+          val json = mapper.readValue[Map[String, Any]](d) // linter:ignore
+          ITEvent(json.getOrElse("eventType", "unknown").toString, json)
+        }
+      }.filter(_.isDefined).map(_.get)
   }
 
   //app resource ----------------------------------------------
@@ -336,21 +365,6 @@ class MarathonFacade(val url: String, baseGroup: PathId, waitTime: Duration = 30
   }
 
   //event resource ---------------------------------------------
-
-  def listSubscribers: RestResult[EventSubscribers] = {
-    val pipeline = marathonSendReceive ~> read[EventSubscribers]
-    result(pipeline(Get(s"$url/v2/eventSubscriptions")), waitTime)
-  }
-
-  def subscribe(callbackUrl: String): RestResult[Subscribe] = {
-    val pipeline = marathonSendReceive ~> read[Subscribe]
-    result(pipeline(Post(s"$url/v2/eventSubscriptions?callbackUrl=$callbackUrl")), waitTime)
-  }
-
-  def unsubscribe(callbackUrl: String): RestResult[Unsubscribe] = {
-    val pipeline = marathonSendReceive ~> read[Unsubscribe]
-    result(pipeline(Delete(s"$url/v2/eventSubscriptions?callbackUrl=$callbackUrl")), waitTime)
-  }
 
   //metrics ---------------------------------------------
 

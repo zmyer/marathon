@@ -19,7 +19,7 @@ import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.api.RestResource
 import mesosphere.marathon.core.health.{ HealthCheck, MarathonHealthCheck, MarathonHttpHealthCheck, PortReference }
-import mesosphere.marathon.integration.facades.{ ITEnrichedTask, ITLeaderResult, MarathonFacade, MesosFacade }
+import mesosphere.marathon.integration.facades.{ ITEnrichedTask, ITEvent, ITLeaderResult, MarathonFacade, MesosFacade }
 import mesosphere.marathon.raml.{ PodState, PodStatus, Resources }
 import mesosphere.marathon.state.{ AppDefinition, Container, DockerVolume, PathId }
 import mesosphere.marathon.test.ExitDisabledTest
@@ -31,7 +31,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.{ Milliseconds, Span }
 import org.scalatest.{ BeforeAndAfterAll, Suite }
-import play.api.libs.json.{ JsString, Json }
+import play.api.libs.json.Json
 
 import scala.annotation.tailrec
 import scala.async.Async.{ async, await }
@@ -93,7 +93,6 @@ case class LocalMarathon(
     "zk_timeout" -> 20.seconds.toMillis.toString,
     "zk_session_timeout" -> 20.seconds.toMillis.toString,
     "mesos_authentication_secret_file" -> s"$secretPath",
-    "event_subscriber" -> "http_callback",
     "access_control_allow_origin" -> "*",
     "reconciliation_initial_delay" -> 5.minutes.toMillis.toString,
     "min_revive_offers_interval" -> "100",
@@ -194,6 +193,9 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
   system.registerOnTermination(killAppProxies())
 
   case class CallbackEvent(eventType: String, info: Map[String, Any])
+  object CallbackEvent {
+    def apply(event: ITEvent): CallbackEvent = CallbackEvent(event.eventType, event.info)
+  }
 
   implicit class CallbackEventToStatusUpdateEvent(val event: CallbackEvent) {
     def taskStatus: String = event.info.get("taskStatus").map(_.toString).getOrElse("")
@@ -213,7 +215,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
 
   protected val events = new ConcurrentLinkedQueue[CallbackEvent]()
   protected val healthChecks = Lock(mutable.ListBuffer.empty[IntegrationHealthCheck])
-  protected[setup] lazy val callbackEndpoint = {
+  protected[setup] lazy val healthEndpoint = {
     val route = {
       import akka.http.scaladsl.server.Directives._
       val mapper = new ObjectMapper() with ScalaObjectMapper
@@ -226,17 +228,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
           }(ec)
         }
       }
-
-      (post & entity(as[Map[String, Any]])) { event =>
-        val kind = event.get("eventType") match {
-          case Some(JsString(s)) => s
-          case Some(s) => s.toString
-          case None => "unknown"
-        }
-        logger.info(s"Received callback event: $kind with props $event")
-        events.add(CallbackEvent(kind, event))
-        complete(HttpResponse(status = StatusCodes.OK))
-      } ~ get {
+      get {
         path("health" / Segments) { uriPath =>
           import PathId._
           val (path, remaining) = uriPath.splitAt(uriPath.size - 2)
@@ -258,14 +250,12 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
     }
     val port = PortAllocator.ephemeralPort()
     val server = Http().bindAndHandle(route, "localhost", port).futureValue
-    marathon.subscribe(s"http://localhost:$port")
-    logger.info(s"Listening for events on $port")
+    logger.info(s"Listening for health events on $port")
     server
   }
 
   abstract override def afterAll(): Unit = {
-    Try(marathon.unsubscribe(s"http://localhost:${callbackEndpoint.localAddress.getPort}"))
-    Try(callbackEndpoint.unbind().futureValue)
+    Try(healthEndpoint.unbind().futureValue)
     Try(killAppProxies())
     super.afterAll()
   }
@@ -318,7 +308,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
       file.getAbsolutePath
     }
     val cmd = Some(s"""echo APP PROXY $$MESOS_TASK_ID RUNNING; $appProxyMainInvocation """ +
-      s"""$$PORT0 $appId $versionId http://127.0.0.1:${callbackEndpoint.localAddress.getPort}/health$appId/$versionId""")
+      s"""$$PORT0 $appId $versionId http://127.0.0.1:${healthEndpoint.localAddress.getPort}/health$appId/$versionId""")
 
     AppDefinition(
       id = appId,
@@ -348,7 +338,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
   def appProxyCommand(appId: PathId, versionId: String, containerDir: String, port: String) = {
     val appProxy = appProxyMainInvocationExternal(containerDir)
     s"""echo APP PROXY $$MESOS_TASK_ID RUNNING; $appProxy """ +
-      s"""$port $appId $versionId http://127.0.0.1:${callbackEndpoint.localAddress.getPort}/health$appId/$versionId"""
+      s"""$port $appId $versionId http://127.0.0.1:${healthEndpoint.localAddress.getPort}/health$appId/$versionId"""
   }
 
   def dockerAppProxy(appId: PathId, versionId: String, instances: Int, healthCheck: Option[HealthCheck] = Some(appProxyHealthCheck()), dependencies: Set[PathId] = Set.empty): AppDefinition = {
@@ -385,7 +375,7 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
     }
   }
 
-  def cleanUp(withSubscribers: Boolean = false): Unit = {
+  def cleanUp(): Unit = {
     logger.info("Starting to CLEAN UP !!!!!!!!!!")
 
     try {
@@ -418,7 +408,6 @@ trait MarathonTest extends Suite with StrictLogging with ScalaFutures with Befor
       events.clear()
       healthChecks(_.clear())
       killAppProxies()
-      if (withSubscribers) marathon.listSubscribers.value.urls.foreach(marathon.unsubscribe)
     } catch {
       case e: Throwable => logger.error("Clean up failed with", e)
     }
@@ -547,7 +536,9 @@ trait LocalMarathonTest
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
     marathonServer.start().futureValue(Timeout(90.seconds))
-    callbackEndpoint
+    marathon.events.runForeach { event =>
+      events.add(CallbackEvent(event))
+    }
   }
 
   abstract override def afterAll(): Unit = {
