@@ -3,15 +3,16 @@ package mesosphere.marathon
 import java.lang.Thread.UncaughtExceptionHandler
 
 import com.google.common.util.concurrent.ServiceManager
-import com.google.inject.{ Guice, Module }
+import com.google.inject.{Guice, Module}
 import com.typesafe.scalalogging.StrictLogging
-import mesosphere.chaos.http.{ HttpModule, HttpService }
+import mesosphere.chaos.http.{HttpModule, HttpService}
 import mesosphere.chaos.metrics.MetricsModule
 import mesosphere.marathon.api.MarathonRestModule
+import mesosphere.marathon.api.v2.json.AppAndGroupFormats
 import mesosphere.marathon.core.base._
 import mesosphere.marathon.core.CoreGuiceModule
 import mesosphere.marathon.core.base.toRichRuntime
-import mesosphere.marathon.metrics.{ MetricsReporterModule, MetricsReporterService }
+import mesosphere.marathon.metrics.{MetricsReporterModule, MetricsReporterService}
 import mesosphere.marathon.stream._
 import mesosphere.mesos.LibMesos
 import org.slf4j.LoggerFactory
@@ -159,5 +160,432 @@ object Main {
   def main(args: Array[String]): Unit = {
     val app = new MarathonApp(args.toVector)
     app.start()
+  }
+}
+
+object ValidateMain extends AppAndGroupFormats {
+  def main(args: Array[String]): Unit = {
+    // parse stdin
+    val appDefinition =
+    f"""{
+        |   "id": "/XXXX/instance_name/backend",
+        |   "apps": [
+        |     {
+        |       "id" : "database",
+        |       "cpus" : 1.0,
+        |       "mem" : 4000,
+        |       "instances" : 1,
+        |       "requirePorts" : true,
+        |       "args" : [],
+        |       "container": {
+        |         "type": "DOCKER",
+        |         "volumes": [
+        |            {
+        |              "containerPath": "database_volume",
+        |              "mode": "RW",
+        |              "persistent": {
+        |                "size": 75000
+        |              }
+        |            },
+        |            {
+        |              "containerPath": "/var/lib/postgresql/data",
+        |              "hostPath": "database_volume",
+        |              "mode": "RW"
+        |            }
+        |         ],
+        |         "docker": {
+        |           "image": "XXXXinc/XXXX-postgres:docker_tag",
+        |           "network": "BRIDGE",
+        |           "forcePullImage": true,
+        |           "portMappings": [
+        |             { "containerPort": 5432, "hostPort": 5432, "protocol": "tcp" }
+        |           ]
+        |         }
+        |       },
+        |       "env" : {
+        |        "POSTGRES_PASSWORD" : "database_root_password",
+        |        "XXXX_DB_USER" : "spring_datasource_username",
+        |        "XXXX_DB_PASS" : "spring_datasource_password"
+        |       },
+        |       "healthChecks": [
+        |         {
+        |            "protocol": "TCP",
+        |            "portIndex": 0,
+        |            "gracePeriodSeconds": 600,
+        |            "timeoutSeconds": 5,
+        |            "intervalSeconds": 10,
+        |            "maxConsecutiveFailures": 3
+        |         }
+        |       ],
+        |       "fetch" : [
+        |         {
+        |            "uri" : "docker_credentials_url",
+        |            "executable" : false,
+        |            "extract" : true,
+        |            "cache" : true
+        |         }
+        |       ]
+        |     },
+        |     {
+        |       "id": "discoveryserver",
+        |       "cpus": 0.05,
+        |       "mem": 2000,
+        |       "instances": 1,
+        |       "requirePorts": true,
+        |       "args" : [],
+        |       "container": {
+        |         "type": "DOCKER",
+        |         "docker": {
+        |           "image": "XXXXinc/XXXX-discovery-service:docker_tag",
+        |           "network": "BRIDGE",
+        |           "forcePullImage": true,
+        |           "portMappings": [
+        |             { "containerPort": 8761, "hostPort": 8761, "protocol": "tcp" }
+        |           ]
+        |         }
+        |       },
+        |       "healthChecks": [
+        |         {
+        |            "protocol": "HTTP",
+        |            "path" : "/",
+        |            "portIndex": 0,
+        |            "gracePeriodSeconds": 180,
+        |            "timeoutSeconds": 5,
+        |            "intervalSeconds": 10,
+        |            "maxConsecutiveFailures": 3
+        |         }
+        |       ],
+        |       "fetch" : [
+        |         {
+        |            "uri" : "docker_credentials_url",
+        |            "executable" : false,
+        |            "extract" : true,
+        |            "cache" : true
+        |         }
+        |       ]
+        |     },
+        |     {
+        |       "id": "configserver",
+        |       "cpus": 0.01,
+        |       "mem": 1000,
+        |       "instances": 1,
+        |       "requirePorts": false,
+        |       "args" : [],
+        |       "container": {
+        |         "type": "DOCKER",
+        |         "docker": {
+        |           "image": "XXXXinc/XXXX-config-service:docker_tag",
+        |           "network": "BRIDGE",
+        |           "forcePullImage": true,
+        |           "portMappings": [
+        |             { "containerPort": 0, "hostPort": 8888, "protocol": "tcp" }
+        |           ]
+        |         }
+        |       },
+        |       "env" : {
+        |         "SPRING_PROFILES_ACTIVE" : "instance_name",
+        |         "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE" : "http://discoveryserver.backend.instance_name.XXXX.marathon.mesos:8761/eureka/"
+        |       },
+        |       "healthChecks": [
+        |         {
+        |            "protocol": "HTTP",
+        |            "path" : "/internal/monitor/info",
+        |            "portIndex": 0,
+        |            "gracePeriodSeconds": 60,
+        |            "timeoutSeconds": 5,
+        |            "intervalSeconds": 10,
+        |            "maxConsecutiveFailures": 3
+        |         }
+        |       ],
+        |       "fetch" : [
+        |         {
+        |            "uri" : "docker_credentials_url",
+        |            "executable" : false,
+        |            "extract" : true,
+        |            "cache" : true
+        |         }
+        |       ],
+        |       "dependencies": [
+        |         "/XXXX/instance_name/backend/discoveryserver"
+        |       ]
+        |     },
+        |     {
+        |       "id": "authserver",
+        |       "cpus": 0.05,
+        |       "mem": 2000,
+        |       "instances": 2,
+        |       "constraints": [
+        |         [ "hostname", "UNIQUE" ]
+        |       ],
+        |       "requirePorts": false,
+        |       "args" : [],
+        |       "container": {
+        |         "type": "DOCKER",
+        |         "docker": {
+        |           "image": "XXXXinc/XXXX-backend-sso-auth:docker_tag",
+        |           "network": "BRIDGE",
+        |           "forcePullImage": true,
+        |           "portMappings": [
+        |             {
+        |               "hostPort": 0,
+        |               "containerPort": 8445,
+        |               "servicePort" : 0
+        |             }
+        |           ]
+        |         }
+        |       },
+        |       "env" : {
+        |         "SPRING_PROFILES_ACTIVE" : "instance_name",
+        |         "SPRING_DATASOURCE_USERNAME" : "spring_datasource_username",
+        |         "SPRING_DATASOURCE_PASSWORD" : "spring_datasource_password",
+        |         "SPRING_DATASOURCE_URL" : "jdbc:postgresql://database.backend.instance_name.XXXX.marathon.mesos:5432/XXXX_sso_users",
+        |         "EUREKA_INSTANCE_HOSTNAME" : "authserver.backend.instance_name.XXXX.marathon.mesos",
+        |         "EUREKA_INSTANCE_SECUREPORT" : "$${PORT0}",
+        |         "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE" : "http://discoveryserver.backend.instance_name.XXXX.marathon.mesos:8761/eureka/"
+        |       },
+        |       "healthChecks": [
+        |         {
+        |            "protocol": "TCP",
+        |            "portIndex" : 0,
+        |            "gracePeriodSeconds": 120,
+        |            "timeoutSeconds": 5,
+        |            "intervalSeconds": 10,
+        |            "maxConsecutiveFailures": 3
+        |         }
+        |       ],
+        |       "labels" : {
+        |         "HAPROXY_GROUP" : "XXXX-internal-instance_name",
+        |         "HAPROXY_0_FRONTEND_HEAD" : "frontend {backend}\\n  bind {bindAddr}:{servicePort} ssl crt /etc/ssl/cert.pem {bindOptions}\\n  mode {mode}\\n",
+        |         "HAPROXY_0_BACKEND_SERVER_OPTIONS" : "  server {serverName} {host_ipv4}:{port}{cookieOptions} ssl verify none {healthCheckOptions}{otherOptions}\\n",
+        |         "HAPROXY_0_USE_HSTS" : "true",
+        |         "HAPROXY_0_REDIRECT_TO_HTTPS": "true",
+        |         "HAPROXY_0_MODE" : "http"
+        |       },
+        |       "fetch" : [
+        |         {
+        |            "uri" : "docker_credentials_url",
+        |            "executable" : false,
+        |            "extract" : true,
+        |            "cache" : true
+        |         }
+        |       ],
+        |       "dependencies": [
+        |         "/XXXX/instance_name/backend/database",
+        |         "/XXXX/instance_name/backend/discoveryserver",
+        |         "/XXXX/instance_name/backend/configserver"
+        |       ],
+        |       "upgradeStrategy" : {
+        |          "maximumOverCapacity": 0,
+        |          "minimumHealthCapacity" : 0.5
+        |       }
+        |     },
+        |     {
+        |       "id": "mainserver",
+        |       "cpus": 1.0,
+        |       "mem": 6000,
+        |       "instances": 2,
+        |       "constraints": [
+        |         [ "hostname", "UNIQUE" ]
+        |       ],
+        |       "acceptedResourceRoles": [ "slave_public", "*" ],
+        |       "requirePorts": false,
+        |       "args" : [],
+        |       "container": {
+        |         "type": "DOCKER",
+        |         "docker": {
+        |           "image": "XXXXinc/backend-mainserver:docker_tag",
+        |           "network": "BRIDGE",
+        |           "forcePullImage": true,
+        |           "portMappings": [
+        |             { "hostPort": 0, "containerPort": 8443, "servicePort": 0}
+        |           ]
+        |         }
+        |       },
+        |       "labels" : {
+        |         "HAPROXY_0_VHOST": "mainserver_haproxy_vhost",
+        |         "HAPROXY_GROUP" : "XXXX-external-instance_name",
+        |         "HAPROXY_0_FRONTEND_HEAD" : "frontend {backend}\\n  bind {bindAddr}:{servicePort} ssl crt /etc/ssl/cert.pem {bindOptions}\\n  mode {mode}\\n",
+        |         "HAPROXY_0_BACKEND_SERVER_OPTIONS" : "  server {serverName} {host_ipv4}:{port}{cookieOptions} ssl verify none {healthCheckOptions}{otherOptions}\\n",
+        |         "HAPROXY_0_USE_HSTS" : "true",
+        |         "HAPROXY_0_REDIRECT_TO_HTTPS": "true",
+        |         "HAPROXY_0_MODE" : "http",
+        |         "HAPROXY_0_STICKY" : "true"
+        |       },
+        |       "env" : {
+        |         "SPRING_PROFILES_ACTIVE" : "instance_name",
+        |         "SPRING_DATASOURCE_USERNAME" : "spring_datasource_username",
+        |         "SPRING_DATASOURCE_PASSWORD" : "spring_datasource_password",
+        |         "SPRING_DATASOURCE_URL" : "jdbc:postgresql://database.backend.instance_name.XXXX.marathon.mesos:5432/mainserver",
+        |         "SPRING_DATASOURCE_READ-REPLICA-URL" : "jdbc:postgresql://database.backend.instance_name.XXXX.marathon.mesos:5432/mainserver",
+        |         "EUREKA_INSTANCE_HOSTNAME" : "mainserver.backend.instance_name.XXXX.marathon.mesos",
+        |         "EUREKA_INSTANCE_SECUREPORT" : "$${PORT0}",
+        |         "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE" : "http://discoveryserver.backend.instance_name.XXXX.marathon.mesos:8761/eureka/",
+        |         "SECURITY_OAUTH2_RESOURCE_USERINFOURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/user",
+        |         "SECURITY_OAUTH2_RESOURCE_TOKENINFOURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/check_token",
+        |         "SECURITY_OAUTH2_CLIENT_ACCESSTOKENURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/oauth/token",
+        |         "SECURITY_OAUTH2_CLIENT_USERAUTHORIZATIONURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/oauth/authorize",
+        |         "SECURITY_OAUTH2_CLIENT_CLIENTID" : "mainserver_oauth_clientid",
+        |         "SECURITY_OAUTH2_CLIENT_CLIENTSECRET" : "mainserver_oauth_clientsecret",
+        |         "XXXX_SETTINGS_SERVER" : "mainserver_api_host"
+        |       },
+        |       "healthChecks": [
+        |         {
+        |            "protocol": "TCP",
+        |            "portIndex" : 0,
+        |            "gracePeriodSeconds": 180,
+        |            "timeoutSeconds": 5,
+        |            "intervalSeconds": 10,
+        |            "maxConsecutiveFailures": 3
+        |         }
+        |       ],
+        |       "fetch" : [
+        |         {
+        |            "uri" : "docker_credentials_url}",
+        |            "executable" : false,
+        |            "extract" : true,
+        |            "cache" : true
+        |         }
+        |       ],
+        |       "dependencies": [
+        |         "/XXXX/instance_name/backend/database",
+        |         "/XXXX/instance_name/backend/discoveryserver",
+        |         "/XXXX/instance_name/backend/configserver",
+        |         "/XXXX/instance_name/backend/authserver"
+        |       ],
+        |       "upgradeStrategy" : {
+        |          "maximumOverCapacity": 0,
+        |          "minimumHealthCapacity" : 0.5
+        |       }
+        |     },
+        |     {
+        |       "id": "batch",
+        |       "cpus": 1.0,
+        |       "mem": 8000,
+        |       "instances": 1,
+        |       "acceptedResourceRoles": [ "slave_public", "*" ],
+        |       "requirePorts": false,
+        |       "args" : [],
+        |       "container": {
+        |         "type": "DOCKER",
+        |         "docker": {
+        |           "image": "XXXXinc/XXXX-batch:docker_tag",
+        |           "network": "BRIDGE",
+        |           "forcePullImage": true,
+        |           "portMappings": [
+        |             { "hostPort": 0, "containerPort": 8444, "protocol": "tcp" }
+        |           ]
+        |         }
+        |       },
+        |       "env" : {
+        |         "SPRING_PROFILES_ACTIVE" : "instance_name",
+        |         "SPRING_DATASOURCE_USERNAME" : "spring_datasource_username",
+        |         "SPRING_DATASOURCE_PASSWORD" : "spring_datasource_password",
+        |         "SPRING_DATASOURCE_URL" : "jdbc:postgresql://database.backend.instance_name.XXXX.marathon.mesos:5432/spring_batch",
+        |         "SPRING_DATA_CASSANDRA_CONTACT-POINTS" : "node-0.XXXX-cassandra-instance_name.mesos,node-1.XXXX-cassandra-instance_name.mesos,node-2.XXXX-cassandra-instance_name.mesos",
+        |         "EUREKA_INSTANCE_HOSTNAME" : "batch.backend.instance_name.XXXX.marathon.mesos",
+        |         "EUREKA_INSTANCE_SECUREPORT" : "$${PORT0}",
+        |         "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE" : "http://discoveryserver.backend.instance_name.XXXX.marathon.mesos:8761/eureka/",
+        |         "XXXX_REST_SERVER" : "https://mainserver.backend.instance_name.XXXX.marathon.mesos:8443",
+        |         "SECURITY_OAUTH2_RESOURCE_USERINFOURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/user",
+        |         "SECURITY_OAUTH2_RESOURCE_TOKENINFOURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/check_token",
+        |         "SECURITY_OAUTH2_CLIENT_ACCESSTOKENURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/oauth/token",
+        |         "SECURITY_OAUTH2_CLIENT_USERAUTHORIZATIONURI" : "https://lb-private.instance_name.XXXX.marathon.mesos:authserver_service_port/oauth/authorize",
+        |         "SECURITY_OAUTH2_CLIENT_CLIENTID" : "bhp_oauth_clientid",
+        |         "SECURITY_OAUTH2_CLIENT_CLIENTSECRET" : "bhp_oauth_clientsecret"
+        |       },
+        |       "healthChecks": [
+        |          {
+        |            "protocol": "TCP",
+        |            "portIndex" : 0,
+        |            "gracePeriodSeconds": 60,
+        |            "timeoutSeconds": 5,
+        |            "intervalSeconds": 10,
+        |            "maxConsecutiveFailures": 3
+        |          }
+        |       ],
+        |       "fetch" : [
+        |         {
+        |            "uri" : "docker_credentials_url",
+        |            "executable" : false,
+        |            "extract" : true,
+        |            "cache" : true
+        |         }
+        |       ],
+        |       "dependencies": [
+        |         "/XXXX-cassandra-instance_name",
+        |         "/XXXX/instance_name/backend/database",
+        |         "/XXXX/instance_name/backend/discoveryserver",
+        |         "/XXXX/instance_name/backend/mainserver"
+        |       ]
+        |     },
+        |     {
+        |        "id": "database-backup",
+        |        "cpus": 0.1,
+        |        "mem": 512,
+        |        "instances": 1,
+        |        "requirePorts": false,
+        |        "args" : [],
+        |        "container": {
+        |          "type": "DOCKER",
+        |          "volumes": [
+        |            {
+        |              "containerPath": "database_backup_volume",
+        |              "mode": "RW",
+        |              "persistent": {
+        |                "size": 50000
+        |              }
+        |            },
+        |            {
+        |              "containerPath": "/tmp",
+        |              "hostPath": "database_backup_volume",
+        |              "mode": "RW"
+        |            }
+        |         ],
+        |          "docker": {
+        |            "image": "XXXXinc/postgres-backup-service:docker_tag",
+        |            "network": "BRIDGE",
+        |            "forcePullImage": true
+        |          }
+        |        },
+        |        "env" : {
+        |          "DATABASE_USERNAME"       : "spring_datasource_username",
+        |          "PGPASSWORD"              : "spring_datasource_password",
+        |          "DATABASE_HOSTNAME"       : "database.backend.instance_name.XXXX.marathon.mesos",
+        |          "AZURE_STORAGE_ACCOUNT"   : "database_backup_azure_storage_account",
+        |          "AZURE_STORAGE_CONTAINER" : "database_backup_azure_storage_container",
+        |          "AZURE_SAS_TOKEN"         : "database_backup_azure_sas_token"
+        |        },
+        |        "fetch" : [
+        |          {
+        |             "uri" : "docker_credentials_url",
+        |             "executable" : false,
+        |             "extract" : true,
+        |             "cache" : true
+        |          }
+        |        ],
+        |        "dependencies": [
+        |         "/XXXX/instance_name/backend/database"
+        |        ],
+        |        "upgradeStrategy" : {
+        |          "maximumOverCapacity": 0,
+        |          "minimumHealthCapacity" : 0
+        |        }
+        |      }
+        |    ]
+        |}""".stripMargin
+
+
+    import mesosphere.marathon.core.plugin.PluginManager
+    import mesosphere.marathon.state.AppDefinition
+    import play.api.libs.json.Json
+
+    val app: AppDefinition = Json.parse(appDefinition).as[AppDefinition]
+
+    // validate
+    val validAppDefinition = AppDefinition.validAppDefinition(Set.empty[String])(PluginManager.None)
+    val result = validAppDefinition(app)
+
+    // print result
+    println(result)
   }
 }
