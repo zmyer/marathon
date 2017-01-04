@@ -225,9 +225,11 @@ def undeployment_wait(test_obj=None):
 
             if deployment_count > 0:
                 time.sleep(1)
+                failure_count = 0
         except:
             failure_count += 1
-            if failure_count > 3 and test_obj is not None:
+            # consecutive failures great than x
+            if failure_count > 5 and test_obj is not None:
                 test_obj.failed('Too many failures waiting for undeploy')
                 raise TestException()
 
@@ -254,9 +256,11 @@ def time_deployment2(test_obj, starting_tasks):
 
             if deployment_count > 0:
                 time.sleep(1)
+                failure_count = 0
         except:
             failure_count += 1
-            if failure_count > 3:
+            # consecutive failures > x will fail test
+            if failure_count > 10:
                 test_obj.failed('Too many failures query for deployments')
                 raise TestException()
 
