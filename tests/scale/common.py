@@ -23,7 +23,7 @@ def app(id=1, instances=1):
 
 
 def group(gcount=1, instances=1):
-    id = "/test"
+    id = "/2deep/group"
     group = {
         "id": id,
         "apps": []
@@ -72,7 +72,7 @@ def time_deployment(test=""):
     return elapse
 
 
-def delete_group(group="test"):
+def delete_group(group="/2deep/group"):
     client = marathon.create_client()
     client.remove_group(group, True)
 
@@ -100,9 +100,9 @@ def launch_apps(count=1, instances=1):
         client.add_app(app(num, instances))
 
 
-def launch_group(instances=1):
+def launch_group(count=1, instances=1):
     client = marathon.create_client()
-    client.create_group(group(instances))
+    client.create_group(group(count, instances))
 
 
 def delete_all_apps_wait():
@@ -112,9 +112,11 @@ def delete_all_apps_wait():
 
 def scale_test_apps(test_obj):
     if 'instance' in test_obj.style:
-        scale_test_app_instances(test_obj)
+        scale_test_app(test_obj)
     if 'count' in test_obj.style:
-        count_test_app_instances(test_obj)
+        count_test_app(test_obj)
+    if 'group' in test_obj.style:
+        group_test_app(test_obj)
 
 
 def get_current_tasks():
@@ -125,7 +127,7 @@ def get_current_app_tasks(starting_tasks):
     return len(get_tasks()) - starting_tasks
 
 
-def count_test_app_instances(test_obj):
+def count_test_app(test_obj):
     # make sure no apps currently
     delete_all_apps_wait2()
 
@@ -172,7 +174,7 @@ def launch_apps2(test_obj):
         client.add_app(app(num, instances))
 
 
-def scale_test_app_instances(test_obj):
+def scale_test_app(test_obj):
 
     # make sure no apps currently
     delete_all_apps_wait2()
@@ -183,6 +185,40 @@ def scale_test_app_instances(test_obj):
     launch_complete = True
     try:
         launch_apps2(test_obj)
+    except:
+        test_obj.failed('Failure to launched (but we still will wait for deploys)')
+        launch_complete = False
+        pass
+
+    # time launch
+    try:
+        time_deployment2(test_obj, starting_tasks)
+    except Exception as e:
+        assert False
+
+    current_tasks = get_current_app_tasks(starting_tasks)
+    test_obj.add_event('undeploying {} tasks'.format(current_tasks))
+
+    # delete apps
+    delete_all_apps_wait2(test_obj)
+
+    assert launch_complete
+
+
+def group_test_app(test_obj):
+
+    # make sure no apps currently
+    delete_all_apps_wait2()
+
+    test_obj.start = time.time()
+    starting_tasks = get_current_tasks()
+    count = test_obj.count
+    instances = test_obj.instance
+
+    # launch apps
+    launch_complete = True
+    try:        
+        launch_group(count, instances)
     except:
         test_obj.failed('Failure to launched (but we still will wait for deploys)')
         launch_complete = False
@@ -289,11 +325,11 @@ def scale_apps(count=1, instances=1):
     return launch_time
 
 
-def scale_groups(instances=2):
+def scale_groups(count=2):
     test = "group test count: " + str(instances)
     start = time.time()
     try:
-        launch_group(instances)
+        launch_group(count)
     except:
         # at high scale this will timeout but we still
         # want the deployment time

@@ -57,6 +57,7 @@ def test_mom1_apps_instances_1_10000():
 def test_mom1_apps_instances_1_25000():
     run_test(sys._getframe().f_code.co_name)
 
+#
 # def test_mom1_apps_instances_1_50000():
 #     run_test(sys._getframe().f_code.co_name)
 
@@ -83,6 +84,23 @@ def test_mom1_apps_count_1000_1():
 
 
 def test_mom1_apps_count_5000_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+# group
+def test_mom1_apps_group_1_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+def test_mom1_apps_group_10_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+def test_mom1_apps_group_100_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+def test_mom1_apps_group_1000_1():
     run_test(sys._getframe().f_code.co_name)
 
 
@@ -143,6 +161,23 @@ def test_mom2_apps_count_1000_1():
 
 
 def test_mom2_apps_count_5000_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+# group
+def test_mom2_apps_group_1_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+def test_mom2_apps_group_10_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+def test_mom2_apps_group_100_1():
+    run_test(sys._getframe().f_code.co_name)
+
+
+def test_mom2_apps_group_1000_1():
     run_test(sys._getframe().f_code.co_name)
 ##############
 # End Test Section
@@ -216,6 +251,10 @@ def collect_stats():
         'mom1_count': [],
         'mom1_count_target': [],
         'mom1_count_max': [],
+        'mom1_group': [],
+        'mom1_group_target': [],
+        'mom2_group': [],
+        'mom2_group_target': [],
         'mom2_instances': [],
         'mom2_instances_target': [],
         'mom2_instances_max': [],
@@ -251,13 +290,15 @@ def write_csv(stats, filename='scale-test.csv'):
         write_stat_lines(f, w, stats, 'mom2', 'instances')
         write_stat_lines(f, w, stats, 'mom1', 'count')
         write_stat_lines(f, w, stats, 'mom2', 'count')
+        write_stat_lines(f, w, stats, 'mom1', 'group')
+        write_stat_lines(f, w, stats, 'mom2', 'group')
 
 
 def write_stat_lines(f, w, stats, marathon, test_type):
         f.write('Marathon: {}, {}'.format(marathons.get(marathon), test_type))
         f.write('\n')
         w.writerow(stats['{}_{}_target'.format(marathon, test_type)])
-        w.writerow(stats['{}_instances'.format(marathon)])
+        w.writerow(stats['{}_{}'.format(marathon, test_type)])
         f.write('\n')
 
 
