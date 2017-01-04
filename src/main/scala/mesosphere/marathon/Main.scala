@@ -5,6 +5,7 @@ import java.lang.Thread.UncaughtExceptionHandler
 import com.google.common.util.concurrent.ServiceManager
 import com.google.inject.{Guice, Module}
 import com.typesafe.scalalogging.StrictLogging
+import com.wix.accord._
 import mesosphere.chaos.http.{HttpModule, HttpService}
 import mesosphere.chaos.metrics.MetricsModule
 import mesosphere.marathon.api.MarathonRestModule
@@ -440,7 +441,7 @@ object ValidateMain extends AppAndGroupFormats {
         |       ],
         |       "fetch" : [
         |         {
-        |            "uri" : "docker_credentials_url}",
+        |            "uri" : "docker_credentials_url",
         |            "executable" : false,
         |            "extract" : true,
         |            "cache" : true
@@ -576,16 +577,29 @@ object ValidateMain extends AppAndGroupFormats {
 
 
     import mesosphere.marathon.core.plugin.PluginManager
-    import mesosphere.marathon.state.AppDefinition
+    import mesosphere.marathon.state.{ AppDefinition, Group, PathId }
     import play.api.libs.json.Json
 
-    val app: AppDefinition = Json.parse(appDefinition).as[AppDefinition]
+    val app = Json.parse(appDefinition).as[Group]
 
     // validate
     val validAppDefinition = AppDefinition.validAppDefinition(Set.empty[String])(PluginManager.None)
-    val result = validAppDefinition(app)
+    val validGroup = Group.valid(PathId("/"),Set.empty[String])
+    val result = validGroup(app)
 
-    // print result
-    println(result)
+    // pretty print result
+    result match {
+      case Success => println("Valid")
+      case f: Failure =>
+        def prettyPrint(indent: Int = 2)(v: Violation): Unit = v match {
+          case rule: RuleViolation =>
+            val i = " " * indent
+            println(s"$i${rule.value} ${rule.constraint}")
+          case group: GroupViolation =>
+            group.children.foreach(prettyPrint(indent+2))
+        }
+        println(s"${f.violations.size} violation(s)")
+        f.violations.foreach(prettyPrint())
+    }
   }
 }
