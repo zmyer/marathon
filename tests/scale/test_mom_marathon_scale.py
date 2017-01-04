@@ -1,5 +1,7 @@
 from utils import *
 from common import *
+
+import csv
 import time
 import sys
 import os
@@ -11,7 +13,7 @@ import os
 """
 default_moms = {
     'mom1': '1.3.6',
-    'mom2': '1.4.0-RC3'
+    'mom2': '1.4.0-RC4'
 }
 # to be discovered
 marathons = {}
@@ -200,21 +202,63 @@ def setup_module(module):
 
 
 def teardown_module(module):
+
+    stats = collect_stats()
+    write_csv(stats)
+    read_csv()
+
+
+def collect_stats():
     stats = {
         'mom1_instances': [],
+        'mom1_instances_target': [],
+        'mom1_instances_max': [],
         'mom1_count': [],
+        'mom1_count_target': [],
+        'mom1_count_max': [],
         'mom2_instances': [],
-        'mom2_count': []
+        'mom2_instances_target': [],
+        'mom2_instances_max': [],
+        'mom2_count': [],
+        'mom2_count_target': [],
+        'mom2_count_max': []
     }
 
-    for stest in test_log:
-        print(stest)
-        stest.log_events()
-        stest.log_stats()
+    for scale_test in test_log:
+        print(scale_test)
+        scale_test.log_events()
+        scale_test.log_stats()
         print('')
-        stats.get(get_mom_style_key(stest)).append(stest.deploy_time)
+        stats.get(get_mom_style_key(scale_test)).append(scale_test.deploy_time)
+        target_key = '{}_target'.format(get_mom_style_key(scale_test))
+        if 'instances' in target_key:
+            stats.get(target_key).append(scale_test.instance)
+        else:
+            stats.get(target_key).append(scale_test.count)
 
-    print(stats)
+    return stats
+
+
+def read_csv(filename='scale-test.csv'):
+    with open(filename, 'r') as fin:
+        print(fin.read())
+
+
+def write_csv(stats, filename='scale-test.csv'):
+    with open(filename, 'w') as f:
+        w = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+        write_stat_lines(f, w, stats, 'mom1', 'instances')
+        write_stat_lines(f, w, stats, 'mom2', 'instances')
+        write_stat_lines(f, w, stats, 'mom1', 'count')
+        write_stat_lines(f, w, stats, 'mom2', 'count')
+
+
+def write_stat_lines(f, w, stats, marathon, test_type):
+        f.write('Marathon: {}, {}'.format(marathons.get(marathon), test_type))
+        f.write('\n')
+        w.writerow(stats['{}_{}_target'.format(marathon, test_type)])
+        w.writerow(stats['{}_instances'.format(marathon)])
+        f.write('\n')
 
 
 def get_current_test():
