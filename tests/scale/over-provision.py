@@ -10,7 +10,7 @@ count = 0
 
 for agent in private_agents:
     count = count + 1
-    if count > 48 :
+    if count > 0 :
         print(agent)
         copy_file(agent, "{}/over-provision.sh".format(file_dir()))
         run_command(agent, "sh over-provision.sh")
