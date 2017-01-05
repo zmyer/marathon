@@ -217,7 +217,7 @@ def group_test_app(test_obj):
 
     # launch apps
     launch_complete = True
-    try:        
+    try:
         launch_group(count, instances)
     except:
         test_obj.failed('Failure to launched (but we still will wait for deploys)')
@@ -265,10 +265,11 @@ def undeployment_wait(test_obj=None):
         except:
             failure_count += 1
             # consecutive failures great than x
-            if failure_count > 5 and test_obj is not None:
+            if failure_count > 10 and test_obj is not None:
                 test_obj.failed('Too many failures waiting for undeploy')
                 raise TestException()
 
+            time.sleep(3)
             wait_for_service_endpoint('marathon-user')
             pass
 
