@@ -436,7 +436,6 @@ def ensure_mom_version(version):
             install_mom(version)
             wait_for_service_endpoint('marathon-user', 1200)
         except Exception as e:
-            print(e)
             traceback.print_exc()
             return False
     return True
