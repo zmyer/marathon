@@ -1,6 +1,8 @@
 import time
+import traceback
 
 from dcos.mesos import DCOSClient
+from dcos import mesos
 from shakedown import *
 from utils import *
 
@@ -386,11 +388,35 @@ def install_mom(version='v1.3.6'):
 
 def uninstall_mom():
     try:
-        client = marathon.create_client()
-        client.remove_app('marathon-user')
-        deployment_wait()
+        framework_id = get_service_framework_id('marathon-user')
+        if framework_id is not None:
+            print('uninstalling: {}'.format(framework_id))
+            dcos_client = mesos.DCOSClient()
+            dcos_client.shutdown_framework(framework_id)
+            time.sleep(2)
     except:
         pass
+
+    removed = False
+    max_times = 10
+    while not removed:
+        try:
+            max_times =- 1
+            client = marathon.create_client()
+            client.remove_app('marathon-user')
+            deployment_wait()
+            time.sleep(2)
+            removed = True
+        except DCOSException:
+            # remove_app throws DCOSException if it doesn't exist
+            removed = True
+            pass
+        except Exception:
+            # http or other exception and we retry
+            traceback.print_exc()
+            time.sleep(5)
+            if max_time > 0:
+                pass
 
     delete_zk_node('universe/marathon-user')
 
@@ -408,21 +434,39 @@ def ensure_mom_version(version):
         try:
             uninstall_mom()
             install_mom(version)
-            wait_for_service_endpoint('marathon-user')
-        except:
+            wait_for_service_endpoint('marathon-user', 1200)
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
             return False
     return True
 
 
 def is_mom_version(version):
-    try:
-        with marathon_on_marathon():
-            client = marathon.create_client()
-            about = client.get_about()
-            return version == about.get("version")
-    except Exception as e:
-        return False
-
+    same_version = False
+    max_times = 10
+    check_complete = False
+    while not check_complete:
+        try:
+            max_times == 1
+            with marathon_on_marathon():
+                client = marathon.create_client()
+                about = client.get_about()
+                same_version = version == about.get("version")
+                check_complete = True
+        except DCOSException:
+            # if marathon doesn't exist yet
+            pass
+            return False
+        except Exception as e:
+            if max_times > 0:
+                pass
+                # this failure only happens at very high scale
+                # it takes a lot of time to recover
+                wait_for_service_endpoint('marathon-user', 600)
+            else:
+                return False
+    return same_version
 
 class Resources(object):
 
