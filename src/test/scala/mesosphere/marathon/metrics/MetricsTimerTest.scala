@@ -1,6 +1,7 @@
-package mesosphere.marathon.metrics
+package mesosphere.marathon
+package metrics
 
-import com.codahale.metrics.MetricRegistry
+import kamon.metric.instrument.CollectionContext
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 
@@ -10,13 +11,12 @@ import scala.util.Try
 class MetricsTimerTest extends FunSuite with Matchers with GivenWhenThen with ScalaFutures {
   test("time crashing call") {
     When("doing the call (but the future is delayed)")
-    val metrics = new Metrics(new MetricRegistry)
-    val timer = metrics.timer("timer")
+    val timer = Timer("timer")
     val failure: RuntimeException = new scala.RuntimeException("failed")
-    val attempt = Try(timer.timeFuture(throw failure))
+    val attempt = Try(timer(throw failure))
 
     Then("we get the expected metric results")
-    timer.timer.getCount should be(1)
+    timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
     // TODO: check time but we need to mock the time first
 
     And("the original failure is preserved")
@@ -25,19 +25,19 @@ class MetricsTimerTest extends FunSuite with Matchers with GivenWhenThen with Sc
 
   test("time delayed successful future") {
     When("doing the call (but the future is delayed)")
-    val metrics = new Metrics(new MetricRegistry)
-    val timer = metrics.timer("timer")
+    val timer = Timer("timer")
     val promise = Promise[Unit]()
-    val result = timer.timeFuture(promise.future)
+    val result = timer(promise.future)
 
     Then("the call has not yet been registered")
-    timer.timer.getCount should be(0)
+    Then("we get the expected metric results")
+    timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(0L)
 
     When("we fulfill the future")
     promise.success(())
 
     Then("we get the expected metric results")
-    timer.timer.getCount should be(1)
+    timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
     // TODO: check time but we need to mock the time first
 
     And("the original result is preserved")
@@ -46,20 +46,19 @@ class MetricsTimerTest extends FunSuite with Matchers with GivenWhenThen with Sc
 
   test("time delayed failed future") {
     When("doing the call (but the future is delayed)")
-    val metrics = new Metrics(new MetricRegistry)
-    val timer = metrics.timer("timer")
+    val timer = Timer("timer")
     val promise = Promise[Unit]()
-    val result = timer.timeFuture(promise.future)
+    val result = timer(promise.future)
 
     Then("the call has not yet been registered")
-    timer.timer.getCount should be(0)
+    timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(0L)
 
     When("we fulfill the future")
     val failure: RuntimeException = new scala.RuntimeException("simulated failure")
     promise.failure(failure)
 
     Then("we get the expected metric results")
-    timer.timer.getCount should be(1)
+    timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
     // TODO: check time but we need to mock the time first
 
     And("the failure should be preserved")

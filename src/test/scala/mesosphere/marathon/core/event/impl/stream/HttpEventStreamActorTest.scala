@@ -1,12 +1,11 @@
-package mesosphere.marathon.core.event.impl.stream
+package mesosphere.marathon
+package core.event.impl.stream
 
 import akka.actor.{ Props, Terminated }
 import akka.event.EventStream
 import akka.testkit._
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.core.election.{ ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.core.event.impl.stream.HttpEventStreamActor._
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.test.{ MarathonSpec, _ }
 import org.mockito.Mockito.{ when => call, _ }
 import org.scalatest.mockito.MockitoSugar
@@ -88,7 +87,7 @@ class HttpEventStreamActorTest extends MarathonActorSupport
   before {
     electionService = mock[ElectionService]
     stream = mock[EventStream]
-    metrics = new HttpEventStreamActorMetrics(new Metrics(new MetricRegistry))
+    metrics = new HttpEventStreamActorMetrics()
     def handleStreamProps(handle: HttpEventStreamHandle) = Props(new HttpEventStreamHandleActor(handle, stream, 1))
     streamActor = TestActorRef(Props(
       new HttpEventStreamActor(electionService, metrics, handleStreamProps)

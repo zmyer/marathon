@@ -1,140 +1,77 @@
-package mesosphere.marathon.metrics
+package mesosphere.marathon
+package metrics
 
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
+import kamon.Kamon
+import kamon.metric.instrument
+import kamon.metric.instrument.Histogram.DynamicRange
+import kamon.metric.instrument.{Histogram, Instrument, Time, UnitOfMeasurement}
 
-import com.codahale.metrics.{ Gauge, MetricRegistry }
-import com.google.inject.Inject
-import com.typesafe.scalalogging.StrictLogging
-import mesosphere.marathon.metrics.Metrics.{ Counter, Histogram, Meter, Timer }
-import org.aopalliance.intercept.MethodInvocation
+trait Counter {
+  def increment(): Unit
+  def increment(times: Long): Unit
+}
 
-import scala.collection.concurrent.TrieMap
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
+trait Gauge {
+  def value(): Long
+  def setValue(value: Long): this.type
+  def increment(by: Long = 1): this.type
+  def decrement(by: Long = 1): this.type
+}
 
-/**
-  * Utils for timer metrics collection.
-  */
-class Metrics @Inject() (val registry: MetricRegistry) extends StrictLogging {
-  private[this] val classNameCache = TrieMap[Class[_], String]()
+trait Histogram {
+  def record(value: Long)
+  def record(value: Long, count: Long)
+}
 
-  def timed[T](name: String)(block: => T): T = {
-    val timer = registry.timer(name)
-
-    val startTime = System.nanoTime()
-    try {
-      block
-    } finally {
-      timer.update(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
-    }
-  }
-
-  def counter(name: String): Counter = {
-    new Counter(registry.counter(name))
-  }
-
-  def timer(name: String): Timer = {
-    new Timer(registry.timer(name))
-  }
-
-  def meter(name: String): Meter = {
-    new Meter(registry.meter(name))
-  }
-
-  def histogram(name: String): Histogram = {
-    new Histogram(registry.histogram(name))
-  }
-
-  @throws[IllegalArgumentException]("if this function is called multiple times for the same name.")
-  @SuppressWarnings(Array("AsInstanceOf"))
-  def gauge[G <: Gauge[_]](name: String, gauge: G): G = {
-    try {
-      registry.register(name, gauge)
-      gauge
-    } catch {
-      case _: IllegalArgumentException =>
-        logger.warn(s"$name already has a registered guage")
-        registry.getGauges.getOrDefault(name, gauge).asInstanceOf[G]
-    }
-  }
-
-  def name(prefix: String, clazz: Class[_], method: String): String = {
-    s"$prefix.${className(clazz)}.$method".replace('$', '.').replaceAll("""\.+""", ".")
-  }
-
-  def name(prefix: String, in: MethodInvocation): String = {
-    name(prefix, in.getThis.getClass, in.getMethod.getName)
-  }
-
-  def className(clazz: Class[_]): String = {
-    classNameCache.getOrElseUpdate(clazz, stripGuiceMarksFromClassName(clazz))
-  }
-
-  private[metrics] def stripGuiceMarksFromClassName(clazz: Class[_]): String = {
-    val name = clazz.getName
-    if (name.contains("$EnhancerByGuice$")) clazz.getSuperclass.getName else name
-  }
+trait MinMaxCounter {
+  def increment(): Unit
+  def increment(times: Long): Unit
+  def decrement()
+  def decrement(times: Long)
+  def refreshValues(): Unit
 }
 
 object Metrics {
-  class Counter(counter: com.codahale.metrics.Counter) {
-    def inc(): Unit = counter.inc()
-    def dec(): Unit = counter.dec()
+  implicit class KamonCounter(val counter: instrument.Counter) extends AnyVal with Counter {
+    override def increment(): Unit = counter.increment()
+    override def increment(times: Long): Unit = counter.increment(times)
+  }
+  def counter(prefix: MetricPrefix, `class`: Class[_], metricName: String,
+              tags: Map[String, String] = Map.empty, unit: UnitOfMeasurement = UnitOfMeasurement.Unknown) : Counter = {
+    Kamon.metrics.counter(name(prefix, `class`, metricName), tags, unit)
   }
 
-  class Timer(private[metrics] val timer: com.codahale.metrics.Timer) {
-    def timeFuture[T](future: => Future[T]): Future[T] = {
-      val startTime = System.nanoTime()
-      val f =
-        try future
-        catch {
-          case NonFatal(e) =>
-            timer.update(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
-            throw e
-        }
-      import mesosphere.util.CallerThreadExecutionContext.callerThreadExecutionContext
-      f.onComplete(_ => timer.update(System.nanoTime() - startTime, TimeUnit.NANOSECONDS))
-      f
-    }
-
-    def apply[T](block: => T): T = {
-      val startTime = System.nanoTime()
-      try {
-        block
-      } finally {
-        timer.update(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
-      }
-    }
-
-    def update(duration: FiniteDuration): Unit = timer.update(duration.toMillis, TimeUnit.MILLISECONDS)
-    def invocationCount: Long = timer.getCount
+  def gauge(prefix: MetricPrefix, `class`: Class[_], metricName: String,
+            tags: Map[String, String] = Map.empty, unit: UnitOfMeasurement = UnitOfMeasurement.Unknown): Gauge = {
+    AtomicGauge(name(prefix, `class`, metricName), unit, tags)
   }
 
-  class Histogram(histogram: com.codahale.metrics.Histogram) {
-    def update(value: Long): Unit = {
-      histogram.update(value)
-    }
-
-    def update(value: Int): Unit = {
-      histogram.update(value)
-    }
+  implicit class KamonHistogram(val histogram: instrument.Histogram) extends AnyVal with Histogram {
+    override def record(value: Long): Unit = histogram.record(value)
+    override def record(value: Long, count: Long): Unit = histogram.record(value, count)
   }
 
-  class Meter(meter: com.codahale.metrics.Meter) {
-    def mark(): Unit = meter.mark()
-    def mark(n: Long): Unit = meter.mark(n)
-    def mark(n: Int): Unit = meter.mark(n.toLong)
+  def histogram(prefix: MetricPrefix, `class`: Class[_], metricName: String,
+                tags: Map[String, String] = Map.empty, unit: UnitOfMeasurement = UnitOfMeasurement.Unknown,
+                dynamicRange: DynamicRange): Histogram = {
+    Kamon.metrics.histogram(name(prefix, `class`, metricName), tags, unit, dynamicRange)
   }
 
-  class AtomicIntGauge extends Gauge[Int] {
-    private[this] val value_ = new AtomicInteger(0)
+  implicit class KamonMinMaxCounter(val counter: instrument.MinMaxCounter) extends MinMaxCounter {
+    override def increment(): Unit = counter.increment()
+    override def increment(times: Long): Unit = counter.increment(times)
+    override def decrement(): Unit = counter.decrement()
+    override def decrement(times: Long): Unit = counter.decrement(times)
+    override def refreshValues(): Unit = counter.refreshValues()
+  }
 
-    def setValue(l: Int): Unit = value_.set(l)
-    override def getValue: Int = value_.get()
+  def minMaxCounter(prefix: MetricPrefix, `class`: Class[_], metricName: String,
+                    tags: Map[String, String] = Map.empty, unit: UnitOfMeasurement = UnitOfMeasurement.Unknown): MinMaxCounter = {
+    Kamon.metrics.minMaxCounter(name(prefix, `class`, metricName), tags, unit)
+  }
 
-    def increment(): Int = value_.incrementAndGet()
-    def decrement(): Int = value_.decrementAndGet()
+  def timer(prefix: MetricPrefix, `class`: Class[_], metricName: String,
+            tags: Map[String, String] = Map.empty, unit: Time = Time.Nanoseconds): Timer = {
+    Timer(name(prefix, `class`, metricName), tags, unit)
   }
 }

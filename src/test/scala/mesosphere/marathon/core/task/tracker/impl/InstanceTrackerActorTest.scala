@@ -4,13 +4,11 @@ package core.task.tracker.impl
 import akka.Done
 import akka.actor.{ Actor, ActorRef, Props, Terminated }
 import akka.testkit.{ TestActorRef, TestProbe }
-import com.codahale.metrics.MetricRegistry
-import mesosphere.marathon.core.instance.{ TestInstanceBuilder, TestTaskBuilder }
 import mesosphere.marathon.core.instance.update.{ InstanceChangedEventsGenerator, InstanceUpdateEffect, InstanceUpdateOperation }
+import mesosphere.marathon.core.instance.{ TestInstanceBuilder, TestTaskBuilder }
 import mesosphere.marathon.core.task.TaskCondition
 import mesosphere.marathon.core.task.bus.TaskStatusUpdateTestHelper
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, InstanceTrackerUpdateStepProcessor }
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.{ MarathonActorSupport, Mockito }
 import org.scalatest.{ FunSuiteLike, GivenWhenThen, Matchers }
@@ -88,8 +86,8 @@ class InstanceTrackerActorTest
     probe.expectMsg(appDataMap)
 
     Then("it will have set the correct metric counts")
-    f.actorMetrics.runningCount.getValue should be(2)
-    f.actorMetrics.stagedCount.getValue should be(1)
+    f.actorMetrics.runningCount.value() should be(2)
+    f.actorMetrics.stagedCount.value() should be(1)
   }
 
   test("taskTrackerActor correctly updates metrics for deleted tasks") {
@@ -118,8 +116,8 @@ class InstanceTrackerActorTest
     probe.expectMsg(InstanceUpdateEffect.Expunge(helper.wrapped.instance, events))
 
     Then("it will have set the correct metric counts")
-    f.actorMetrics.runningCount.getValue should be(2)
-    f.actorMetrics.stagedCount.getValue should be(0)
+    f.actorMetrics.runningCount.value() should be(2)
+    f.actorMetrics.stagedCount.value() should be(0)
 
     When("running task gets deleted")
     val runningUpdate = TaskStatusUpdateTestHelper.killed(runningInstance1).effect
@@ -128,8 +126,8 @@ class InstanceTrackerActorTest
     probe.expectMsg(())
 
     Then("it will have set the correct metric counts")
-    f.actorMetrics.runningCount.getValue should be(1)
-    f.actorMetrics.stagedCount.getValue should be(0)
+    f.actorMetrics.runningCount.value() should be(1)
+    f.actorMetrics.stagedCount.value() should be(0)
 
     And("update steps have been processed 2 times")
     verify(f.stepProcessor, times(2)).process(any)(any[ExecutionContext])
@@ -161,8 +159,8 @@ class InstanceTrackerActorTest
     probe.expectMsg(update)
 
     Then("it will have set the correct metric counts")
-    f.actorMetrics.runningCount.getValue should be(3)
-    f.actorMetrics.stagedCount.getValue should be(0)
+    f.actorMetrics.runningCount.value() should be(3)
+    f.actorMetrics.stagedCount.value() should be(0)
     And("update steps are processed")
     verify(f.stepProcessor).process(any)(any[ExecutionContext])
   }
@@ -189,8 +187,8 @@ class InstanceTrackerActorTest
     probe.expectMsg(update)
 
     Then("it will have set the correct metric counts")
-    f.actorMetrics.runningCount.getValue should be(2)
-    f.actorMetrics.stagedCount.getValue should be(2)
+    f.actorMetrics.runningCount.value() should be(2)
+    f.actorMetrics.stagedCount.value() should be(2)
     And("update steps are processed")
     verify(f.stepProcessor).process(any)(any[ExecutionContext])
   }
@@ -213,8 +211,7 @@ class InstanceTrackerActorTest
     def updaterProps(trackerRef: ActorRef): Props = spyActor // linter:ignore:UnusedParameter
     lazy val taskLoader = mock[InstancesLoader]
     lazy val stepProcessor = mock[InstanceTrackerUpdateStepProcessor]
-    lazy val metrics = new Metrics(new MetricRegistry)
-    lazy val actorMetrics = new InstanceTrackerActor.ActorMetrics(metrics)
+    lazy val actorMetrics = new InstanceTrackerActor.ActorMetrics()
     val eventsGenerator = InstanceChangedEventsGenerator
 
     stepProcessor.process(any)(any[ExecutionContext]) returns Future.successful(Done)

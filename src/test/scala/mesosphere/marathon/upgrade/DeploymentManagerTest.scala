@@ -10,7 +10,6 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestActor.{ AutoPilot, NoAutoPilot }
 import akka.testkit.{ ImplicitSender, TestActor, TestActorRef, TestProbe }
 import akka.util.Timeout
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.MarathonSchedulerActor.{ CommandFailed, DeploymentStarted, LoadedDeploymentsOnLeaderElection }
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.launchqueue.LaunchQueue
@@ -20,7 +19,6 @@ import mesosphere.marathon.core.storage.store.impl.memory.InMemoryPersistenceSto
 import mesosphere.marathon.core.task.termination.KillService
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.AppDefinition
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.storage.repository.{ AppRepository, DeploymentRepository }
@@ -237,7 +235,6 @@ class DeploymentManagerTest
     val config: MarathonConf = new ScallopConf(Seq("--master", "foo")) with MarathonConf {
       verify()
     }
-    implicit val metrics: Metrics = new Metrics(new MetricRegistry)
     implicit val ctx: ExecutionContext = ExecutionContext.global
     val taskTracker: InstanceTracker = MarathonTestHelper.createTaskTracker(
       AlwaysElectedLeadershipModule.forActorSystem(system)

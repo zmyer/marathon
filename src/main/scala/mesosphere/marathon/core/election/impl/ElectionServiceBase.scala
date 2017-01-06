@@ -3,12 +3,12 @@ package mesosphere.marathon.core.election.impl
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.EventStream
 import akka.pattern.after
-import com.codahale.metrics.{ Gauge, MetricRegistry }
-import mesosphere.marathon.core.base._
-import mesosphere.marathon.core.base.ShutdownHooks
+import kamon.Kamon
+import kamon.metric.instrument.Time
+import mesosphere.marathon.core.base.{ ShutdownHooks, _ }
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService, LocalLeadershipEvent }
-import mesosphere.marathon.metrics.Metrics.Timer
-import mesosphere.marathon.metrics.{ MetricPrefixes, Metrics }
+import mesosphere.marathon.metrics
+import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -40,7 +40,6 @@ private[impl] object ElectionServiceBase {
 abstract class ElectionServiceBase(
     system: ActorSystem,
     eventStream: EventStream,
-    metrics: Metrics = new Metrics(new MetricRegistry),
     backoff: Backoff,
     shutdownHooks: ShutdownHooks) extends ElectionService {
   import ElectionServiceBase._
@@ -53,10 +52,9 @@ abstract class ElectionServiceBase(
 
   def leaderHostPortImpl: Option[String]
 
-  val getLeaderDataTimer: Timer =
-    metrics.timer(metrics.name(MetricPrefixes.SERVICE, getClass, "current-leader-host-port"))
+  val getLeaderDataTimer: Timer = Timer(metrics.name(ServiceMetric, getClass, "current-leader-host-port"))
 
-  final override def leaderHostPort: Option[String] = getLeaderDataTimer {
+  final override def leaderHostPort: Option[String] = getLeaderDataTimer.blocking {
     synchronized {
       try {
         leaderHostPortImpl
@@ -235,16 +233,11 @@ abstract class ElectionServiceBase(
   }
 
   private def startMetrics(): Unit = {
-    metrics.gauge("service.mesosphere.marathon.leaderDuration", new Gauge[Long] {
-      val startedAt = System.currentTimeMillis()
-
-      override def getValue: Long = {
-        System.currentTimeMillis() - startedAt
-      }
-    })
+    val startedAt = System.currentTimeMillis()
+    Kamon.metrics.gauge("service.mesosphere.marathon.leaderDuration", Time.Milliseconds)(System.currentTimeMillis() - startedAt)
   }
 
   private def stopMetrics(): Unit = {
-    metrics.registry.remove("service.mesosphere.marathon.leaderDuration")
+    Kamon.metrics.removeGauge("service.mesosphere.marathon.leaderDuration")
   }
 }

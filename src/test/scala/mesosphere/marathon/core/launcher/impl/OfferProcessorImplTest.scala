@@ -1,7 +1,7 @@
-package mesosphere.marathon.core.launcher.impl
+package mesosphere.marathon
+package core.launcher.impl
 
 import akka.Done
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
@@ -13,7 +13,6 @@ import mesosphere.marathon.core.matcher.base.OfferMatcher.{ InstanceOpSource, In
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.state.NetworkInfo
 import mesosphere.marathon.core.task.tracker.InstanceCreationHandler
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.test.{ MarathonSpec, MarathonTestHelper, Mockito }
 import org.scalatest.GivenWhenThen
@@ -293,7 +292,7 @@ class OfferProcessorImplTest extends MarathonSpec with GivenWhenThen with Mockit
     taskCreationHandler = mock[InstanceCreationHandler]
 
     new OfferProcessorImpl(
-      conf, clock, new Metrics(new MetricRegistry), offerMatcher, taskLauncher, taskCreationHandler
+      conf, clock, offerMatcher, taskLauncher, taskCreationHandler
     )
   }
 

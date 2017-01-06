@@ -11,10 +11,8 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.testkit.TestActorRef
 import akka.util.Timeout
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.core.event.GroupChangeSuccess
 import mesosphere.marathon.io.storage.StorageProvider
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.{ AppRepository, GroupRepository }
@@ -367,9 +365,6 @@ class GroupManagerActorTest extends Mockito with Matchers with MarathonSpec with
         verify()
       }
     }
-
-    lazy val metricRegistry = new MetricRegistry()
-    lazy val metrics = new Metrics(metricRegistry)
 
     val schedulerProvider = new Provider[DeploymentService] {
       override def get() = scheduler

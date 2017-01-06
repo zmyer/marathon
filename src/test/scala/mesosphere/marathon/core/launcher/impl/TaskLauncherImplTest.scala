@@ -4,12 +4,10 @@ package core.launcher.impl
 import java.util
 import java.util.Collections
 
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.TestInstanceBuilder._
 import mesosphere.marathon.core.launcher.{ InstanceOp, TaskLauncher }
 import mesosphere.marathon.core.task.Task
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.stream._
 import mesosphere.marathon.test.{ MarathonSpec, MarathonTestHelper }
@@ -83,10 +81,9 @@ class TaskLauncherImplTest extends MarathonSpec {
   var launcher: TaskLauncher = _
 
   before {
-    val metrics = new Metrics(new MetricRegistry)
     driverHolder = new MarathonSchedulerDriverHolder
     driverHolder.driver = Some(mock[SchedulerDriver])
-    launcher = new TaskLauncherImpl(metrics, driverHolder)
+    launcher = new TaskLauncherImpl(driverHolder)
   }
 
   after {

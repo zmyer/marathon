@@ -3,7 +3,6 @@ package core.health.impl
 
 import akka.event.EventStream
 import akka.testkit.EventFilter
-import com.codahale.metrics.MetricRegistry
 import com.typesafe.config.{ Config, ConfigFactory }
 import mesosphere.AkkaFunTest
 import mesosphere.marathon.core.base.ConstantClock
@@ -15,7 +14,6 @@ import mesosphere.marathon.core.leadership.{ AlwaysElectedLeadershipModule, Lead
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.termination.KillService
 import mesosphere.marathon.core.task.tracker.{ InstanceCreationHandler, InstanceTracker, TaskStateOpProcessor }
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId.StringPathId
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.{ CaptureEvents, MarathonShutdownHookSupport, MarathonTestHelper }
@@ -44,7 +42,6 @@ class MarathonHealthCheckManagerTest extends AkkaFunTest with MarathonShutdownHo
   private val clock = ConstantClock()
 
   before {
-    implicit val metrics = new Metrics(new MetricRegistry)
     leadershipModule = AlwaysElectedLeadershipModule(shutdownHooks)
 
     val taskTrackerModule = MarathonTestHelper.createTaskTrackerModule(leadershipModule)

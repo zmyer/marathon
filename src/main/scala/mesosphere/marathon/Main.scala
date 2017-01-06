@@ -5,13 +5,12 @@ import java.lang.Thread.UncaughtExceptionHandler
 import com.google.common.util.concurrent.ServiceManager
 import com.google.inject.{ Guice, Module }
 import com.typesafe.scalalogging.StrictLogging
+import kamon.Kamon
 import mesosphere.chaos.http.{ HttpModule, HttpService }
 import mesosphere.chaos.metrics.MetricsModule
 import mesosphere.marathon.api.MarathonRestModule
-import mesosphere.marathon.core.base._
 import mesosphere.marathon.core.CoreGuiceModule
 import mesosphere.marathon.core.base.toRichRuntime
-import mesosphere.marathon.metrics.{ MetricsReporterModule, MetricsReporterService }
 import mesosphere.marathon.stream._
 import mesosphere.mesos.LibMesos
 import org.slf4j.LoggerFactory
@@ -36,7 +35,6 @@ class MarathonApp(args: Seq[String]) extends AutoCloseable with StrictLogging {
     Seq(
       new HttpModule(conf),
       new MetricsModule,
-      new MetricsReporterModule(conf),
       new MarathonModule(conf, conf),
       new MarathonRestModule,
       new DebugModule(conf),
@@ -74,8 +72,7 @@ class MarathonApp(args: Seq[String]) extends AutoCloseable with StrictLogging {
     val injector = Guice.createInjector(modules)
     val services = Seq(
       classOf[HttpService],
-      classOf[MarathonSchedulerService],
-      classOf[MetricsReporterService]).map(injector.getInstance(_))
+      classOf[MarathonSchedulerService]).map(injector.getInstance(_))
     serviceManager = Some(new ServiceManager(services))
 
     sys.addShutdownHook(shutdownAndWait())
@@ -157,6 +154,7 @@ class MarathonApp(args: Seq[String]) extends AutoCloseable with StrictLogging {
 
 object Main {
   def main(args: Array[String]): Unit = {
+    Kamon.start()
     val app = new MarathonApp(args.toVector)
     app.start()
   }

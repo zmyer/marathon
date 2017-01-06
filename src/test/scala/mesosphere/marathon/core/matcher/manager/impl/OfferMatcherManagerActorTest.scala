@@ -1,4 +1,5 @@
-package mesosphere.marathon.core.matcher.manager.impl
+package mesosphere.marathon
+package core.matcher.manager.impl
 
 import java.util
 import java.util.concurrent.TimeUnit
@@ -10,7 +11,6 @@ import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.matcher.base.OfferMatcher
 import mesosphere.marathon.core.matcher.manager.OfferMatcherManagerConfig
 import mesosphere.marathon.core.task.Task.LocalVolumeId
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.PathId
 import mesosphere.marathon.test.{ MarathonActorSupport, MarathonTestHelper, Mockito }
 import org.apache.mesos.Protos.Offer
@@ -61,8 +61,7 @@ class OfferMatcherManagerActorTest extends MarathonActorSupport with FunSuiteLik
 
   implicit val timeout = Timeout(3, TimeUnit.SECONDS)
   class Fixture {
-    val metricRegistry = mock[Metrics]
-    val metrics = new OfferMatcherManagerActorMetrics(metricRegistry)
+    val metrics = new OfferMatcherManagerActorMetrics()
     val random = new Random(new util.Random())
     val clock = ConstantClock()
     val observer = Observer.apply[Boolean]((a: Boolean) => ())

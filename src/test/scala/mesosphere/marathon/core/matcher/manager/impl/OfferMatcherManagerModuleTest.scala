@@ -1,7 +1,6 @@
 package mesosphere.marathon
 package core.matcher.manager.impl
 
-import com.codahale.metrics.MetricRegistry
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
 import mesosphere.marathon.core.instance.TestInstanceBuilder._
@@ -13,7 +12,6 @@ import mesosphere.marathon.core.matcher.base.OfferMatcher.{ InstanceOpSource, In
 import mesosphere.marathon.core.matcher.base.util.OfferMatcherSpec
 import mesosphere.marathon.core.matcher.manager.{ OfferMatcherManagerConfig, OfferMatcherManagerModule }
 import mesosphere.marathon.core.task.Task
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.stream._
 import mesosphere.marathon.tasks.ResourceUtil
@@ -158,7 +156,7 @@ class OfferMatcherManagerModuleTest extends FunSuite
     val config = new OfferMatcherManagerConfig {
       verify()
     }
-    module = new OfferMatcherManagerModule(clock, random, new Metrics(new MetricRegistry), config, actorSystem)
+    module = new OfferMatcherManagerModule(clock, random, config, actorSystem)
   }
 
   /**

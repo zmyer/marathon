@@ -6,7 +6,6 @@ import akka.actor.{ ActorRef, Status }
 import akka.event.EventStream
 import akka.testkit.TestProbe
 import ch.qos.logback.classic.Level
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.Provider
 import mesosphere.AkkaFunTest
 import mesosphere.marathon.core.CoreGuiceModule
@@ -19,7 +18,6 @@ import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.core.task.bus.{ MesosTaskStatusTestHelper, TaskStatusEmitter }
 import mesosphere.marathon.core.task.update.impl.steps.{ NotifyHealthCheckManagerStepImpl, NotifyLaunchQueueStepImpl, NotifyRateLimiterStepImpl, PostToEventStreamStepImpl, ScaleAppUpdateStepImpl, TaskStatusEmitterPublishStepImpl }
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ AppDefinition, PathId, Timestamp }
 import mesosphere.marathon.storage.repository.InstanceRepository
 import mesosphere.marathon.test.{ CaptureLogEvents, _ }
@@ -411,7 +409,6 @@ class InstanceOpProcessorImplTest extends AkkaFunTest {
     lazy val opSender = TestProbe()
     lazy val instanceRepository = mock[InstanceRepository]
     lazy val stateOpResolver = mock[InstanceUpdateOpResolver]
-    lazy val metrics = new Metrics(new MetricRegistry)
     lazy val clock = ConstantClock()
     lazy val now = clock.now()
 

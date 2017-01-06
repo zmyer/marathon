@@ -1,11 +1,10 @@
-package mesosphere.marathon.api
+package mesosphere.marathon
+package api
 
-import com.codahale.metrics.MetricRegistry
-import mesosphere.FunTest
-import mesosphere.marathon.MarathonConf
+import mesosphere.AkkaFunTest
 import play.api.libs.json.{ JsDefined, Json }
 
-class SystemResourceTest extends FunTest {
+class SystemResourceTest extends AkkaFunTest {
 
   test("Do a ping") {
     Given("The system resource")
@@ -71,8 +70,7 @@ class SystemResourceTest extends FunTest {
 
   class Fixture {
     val auth = new TestAuthFixture
-    val metrics = new MetricRegistry
     val conf = mock[MarathonConf]
-    val resource = new SystemResource(metrics, conf)(auth.auth, auth.auth)
+    val resource = new SystemResource(conf)(auth.auth, auth.auth, system)
   }
 }

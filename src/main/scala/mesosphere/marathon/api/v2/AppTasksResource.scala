@@ -6,7 +6,6 @@ import javax.servlet.http.HttpServletRequest
 import javax.ws.rs._
 import javax.ws.rs.core.{ Context, MediaType, Response }
 
-import com.codahale.metrics.annotation.Timed
 import mesosphere.marathon.api._
 import mesosphere.marathon.api.v2.json.Formats._
 import mesosphere.marathon.core.appinfo.EnrichedTask
@@ -37,7 +36,6 @@ class AppTasksResource @Inject() (
   val GroupTasks = """^((?:.+/)|)\*$""".r
 
   @GET
-  @Timed
   def indexJson(
     @PathParam("appId") id: String,
     @Context req: HttpServletRequest): Response = authenticated(req) { implicit identity =>
@@ -72,7 +70,6 @@ class AppTasksResource @Inject() (
 
   @GET
   @Produces(Array(MediaType.TEXT_PLAIN))
-  @Timed
   def indexTxt(
     @PathParam("appId") appId: String,
     @Context req: HttpServletRequest): Response = authenticated(req) { implicit identity =>
@@ -83,7 +80,6 @@ class AppTasksResource @Inject() (
   }
 
   @DELETE
-  @Timed
   def deleteMany(
     @PathParam("appId") appId: String,
     @QueryParam("host") host: String,
@@ -113,7 +109,6 @@ class AppTasksResource @Inject() (
 
   @DELETE
   @Path("{taskId}")
-  @Timed
   def deleteOne(
     @PathParam("appId") appId: String,
     @PathParam("taskId") id: String,

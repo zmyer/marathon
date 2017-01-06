@@ -1,14 +1,13 @@
 package mesosphere.marathon
 
 import java.net.URI
-import javax.inject.Provider
 
 import ch.qos.logback.classic.{ AsyncAppender, Level, LoggerContext }
 import ch.qos.logback.core.net.ssl.SSLConfiguration
 import com.getsentry.raven.logback.SentryAppender
 import com.google.inject.AbstractModule
 import com.google.inject.matcher.{ AbstractMatcher, Matchers }
-import mesosphere.marathon.metrics.{ MetricPrefixes, Metrics }
+import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
 import net.logstash.logback.appender._
 import net.logstash.logback.composite.loggingevent.ArgumentsJsonProvider
 import org.aopalliance.intercept.{ MethodInterceptor, MethodInvocation }
@@ -79,22 +78,18 @@ class DebugModule(conf: DebugConf) extends AbstractModule {
   /**
     * Measure processing time of each service method.
     */
-  class MetricsBehavior(metricsProvider: Provider[Metrics]) extends MethodInterceptor {
+  class MetricsBehavior extends MethodInterceptor {
     override def invoke(in: MethodInvocation): AnyRef = {
-      val metrics: Metrics = metricsProvider.get
-
-      metrics.timed(metrics.name(MetricPrefixes.SERVICE, in)) {
-        in.proceed
-      }
+      Timer(metrics.name(ServiceMetric, in)).blocking(in.proceed())
     }
   }
 
   /**
     * Add trace, whenever a service method is entered and finished.
     */
-  class TracingBehavior(metrics: Provider[Metrics]) extends MethodInterceptor {
+  class TracingBehavior extends MethodInterceptor {
     override def invoke(in: MethodInvocation): AnyRef = {
-      val className = metrics.get.className(in.getThis.getClass)
+      val className = metrics.className(in.getThis.getClass)
       val logger = LoggerFactory.getLogger(className)
       val method = s"""$className.${in.getMethod.getName}(${in.getArguments.mkString(", ")})"""
       logger.trace(s">>> $method")
@@ -107,7 +102,7 @@ class DebugModule(conf: DebugConf) extends AbstractModule {
   object MarathonMatcher extends AbstractMatcher[Class[_]] {
     override def matches(t: Class[_]): Boolean = {
       // Don't instrument the Metrics class, in order to avoid an infinite recursion
-      t.getPackage.getName.startsWith("mesosphere") && t != classOf[Metrics]
+      t.getPackage.getName.startsWith("mesosphere") && !t.getPackage.getName.startsWith("mesosphere.marathon.metrics")
     }
   }
 
@@ -129,11 +124,8 @@ class DebugModule(conf: DebugConf) extends AbstractModule {
       configureSentry(_, conf.sentryTags.get)
     }
 
-    //add behaviors
-    val metricsProvider = getProvider(classOf[Metrics])
-
-    val tracingBehavior = if (conf.enableDebugTracing) Some(new TracingBehavior(metricsProvider)) else None
-    val metricsBehavior = conf.metrics.get.map(_ => new MetricsBehavior(metricsProvider))
+    val tracingBehavior = if (conf.enableDebugTracing) Some(new TracingBehavior()) else None
+    val metricsBehavior = conf.metrics.get.map(_ => new MetricsBehavior())
 
     val behaviors = (tracingBehavior :: metricsBehavior :: Nil).flatten
     if (behaviors.nonEmpty) bindInterceptor(MarathonMatcher, Matchers.any(), behaviors: _*)

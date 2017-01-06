@@ -1,4 +1,5 @@
-package mesosphere.marathon.storage.repository
+package mesosphere.marathon
+package storage.repository
 
 import java.time.OffsetDateTime
 
@@ -9,10 +10,8 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.{ Done, NotUsed }
 import com.typesafe.scalalogging.StrictLogging
-import mesosphere.marathon.Protos
 import mesosphere.marathon.core.storage.repository.impl.PersistenceStoreRepository
 import mesosphere.marathon.core.storage.store.{ IdResolver, PersistenceStore }
-import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.state.{ RootGroup, Timestamp }
 import mesosphere.marathon.storage.repository.GcActor.{ StoreApp, StorePlan, StorePod, StoreRoot }
 import mesosphere.marathon.upgrade.DeploymentPlan
@@ -87,8 +86,7 @@ class DeploymentRepositoryImpl[K, C, S](
     unmarshaller: Unmarshaller[S, StoredPlan],
     ctx: ExecutionContext,
     actorRefFactory: ActorRefFactory,
-    mat: Materializer,
-    metrics: Metrics) extends DeploymentRepository {
+    mat: Materializer) extends DeploymentRepository {
 
   private val gcActor = GcActor(
     s"PersistenceGarbageCollector:$hashCode",
