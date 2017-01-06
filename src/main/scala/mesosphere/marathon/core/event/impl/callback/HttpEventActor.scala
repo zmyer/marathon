@@ -8,19 +8,19 @@ import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.event.impl.callback.HttpEventActor._
 import mesosphere.marathon.core.event.impl.callback.SubscribersKeeperActor.GetSubscribers
-import mesosphere.marathon.metrics.{Metrics, ServiceMetric, Timer}
+import mesosphere.marathon.metrics.{ Metrics, MinMaxCounter, ServiceMetric, Timer }
 import mesosphere.marathon.util.Retry
 import mesosphere.util.CallerThreadExecutionContext
 import org.slf4j.LoggerFactory
 import play.api.libs.json.JsValue
 import spray.client.pipelining._
-import spray.http.{HttpRequest, HttpResponse}
+import spray.http.{ HttpRequest, HttpResponse }
 import spray.httpx.PlayJsonSupport
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
   * This actor subscribes to the event bus and distributes every event to all http callback listeners.

@@ -49,6 +49,7 @@ object InstanceTrackerActor {
   private[impl] case class StateChanged(ack: Ack)
 
   private[tracker] class ActorMetrics {
+    // We can't
     val stagedCount: AtomicGauge = AtomicGauge("service.mesosphere.marathon.task.staged.count")
     val runningCount: AtomicGauge = AtomicGauge("service.mesosphere.marathon.task.running.count")
 

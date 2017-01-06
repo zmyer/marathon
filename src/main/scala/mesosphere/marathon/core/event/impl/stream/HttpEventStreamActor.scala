@@ -4,7 +4,7 @@ package core.event.impl.stream
 import akka.actor._
 import mesosphere.marathon.core.election.{ ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.core.event.impl.stream.HttpEventStreamActor._
-import mesosphere.marathon.metrics.{ ApiMetric, AtomicGauge }
+import mesosphere.marathon.metrics.{ ApiMetric, Metrics, SettableGauge }
 import org.slf4j.LoggerFactory
 
 import scala.util.Try
@@ -20,7 +20,7 @@ trait HttpEventStreamHandle {
 }
 
 class HttpEventStreamActorMetrics() {
-  val numberOfStreams = AtomicGauge(metrics.name(ApiMetric, getClass, "number-of-streams"))
+  val numberOfStreams: SettableGauge = Metrics.atomicGauge(ApiMetric, getClass, "number-of-streams")
 }
 
 /**

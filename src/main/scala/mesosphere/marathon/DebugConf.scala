@@ -7,7 +7,7 @@ import ch.qos.logback.core.net.ssl.SSLConfiguration
 import com.getsentry.raven.logback.SentryAppender
 import com.google.inject.AbstractModule
 import com.google.inject.matcher.{ AbstractMatcher, Matchers }
-import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric }
 import net.logstash.logback.appender._
 import net.logstash.logback.composite.loggingevent.ArgumentsJsonProvider
 import org.aopalliance.intercept.{ MethodInterceptor, MethodInvocation }
@@ -80,7 +80,7 @@ class DebugModule(conf: DebugConf) extends AbstractModule {
     */
   class MetricsBehavior extends MethodInterceptor {
     override def invoke(in: MethodInvocation): AnyRef = {
-      Timer(metrics.name(ServiceMetric, in)).blocking(in.proceed())
+      Metrics.timer(ServiceMetric, in).blocking(in.proceed())
     }
   }
 

@@ -6,13 +6,13 @@ import akka.pattern.AskTimeoutException
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
-import mesosphere.marathon.core.launcher.{InstanceOp, OfferProcessor, OfferProcessorConfig, TaskLauncher}
+import mesosphere.marathon.core.launcher.{ InstanceOp, OfferProcessor, OfferProcessorConfig, TaskLauncher }
 import mesosphere.marathon.core.matcher.base.OfferMatcher
-import mesosphere.marathon.core.matcher.base.OfferMatcher.{InstanceOpWithSource, MatchedInstanceOps}
+import mesosphere.marathon.core.matcher.base.OfferMatcher.{ InstanceOpWithSource, MatchedInstanceOps }
 import mesosphere.marathon.core.task.tracker.InstanceCreationHandler
-import mesosphere.marathon.metrics.{Metrics, ServiceMetric}
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric }
 import mesosphere.marathon.state.Timestamp
-import org.apache.mesos.Protos.{Offer, OfferID}
+import org.apache.mesos.Protos.{ Offer, OfferID }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

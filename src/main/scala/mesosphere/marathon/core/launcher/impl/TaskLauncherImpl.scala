@@ -3,11 +3,11 @@ package core.launcher.impl
 
 import java.util.Collections
 
-import mesosphere.marathon.core.launcher.{InstanceOp, TaskLauncher}
-import mesosphere.marathon.metrics.{Metrics, ServiceMetric}
+import mesosphere.marathon.core.launcher.{ InstanceOp, TaskLauncher }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric }
 import mesosphere.marathon.stream._
-import org.apache.mesos.Protos.{OfferID, Status}
-import org.apache.mesos.{Protos, SchedulerDriver}
+import org.apache.mesos.Protos.{ OfferID, Status }
+import org.apache.mesos.{ Protos, SchedulerDriver }
 import org.slf4j.LoggerFactory
 
 private[launcher] class TaskLauncherImpl(

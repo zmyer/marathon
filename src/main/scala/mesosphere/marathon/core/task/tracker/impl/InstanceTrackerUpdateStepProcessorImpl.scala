@@ -4,7 +4,7 @@ package core.task.tracker.impl
 import akka.Done
 import mesosphere.marathon.core.instance.update.{ InstanceChange, InstanceChangeHandler }
 import mesosphere.marathon.core.task.tracker.InstanceTrackerUpdateStepProcessor
-import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric, Timer }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -19,7 +19,7 @@ private[tracker] class InstanceTrackerUpdateStepProcessorImpl(
   private[this] val log = LoggerFactory.getLogger(getClass)
 
   private[this] val stepTimers: Map[String, Timer] = steps.map { step =>
-    step.name -> Timer(metrics.name(ServiceMetric, getClass, s"step-${step.name}"))
+    step.name -> Metrics.timer(ServiceMetric, getClass, s"step-${step.name}")
   }(collection.breakOut)
 
   log.info(

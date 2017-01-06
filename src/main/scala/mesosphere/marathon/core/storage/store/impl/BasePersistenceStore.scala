@@ -10,7 +10,7 @@ import akka.stream.scaladsl.Source
 import akka.{ Done, NotUsed }
 import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.core.storage.store.{ IdResolver, PersistenceStore }
-import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric, Timer }
 import mesosphere.marathon.util.KeyedLock
 
 import scala.async.Async.{ async, await }
@@ -35,24 +35,24 @@ case class CategorizedKey[C, K](category: C, key: K)
 abstract class BasePersistenceStore[K, Category, Serialized](implicit
   ctx: ExecutionContext,
     mat: Materializer) extends PersistenceStore[K, Category, Serialized] with StrictLogging {
-  val idsTimer = Timer(metrics.name(ServiceMetric, getClass, "ids"))
-  val getTimer = Timer(metrics.name(ServiceMetric, getClass, "get"))
-  val deleteTimer = Timer(metrics.name(ServiceMetric, getClass, "delete"))
-  val storeTimer = Timer(metrics.name(ServiceMetric, getClass, "store"))
-  val versionTimer = Timer(metrics.name(ServiceMetric, getClass, "versions"))
+  private val idsTimer: Timer = Metrics.timer(ServiceMetric, getClass, "ids")
+  private val getTimer: Timer = Metrics.timer(ServiceMetric, getClass, "get")
+  private val deleteTimer: Timer = Metrics.timer(ServiceMetric, getClass, "delete")
+  private val storeTimer: Timer = Metrics.timer(ServiceMetric, getClass, "store")
+  private val versionTimer: Timer = Metrics.timer(ServiceMetric, getClass, "versions")
 
   private[this] lazy val lock = KeyedLock[String]("persistenceStore", Int.MaxValue)
 
   protected def rawIds(id: Category): Source[K, NotUsed]
 
-  override def ids[Id, V]()(implicit ir: IdResolver[Id, V, Category, K]): Source[Id, NotUsed] = {
+  override def ids[Id, V]()(implicit ir: IdResolver[Id, V, Category, K]): Source[Id, NotUsed] = idsTimer {
     rawIds(ir.category).map(ir.fromStorageId)
   }
 
   protected def rawVersions(id: K): Source[OffsetDateTime, NotUsed]
 
   final override def versions[Id, V](
-    id: Id)(implicit ir: IdResolver[Id, V, Category, K]): Source[OffsetDateTime, NotUsed] = {
+    id: Id)(implicit ir: IdResolver[Id, V, Category, K]): Source[OffsetDateTime, NotUsed] = versionTimer {
     rawVersions(ir.toStorageId(id, None))
   }
 

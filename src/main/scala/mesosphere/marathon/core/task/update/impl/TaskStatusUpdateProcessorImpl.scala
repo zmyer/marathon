@@ -15,7 +15,7 @@ import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, TaskStateOpProcessor }
 import mesosphere.marathon.core.task.update.TaskStatusUpdateProcessor
 import mesosphere.marathon.core.task.{ Task, TaskCondition }
-import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric, Timer }
 import org.apache.mesos.{ Protos => MesosProtos }
 
 import scala.concurrent.Future
@@ -32,11 +32,9 @@ class TaskStatusUpdateProcessorImpl @Inject() (
     eventStream: EventStream) extends TaskStatusUpdateProcessor with StrictLogging {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private[this] val publishTimer: Timer =
-    Timer(metrics.name(ServiceMetric, getClass, "publishFuture"))
+  private[this] val publishTimer: Timer = Metrics.timer(ServiceMetric, getClass, "publishFuture")
 
-  private[this] val killUnknownTaskTimer: Timer =
-    Timer(metrics.name(ServiceMetric, getClass, "killUnknownTask"))
+  private[this] val killUnknownTaskTimer: Timer = Metrics.timer(ServiceMetric, getClass, "killUnknownTask")
 
   logger.info("Started status update processor")
 

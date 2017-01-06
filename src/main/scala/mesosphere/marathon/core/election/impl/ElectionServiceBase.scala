@@ -7,8 +7,7 @@ import kamon.Kamon
 import kamon.metric.instrument.Time
 import mesosphere.marathon.core.base.{ ShutdownHooks, _ }
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService, LocalLeadershipEvent }
-import mesosphere.marathon.metrics
-import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric, Timer }
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -52,7 +51,7 @@ abstract class ElectionServiceBase(
 
   def leaderHostPortImpl: Option[String]
 
-  val getLeaderDataTimer: Timer = Timer(metrics.name(ServiceMetric, getClass, "current-leader-host-port"))
+  val getLeaderDataTimer: Timer = Metrics.timer(ServiceMetric, getClass, "current-leader-host-port")
 
   final override def leaderHostPort: Option[String] = getLeaderDataTimer.blocking {
     synchronized {

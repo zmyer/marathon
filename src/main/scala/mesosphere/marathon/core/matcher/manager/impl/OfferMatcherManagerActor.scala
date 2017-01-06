@@ -11,7 +11,7 @@ import mesosphere.marathon.core.matcher.base.util.ActorOfferMatcher
 import mesosphere.marathon.core.matcher.manager.OfferMatcherManagerConfig
 import mesosphere.marathon.core.matcher.manager.impl.OfferMatcherManagerActor.{ MatchTimeout, OfferData }
 import mesosphere.marathon.core.task.Task.LocalVolumeId
-import mesosphere.marathon.metrics.{ AtomicGauge, ServiceMetric }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric, SettableGauge }
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import mesosphere.marathon.stream._
 import mesosphere.marathon.tasks.ResourceUtil
@@ -23,10 +23,10 @@ import scala.util.Random
 import scala.util.control.NonFatal
 
 private[manager] class OfferMatcherManagerActorMetrics() {
-  private[manager] val launchTokenGauge: AtomicGauge =
-    AtomicGauge(metrics.name(ServiceMetric, getClass, "launchTokens"))
-  private[manager] val currentOffersGauge: AtomicGauge =
-    AtomicGauge(metrics.name(ServiceMetric, getClass, "currentOffers"))
+  private[manager] val launchTokenGauge: SettableGauge =
+    Metrics.atomicGauge(ServiceMetric, getClass, "launchTokens")
+  private[manager] val currentOffersGauge: SettableGauge =
+    Metrics.atomicGauge(ServiceMetric, getClass, "currentOffers")
 }
 
 /**

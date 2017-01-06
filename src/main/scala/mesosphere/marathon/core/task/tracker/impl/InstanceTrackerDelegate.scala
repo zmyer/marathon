@@ -8,7 +8,7 @@ import akka.pattern.{ AskTimeoutException, ask }
 import akka.util.Timeout
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.task.tracker.{ InstanceTracker, InstanceTrackerConfig }
-import mesosphere.marathon.metrics.{ ServiceMetric, Timer }
+import mesosphere.marathon.metrics.{ Metrics, ServiceMetric }
 import mesosphere.marathon.state.PathId
 
 import scala.concurrent.duration._
@@ -57,7 +57,7 @@ private[tracker] class InstanceTrackerDelegate(
   override def instance(taskId: Instance.Id): Future[Option[Instance]] =
     (taskTrackerRef ? InstanceTrackerActor.Get(taskId)).mapTo[Option[Instance]]
 
-  private[this] val tasksByAppTimer = Timer(metrics.name(ServiceMetric, getClass, "tasksByApp"))
+  private[this] val tasksByAppTimer = Metrics.timer(ServiceMetric, getClass, "tasksByApp")
 
   private[this] implicit val taskTrackerQueryTimeout: Timeout = config.internalTaskTrackerRequestTimeout().milliseconds
 }

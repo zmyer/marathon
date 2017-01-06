@@ -6,8 +6,11 @@ import java.util.concurrent.atomic.AtomicLong
 import kamon.Kamon
 import kamon.metric.instrument.UnitOfMeasurement
 
+/**
+  * Prefer [[Metrics.atomicGauge]] over usage of the constructor directly
+  */
 case class AtomicGauge(name: String, unitOfMeasurement: UnitOfMeasurement = UnitOfMeasurement.Unknown,
-                       tags: Map[String, String] = Map.empty) extends Gauge {
+    tags: Map[String, String] = Map.empty) extends SettableGauge {
   private[this] val counter = new AtomicLong()
   private[this] val gauge = Kamon.metrics.gauge(name, tags, unitOfMeasurement)(counter.get())
 

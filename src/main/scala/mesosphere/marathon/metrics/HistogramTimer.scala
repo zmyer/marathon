@@ -1,16 +1,17 @@
 package mesosphere.marathon
 package metrics
 
+import akka.stream.scaladsl.Source
 import kamon.Kamon
-import kamon.metric.instrument.Time
 import kamon.metric.instrument
+import kamon.metric.instrument.Time
 import mesosphere.util.CallerThreadExecutionContext
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-case class Timer(name: String, tags: Map[String, String], unit: Time) {
+private[metrics] case class HistogramTimer(name: String, tags: Map[String, String], unit: Time) extends Timer {
   private[this] val histogram: instrument.Histogram = Kamon.metrics.histogram(name, tags, unit)
 
   def apply[T](f: => Future[T]): Future[T] = {
@@ -24,6 +25,15 @@ case class Timer(name: String, tags: Map[String, String], unit: Time) {
     }
     future.onComplete(_ => histogram.record(System.nanoTime() - start))(CallerThreadExecutionContext.callerThreadExecutionContext)
     future
+  }
+
+  def apply[T, M](f: => Source[T, M]): Source[T, M] = {
+    val start = System.nanoTime()
+    val src = f
+    src.mapMaterializedValue { m =>
+      histogram.record(System.nanoTime() - start)
+      m
+    }
   }
 
   def blocking[T](f: => T): T = {
