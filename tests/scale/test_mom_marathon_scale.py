@@ -87,12 +87,12 @@ def test_mom1_apps_count_5000_1():
     run_test(sys._getframe().f_code.co_name)
 
 
-def test_mom1_apps_count_10000_1():
-    run_test(sys._getframe().f_code.co_name)
-
-
-def test_mom1_apps_count_25000_1():
-    run_test(sys._getframe().f_code.co_name)
+# def test_mom1_apps_count_10000_1():
+#     run_test(sys._getframe().f_code.co_name)
+#
+#
+# def test_mom1_apps_count_25000_1():
+#     run_test(sys._getframe().f_code.co_name)
 
 
 # group
@@ -172,12 +172,12 @@ def test_mom2_apps_count_5000_1():
     run_test(sys._getframe().f_code.co_name)
 
 
-def test_mom2_apps_count_10000_1():
-    run_test(sys._getframe().f_code.co_name)
-
-
-def test_mom2_apps_count_25000_1():
-    run_test(sys._getframe().f_code.co_name)
+# def test_mom2_apps_count_10000_1():
+#     run_test(sys._getframe().f_code.co_name)
+#
+#
+# def test_mom2_apps_count_25000_1():
+#     run_test(sys._getframe().f_code.co_name)
 
 
 # group
