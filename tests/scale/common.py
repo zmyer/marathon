@@ -243,10 +243,20 @@ def group_test_app(test_obj):
 
 def delete_all_apps_wait2(test_obj=None, msg='undeployment failure'):
     try:
+        # it is possible to get an exception here
+        # yet in all tested cases the remove app is
+        # being processed.  need to separate the delete_all_apps
+        # from the waiting.
         delete_all_apps()
+    except:
+        test_obj.add_event(msg)
+        pass
+
+    try:
         undeployment_wait(test_obj)
     except Exception as e:
         test_obj.add_event(msg)
+        traceback.print_exc()
         assert False, msg
 
 
@@ -267,9 +277,10 @@ def undeployment_wait(test_obj=None):
         except:
             failure_count += 1
             # consecutive failures great than x
-            if failure_count > 10 and test_obj is not None:
-                test_obj.failed('Too many failures waiting for undeploy')
-                raise TestException()
+            if failure_count > 30 and test_obj is not None:
+                msg = 'Too many failures waiting for undeploy'
+                test_obj.failed(msg)
+                raise TestException(msg)
 
             time.sleep(3)
             wait_for_service_endpoint('marathon-user')
@@ -401,7 +412,7 @@ def uninstall_mom():
     max_times = 10
     while not removed:
         try:
-            max_times =- 1
+            max_times = max_times - 1
             client = marathon.create_client()
             client.remove_app('marathon-user')
             deployment_wait()
@@ -466,6 +477,7 @@ def is_mom_version(version):
             else:
                 return False
     return same_version
+
 
 class Resources(object):
 
