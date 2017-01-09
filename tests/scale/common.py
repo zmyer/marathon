@@ -414,9 +414,9 @@ def uninstall_mom():
         try:
             max_times = max_times - 1
             client = marathon.create_client()
-            client.remove_app('marathon-user')
-            deployment_wait()
+            client.remove_app('marathon-user', True)
             time.sleep(2)
+            deployment_wait()
             removed = True
         except DCOSException:
             # remove_app throws DCOSException if it doesn't exist
