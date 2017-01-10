@@ -41,7 +41,7 @@ trait MinMaxCounter {
 
 trait Timer {
   def apply[T](f: => Future[T]): Future[T]
-  def apply[T, M](f: => Source[T, M]): Source[T, M]
+  def forSource[T, M](f: => Source[T, M]): Source[T, M]
   def blocking[T](f: => T): T
   def update(value: Long): this.type
   def update(duration: FiniteDuration): this.type

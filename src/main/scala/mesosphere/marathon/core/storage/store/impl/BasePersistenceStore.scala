@@ -45,14 +45,14 @@ abstract class BasePersistenceStore[K, Category, Serialized](implicit
 
   protected def rawIds(id: Category): Source[K, NotUsed]
 
-  override def ids[Id, V]()(implicit ir: IdResolver[Id, V, Category, K]): Source[Id, NotUsed] = idsTimer {
+  override def ids[Id, V]()(implicit ir: IdResolver[Id, V, Category, K]): Source[Id, NotUsed] = idsTimer.forSource {
     rawIds(ir.category).map(ir.fromStorageId)
   }
 
   protected def rawVersions(id: K): Source[OffsetDateTime, NotUsed]
 
   final override def versions[Id, V](
-    id: Id)(implicit ir: IdResolver[Id, V, Category, K]): Source[OffsetDateTime, NotUsed] = versionTimer {
+    id: Id)(implicit ir: IdResolver[Id, V, Category, K]): Source[OffsetDateTime, NotUsed] = versionTimer.forSource {
     rawVersions(ir.toStorageId(id, None))
   }
 
