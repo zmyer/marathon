@@ -101,7 +101,6 @@ object Dependency {
     val Java8Compat = "0.8.0"
     val ScalaLogging = "3.5.0"
     val Raven = "7.8.0"
-    val Kamon = "0.6.3"
 
     // test deps versions
     val Mockito = "1.10.19"
@@ -153,20 +152,22 @@ object Dependency {
   val raven = "com.getsentry.raven" % "raven-logback" % V.Raven
 
   object Kamon {
-    val core = "io.kamon" %% "kamon-core" % V.Kamon % "compile"
-    val akka = "io.kamon" %% "kamon-akka" % V.Kamon % "compile"
-    val autoweave = "io.kamon" %% "kamon-autoweave" % V.Kamon % "compile"
-    val scala = "io.kamon" %% "kamon-scala" % V.Kamon % "compile"
-    val spray = "io.kamon" %% "kamon-spray" % V.Kamon % "compile"
-    val annotations = "io.kamon" %% "kamon-annotation" % V.Kamon % "compile"
+    val Version = "0.6.5"
+
+    val core = "io.kamon" %% "kamon-core" % Version % "compile"
+    val akka = "io.kamon" %% "kamon-akka" % "0.6.3" % "compile" // not yet published for 0.6.5
+    val autoweave = "io.kamon" %% "kamon-autoweave" % Version % "compile"
+    val scala = "io.kamon" %% "kamon-scala" % Version % "compile"
+    val spray = "io.kamon" %% "kamon-spray" % "0.6.3" % "compile" // not yet published for 0.6.5
+    val systemMetrics = "io.kamon" %% "kamon-system-metrics" % Version % "compile"
 
     object Backends {
-      val statsd = "io.kamon" %% "kamon-statsd" % V.Kamon % "compile"
-      val datadog = "io.kamon" %% "kamon-datadog" % V.Kamon % "compile"
-      val jmx = "io.kamon" %% "kamon-jmx" % V.Kamon % "compile"
+      val statsd = "io.kamon" %% "kamon-statsd" % Version % "compile"
+      val datadog = "io.kamon" %% "kamon-datadog" % Version % "compile"
+      val jmx = "io.kamon" %% "kamon-jmx" % "0.6.3" % "compile" // not yet published for 0.6.5
     }
 
-    val all = Seq(core, akka, autoweave, annotations, scala, spray, Backends.statsd, Backends.datadog, Backends.jmx)
+    val all = Seq(core, akka, autoweave, systemMetrics, scala, spray, Backends.statsd, Backends.datadog, Backends.jmx)
   }
 
   object Test {
