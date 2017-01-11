@@ -1,14 +1,13 @@
 package mesosphere.marathon
 package metrics
 
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import kamon.metric.instrument.CollectionContext
 import mesosphere.AkkaUnitTest
 
 import scala.Exception
 import scala.concurrent.Promise
 import scala.util.Try
-
 
 class MetricsTimerTest extends AkkaUnitTest {
   "Metrics Timers" should {
@@ -77,7 +76,6 @@ class MetricsTimerTest extends AkkaUnitTest {
       sourceFuture.futureValue should contain theSameElementsAs Seq(1)
       timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
     }
-
 
     "measure a failed source" in {
       val timer = HistogramTimer("timer")
