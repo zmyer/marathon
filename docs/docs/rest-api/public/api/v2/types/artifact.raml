@@ -7,6 +7,9 @@ types:
   FsArtifact:
     type: object
     properties:
+      path?:
+        type: strings.Path
+        description: The path inside the container at which the object is bound.
       uri: strings.Uri
       extract?: boolean
       executable?: boolean
@@ -16,7 +19,8 @@ types:
         "uri": "http://download.me/file.tgz",
         "extract": true,
         "executable": true,
-        "cache": false
+        "cache": false,
+        "path": "/var/file"
       }
   Artifact:
     type: object

@@ -23,9 +23,12 @@ types:
   VolumeMount:
     type: object
     properties:
+      path:
+        type: strings.Path
+        description: The path inside the container at which the object is bound.
       readOnly?:
         type: boolean
-      volume?:
+      volume:
         type: strings.Name
         description: Refers to some declared volume of the app or pod.
   ImageType:
@@ -48,16 +51,10 @@ types:
         (pragma.omitEmpty):
         description: Labels for APPC images.
   FsObject:
-    type: object
-    description: |
+     type: VolumeMount | artifacts.FsArtifact
+     description: |
       At runtime volumes and/or files may be injected automatically into a container by the
       container engine.
-    properties:
-      path?:
-        type: strings.Path
-        description: The path inside the container at which the object is bound.
-      artifact?: artifacts.FsArtifact
-      volume?: VolumeMount
   Filesystem:
     type: object
     properties:

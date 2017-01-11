@@ -7,7 +7,7 @@ import com.wix.accord._
 import com.wix.accord.dsl._
 import mesosphere.marathon.Features
 import mesosphere.marathon.api.v2.Validation
-import mesosphere.marathon.raml.{ ArgvCommand, Artifact, CommandHealthCheck, Constraint, Endpoint, EnvVarSecretRef, EnvVarValueOrSecret, FixedPodScalingPolicy, HealthCheck, HttpHealthCheck, Image, ImageType, Lifecycle, Network, NetworkMode, Pod, PodContainer, PodPlacementPolicy, PodScalingPolicy, PodSchedulingBackoffStrategy, PodSchedulingPolicy, PodUpgradeStrategy, Resources, SecretDef, ShellCommand, TcpHealthCheck, Volume, VolumeMount }
+import mesosphere.marathon.raml.{ ArgvCommand, Artifact, CommandHealthCheck, Constraint, Endpoint, EnvVarSecretRef, EnvVarValueOrSecret, Filesystem, FixedPodScalingPolicy, FsObject, HealthCheck, HttpHealthCheck, Image, ImageType, Lifecycle, Network, NetworkMode, Pod, PodContainer, PodPlacementPolicy, PodScalingPolicy, PodSchedulingBackoffStrategy, PodSchedulingPolicy, PodUpgradeStrategy, Resources, SecretDef, ShellCommand, TcpHealthCheck, Volume, VolumeMount }
 import mesosphere.marathon.state.{ PathId, ResourceRole }
 import mesosphere.marathon.util.SemanticVersion
 
@@ -169,10 +169,10 @@ trait PodsValidation {
   }
 
   def volumeMountValidator(volumes: Seq[Volume]): Validator[VolumeMount] = validator[VolumeMount] { volumeMount => // linter:ignore:UnusedParameter
-    volumeMount.name.length is between(1, 63)
-    volumeMount.name should matchRegexFully(NamePattern)
-    volumeMount.mountPath.length is between(1, 1024)
-    volumeMount.name is isTrue("Referenced Volume in VolumeMount should exist") { name =>
+    volumeMount.volume.length is between(1, 63)
+    volumeMount.volume should matchRegexFully(NamePattern)
+    volumeMount.path.length is between(1, 1024)
+    volumeMount.volume is isTrue("Referenced Volume in VolumeMount should exist") { name =>
       volumes.exists(_.name == name)
     }
   }
@@ -186,22 +186,31 @@ trait PodsValidation {
     lc.killGracePeriodSeconds.getOrElse(0.0) should be > 0.0
   }
 
+  def fsObjectValidator(volumes: Seq[Volume]): Validator[FsObject] = validator[FsObject] {
+    case volumeMount: VolumeMount =>
+      volumeMount is valid(volumeMountValidator(volumes))
+    case artifact: Artifact =>
+      artifact is valid(artifactValidator)
+  }
+
+  def filesystemValidator(volumes: Seq[Volume]): Validator[Filesystem] =
+    validator[Filesystem] { fs =>
+      fs.image.getOrElse(Image(ImageType.Docker, "abc")) is valid(imageValidator)
+      fs.objects is every(fsObjectValidator(volumes))
+    }
+
   def containerValidator(pod: Pod, enabledFeatures: Set[String], mesosMasterVersion: SemanticVersion): Validator[PodContainer] =
     validator[PodContainer] { container =>
       container.resources is valid(resourceValidator)
       container.endpoints is every(endpointValidator(pod.networks))
-      container.image.getOrElse(Image(ImageType.Docker, "abc")) is valid(imageValidator)
       container.environment is envValidator(pod, enabledFeatures)
       container.healthCheck is optional(healthCheckValidator(container.endpoints, mesosMasterVersion))
-      container.volumeMounts is every(volumeMountValidator(pod.volumes))
-      container.artifacts is every(artifactValidator)
+      container.filesystem.getOrElse(Filesystem()) is valid(filesystemValidator(pod.volumes))
     }
 
   def volumeValidator(containers: Seq[PodContainer]): Validator[Volume] = validator[Volume] { volume =>
     volume.name is valid(validName)
     volume.host is optional(notEmpty)
-  } and isTrue[Volume]("volume must be referenced by at least one container") { v =>
-    containers.exists(_.volumeMounts.exists(_.name == v.name))
   }
 
   val backoffStrategyValidator = validator[PodSchedulingBackoffStrategy] { bs =>
