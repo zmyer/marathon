@@ -2,7 +2,7 @@
 uses:
   label: label.raml
   numbers: numberTypes.raml
-  volumes: volumes.raml
+  filesystem: filesystem.raml
   strings: stringTypes.raml
 
 types:
@@ -152,4 +152,4 @@ types:
       type: EngineType
       docker?: DockerContainer
       appc?: AppCContainer
-      volumes?: volumes.AppVolume[]
+      volumes?: filesystem.AppVolume[]

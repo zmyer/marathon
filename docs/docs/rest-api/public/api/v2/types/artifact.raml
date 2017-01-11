@@ -4,6 +4,20 @@ usage: |
 uses:
   strings: stringTypes.raml
 types:
+  FsArtifact:
+    type: object
+    properties:
+      uri: strings.Uri
+      extract?: boolean
+      executable?: boolean
+      cache?: boolean
+    example: |
+      {
+        "uri": "http://download.me/file.tgz",
+        "extract": true,
+        "executable": true,
+        "cache": false
+      }
   Artifact:
     type: object
     properties:
@@ -12,10 +26,3 @@ types:
       executable?: boolean
       cache?: boolean
       destPath?: strings.Path
-    example: |
-      {
-        "uri": "http://download.me/file.tgz",
-        "extract": true,
-        "executable": true,
-        "cache": false
-      }

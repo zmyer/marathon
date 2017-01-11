@@ -1,10 +1,10 @@
 #%RAML 1.0 Library
 uses:
+  artifacts: artifact.raml
   constraints: constraint.raml
   label: label.raml
   strings: stringTypes.raml
   pragma: pragma.raml
-
 types:
   Volume:
     type: object
@@ -23,14 +23,53 @@ types:
   VolumeMount:
     type: object
     properties:
-      name:
-        type: strings.Name
-        description: The name of the volume to reference.
-      mountPath:
-        type: strings.Path
-        description: The path inside the container at which the volume is mounted.
       readOnly?:
         type: boolean
+      volume?:
+        type: strings.Name
+        description: Refers to some declared volume of the app or pod.
+  ImageType:
+    type: string
+    enum: [DOCKER, APPC]
+  Image:
+    type: object
+    description: The filesystem image to populate the container with
+    properties:
+      kind: ImageType
+      id:
+        type: strings.Path
+        description: address/identifier of the file system image
+        example: mesosphere/marathon:1.3.0
+      forcePull?:
+        type: boolean
+        description: true if the image should always be pulled
+      labels?:
+        type: label.KVLabels
+        (pragma.omitEmpty):
+        description: Labels for APPC images.
+  FsObject:
+    type: object
+    description: |
+      At runtime volumes and/or files may be injected automatically into a container by the
+      container engine.
+    properties:
+      path?:
+        type: strings.Path
+        description: The path inside the container at which the object is bound.
+      artifact?: artifacts.FsArtifact
+      volume?: VolumeMount
+  Filesystem:
+    type: object
+    properties:
+      image?:
+        type: Image
+        (pragma.omitEmpty):
+      objects?:
+        type: array
+        (pragma.omitEmpty):
+        description: All filesystem objects used by the container.
+        items: FsObject
+        uniqueItems: true
   PersistentVolumeType:
     type: string
     description: The type of mesos disk resource to use; defaults to root

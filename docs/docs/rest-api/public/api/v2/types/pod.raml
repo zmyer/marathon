@@ -9,7 +9,7 @@ uses:
   resources: resources.raml
   strings: stringTypes.raml
   secrets: secrets.raml
-  volumes: volumes.raml
+  filesystem: filesystem.raml
   unreachableStrategy: unreachableStrategy.raml
   killSelection: killSelection.raml
 types:
@@ -156,7 +156,7 @@ types:
         type: secrets.Secrets
         (pragma.omitEmpty):
       volumes?:
-        type: volumes.Volume[]
+        type: filesystem.Volume[]
         (pragma.omitEmpty):
         description: Volumes defined on a pod level that are mounted into containers
       networks?:
