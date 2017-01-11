@@ -11,13 +11,13 @@ import com.google.inject.Inject
 import kamon.Kamon
 import kamon.metric.SubscriptionsDispatcher.TickMetricSnapshot
 import kamon.metric.instrument.Histogram.Snapshot
-import kamon.metric.instrument.{CollectionContext, Histogram}
+import kamon.metric.instrument.{CollectionContext, Counter, Histogram, UnitOfMeasurement}
 import kamon.metric.{Entity, EntitySnapshot, SubscriptionFilter}
 import kamon.util.{MapMerge, MilliTimestamp}
 import mesosphere.marathon.metrics.{ApiMetric, Metrics}
 import mesosphere.marathon.plugin.auth.AuthorizedResource.SystemConfig
 import mesosphere.marathon.plugin.auth.{Authenticator, Authorizer, ViewResource}
-import play.api.libs.json._
+import play.api.libs.json.{JsObject, _}
 
 /**
   * System Resource gives access to system level functionality.
@@ -54,32 +54,52 @@ class SystemResource @Inject() (val config: MarathonConf)(implicit
   }, actorRefFactory.actorOf(Props(new SubscriberActor(metrics))))
 
 
-  implicit val snapshotWrites: Writes[(Map[String, String], Snapshot)] = Writes[(Map[String, String], Histogram.Snapshot)] { case (tags, histogram) =>
-    JsObject(Seq(
-      "count" -> JsNumber(histogram.numberOfMeasurements),
-      "min" -> JsNumber(histogram.min),
-      "max" -> JsNumber(histogram.max),
-      "p50" -> JsNumber(histogram.percentile(0.5)),
-      "p75" -> JsNumber(histogram.percentile(0.75)),
-      "p98" -> JsNumber(histogram.percentile(0.98)),
-      "p99" -> JsNumber(histogram.percentile(0.99)),
-      "p999" -> JsNumber(histogram.percentile(0.999)),
-      // TODO: Stddev?
-      "mean" -> JsNumber(if (histogram.numberOfMeasurements != 0) histogram.sum / histogram.numberOfMeasurements else 0),
-      "tags" -> JsObject(tags.map { case (k, v) => k -> JsString(v) })
-    ))
+  implicit val snapshotWrites: Writes[(Map[String, String], Snapshot)] = Writes[(Map[String, String], Histogram.Snapshot)] {
+    case (tags, histogram) =>
+      JsObject(Seq(
+        "count" -> JsNumber(histogram.numberOfMeasurements),
+        "min" -> JsNumber(histogram.min),
+        "max" -> JsNumber(histogram.max),
+        "p50" -> JsNumber(histogram.percentile(0.5)),
+        "p75" -> JsNumber(histogram.percentile(0.75)),
+        "p98" -> JsNumber(histogram.percentile(0.98)),
+        "p99" -> JsNumber(histogram.percentile(0.99)),
+        "p999" -> JsNumber(histogram.percentile(0.999)),
+        "mean" -> JsNumber(if (histogram.numberOfMeasurements != 0) histogram.sum / histogram.numberOfMeasurements else 0),
+        "tags" -> JsObject(tags.map { case (k, v) => k -> JsString(v) })
+      ))
   }
 
   implicit val tickMetricWrites: Writes[TickMetricSnapshot] = Writes[TickMetricSnapshot] { snapshot =>
+    val metrics = snapshot.metrics.view.map { case (entity, entitySnapshot) =>
+      val json = entitySnapshot.metrics.map { case (metricKey, metricSnapshot) =>
+        val metricName = if (entity.category == metricKey.name) entity.name else s"${entity.name}.${metricKey.name}"
+        metricSnapshot match {
+            case histogram: Histogram.Snapshot =>
+              JsObject(Seq(metricName -> JsObject(Seq(
+                "count" -> JsNumber(histogram.numberOfMeasurements),
+                "min" -> JsNumber(histogram.min),
+                "max" -> JsNumber(histogram.max),
+                "p50" -> JsNumber(histogram.percentile(0.5)),
+                "p75" -> JsNumber(histogram.percentile(0.75)),
+                "p98" -> JsNumber(histogram.percentile(0.98)),
+                "p99" -> JsNumber(histogram.percentile(0.99)),
+                "p999" -> JsNumber(histogram.percentile(0.999)),
+                "mean" -> JsNumber(if (histogram.numberOfMeasurements != 0) histogram.sum / histogram.numberOfMeasurements else 0),
+                "tags" -> JsObject(entity.tags.map { case (k, v) => k -> JsString(v) }),
+                "unit" -> JsString(metricKey.unitOfMeasurement.name)
+              ))))
+            case cs: Counter.Snapshot =>
+              JsObject(Seq(metricName -> JsObject(Seq(
+                "count" -> JsNumber(cs.count),
+                "tags" -> JsObject(entity.tags.map { case (k, v) => k -> JsString(v) }),
+                "unit" -> JsString(metricKey.unitOfMeasurement.name)
+              ))))
+          }
+      }
+      entity.category -> json
+    }.groupBy(_._1).map { case (category, (_, json)) => category -> JsArray(json) }
 
-    def gauges(metrics: Map[Entity, EntitySnapshot]): JsObject =
-      JsObject(metrics.filterKeys(_.category == "gauge").map { case (entity, entitySnapshot) =>
-       entity.name ->
-          Json.toJson(entity.tags -> entitySnapshot.gauge(entity.name).get)
-      })
-    def counters(metrics: Map[Entity, EntitySnapshot]): JsObject = JsObject(Seq()) // linter:ignore
-    def meters(metrics: Map[Entity, EntitySnapshot]): JsObject = JsObject(Seq()) // linter:ignore
-    def histograms(metrics: Map[Entity, EntitySnapshot]): JsObject = JsObject(Seq()) // linter:ignore
 
 
     JsObject(Seq(

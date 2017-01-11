@@ -160,6 +160,7 @@ object Dependency {
     val scala = "io.kamon" %% "kamon-scala" % Version % "compile"
     val spray = "io.kamon" %% "kamon-spray" % "0.6.3" % "compile" // not yet published for 0.6.5
     val systemMetrics = "io.kamon" %% "kamon-system-metrics" % Version % "compile"
+    val akkaHttp = "io.kamon" %% "kamon-akka-http-experimental" % "0.6.3" % "compile" // not yet published for 0.6.5
 
     object Backends {
       val statsd = "io.kamon" %% "kamon-statsd" % Version % "compile"
@@ -167,7 +168,7 @@ object Dependency {
       val jmx = "io.kamon" %% "kamon-jmx" % "0.6.3" % "compile" // not yet published for 0.6.5
     }
 
-    val all = Seq(core, akka, autoweave, systemMetrics, scala, spray, Backends.statsd, Backends.datadog, Backends.jmx)
+    val all = Seq(core, akka, autoweave, systemMetrics, akkaHttp, scala, spray, Backends.statsd, Backends.datadog, Backends.jmx)
   }
 
   object Test {

@@ -1,9 +1,9 @@
 package mesosphere.marathon
 package metrics
 
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import kamon.Kamon
 import kamon.metric.instrument
 import kamon.metric.instrument.Time
@@ -60,7 +60,7 @@ private final class TimedStage[T](timer: Timer) extends GraphStage[FlowShape[T, 
 }
 
 private[metrics] case class HistogramTimer(name: String, tags: Map[String, String] = Map.empty,
-                                           unit: Time = Time.Nanoseconds) extends Timer {
+    unit: Time = Time.Nanoseconds) extends Timer {
   private[metrics] val histogram: instrument.Histogram = Kamon.metrics.histogram(name, tags, unit)
 
   def apply[T](f: => Future[T]): Future[T] = {
