@@ -1,7 +1,9 @@
-package mesosphere.marathon.core.leadership.impl
+package mesosphere.marathon
+package core.leadership.impl
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props, Stash, Status, Terminated }
+import akka.actor.{ Actor, ActorRef, PoisonPill, Props, Stash, Status, Terminated }
 import akka.event.LoggingReceive
+import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.core.leadership.PreparationMessages.{ PrepareForStart, Prepared }
 import mesosphere.marathon.core.leadership.impl.WhenLeaderActor.{ Stop, Stopped }
 
@@ -17,8 +19,8 @@ private[leadership] object WhenLeaderActor {
 /**
   * Wraps an actor which is only started when we are currently the leader.
   */
-private class WhenLeaderActor(childProps: => Props)
-    extends Actor with ActorLogging with Stash {
+private[impl] class WhenLeaderActor(childProps: => Props)
+  extends Actor with StrictLogging with Stash {
 
   private[this] var leadershipCycle = 1
 
@@ -34,7 +36,7 @@ private class WhenLeaderActor(childProps: => Props)
     case Stop => sender() ! Stopped
 
     case unhandled: Any =>
-      log.debug("unhandled message in suspend: {}", unhandled)
+      logger.debug(s"unhandled message in suspend: $unhandled")
       sender() ! Status.Failure(new IllegalStateException(s"not currently active ($self)"))
   }
 
@@ -50,7 +52,7 @@ private class WhenLeaderActor(childProps: => Props)
         stop(childRef)
 
       case unhandled: Any =>
-        log.debug("waiting for startup, stashing {}", unhandled)
+        logger.debug(s"waiting for startup, stashing $unhandled")
         stash()
     }
 
@@ -64,11 +66,11 @@ private class WhenLeaderActor(childProps: => Props)
     case Terminated(`childRef`) =>
       unstashAll()
       stopAckRef ! Stopped
-      log.debug("becoming suspended")
+      logger.debug("becoming suspended")
       context.become(suspended)
 
     case unhandled: Any =>
-      log.debug("waiting for termination, stashing {}", unhandled)
+      logger.debug(s"waiting for termination, stashing $unhandled")
       stash()
   }
 

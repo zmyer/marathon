@@ -2,6 +2,7 @@ package mesosphere.marathon
 package state
 
 import mesosphere.marathon.Protos.Constraint
+import mesosphere.marathon.core.pod.Network
 import mesosphere.marathon.raml.Resources
 
 import scala.concurrent.duration._
@@ -19,9 +20,9 @@ import scala.concurrent.duration._
   *   minimum: 0.0
   */
 case class BackoffStrategy(
-  backoff: FiniteDuration = 1.seconds,
-  maxLaunchDelay: FiniteDuration = 1.hour,
-  factor: Double = 1.15)
+    backoff: FiniteDuration = 1.seconds,
+    maxLaunchDelay: FiniteDuration = 1.hour,
+    factor: Double = 1.15)
 
 /**
   * A generic spec that specifies something that Marathon is able to launch instances of.
@@ -59,4 +60,5 @@ trait RunSpec extends plugin.RunSpec {
   val user: Option[String]
   val unreachableStrategy: UnreachableStrategy
   val killSelection: KillSelection
+  val networks: Seq[Network]
 }

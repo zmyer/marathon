@@ -1,11 +1,12 @@
-package mesosphere.marathon.core.event.impl.stream
+package mesosphere.marathon
+package core.event.impl.stream
 
 import java.util.UUID
 import javax.servlet.http.{ Cookie, HttpServletRequest, HttpServletResponse }
 
 import akka.actor.ActorRef
 import mesosphere.marathon.api.RequestFacade
-import mesosphere.marathon.core.event.EventConf
+import mesosphere.marathon.core.event.{ EventConf, MarathonEvent }
 import mesosphere.marathon.core.event.impl.stream.HttpEventStreamActor._
 import mesosphere.marathon.plugin.auth._
 import mesosphere.marathon.plugin.http.HttpResponse
@@ -24,7 +25,7 @@ class HttpEventSSEHandle(request: HttpServletRequest, emitter: Emitter) extends 
 
   lazy val id: String = UUID.randomUUID().toString
 
-  val subscribedEventTypes = request.getParameterMap.getOrDefault("event_type", Array.empty).toSet
+  private val subscribedEventTypes = request.getParameterMap.getOrDefault("event_type", Array.empty).toSet
 
   def subscribed(eventType: String): Boolean = {
     subscribedEventTypes.isEmpty || subscribedEventTypes.contains(eventType)
@@ -34,8 +35,8 @@ class HttpEventSSEHandle(request: HttpServletRequest, emitter: Emitter) extends 
 
   override def close(): Unit = emitter.close()
 
-  override def sendEvent(event: String, message: String): Unit = {
-    if (subscribed(event)) blocking(emitter.event(event, message))
+  override def sendEvent(event: MarathonEvent): Unit = {
+    if (subscribed(event.eventType)) blocking(emitter.event(event.eventType, event.jsonString))
   }
 
   override def toString: String = s"HttpEventSSEHandle($id on $remoteAddress on event types from $subscribedEventTypes)"
@@ -45,15 +46,16 @@ class HttpEventSSEHandle(request: HttpServletRequest, emitter: Emitter) extends 
   * Handle a server side event client stream by delegating events to the stream actor.
   */
 class HttpEventStreamServlet(
-  streamActor: ActorRef,
-  conf: EventConf,
-  val authenticator: Authenticator,
-  val authorizer: Authorizer)
-    extends EventSourceServlet {
+    streamActor: ActorRef,
+    conf: EventConf,
+    val authenticator: Authenticator,
+    val authorizer: Authorizer)
+  extends EventSourceServlet {
 
   override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
     val requestFacade = new RequestFacade(request)
     val maybeIdentity = Await.result(authenticator.authenticate(requestFacade), conf.zkTimeoutDuration)
+
     def withResponseFacade(fn: HttpResponse => Unit): Unit = {
       val facade = new HttpResponse {
         override def body(mediaType: String, bytes: Array[Byte]): Unit = {
@@ -82,9 +84,11 @@ class HttpEventStreamServlet(
       }
       fn(facade)
     }
+
     def isAuthorized(identity: Identity): Boolean = {
       authorizer.isAuthorized(identity, ViewResource, AuthorizedResource.Events)
     }
+
     maybeIdentity match {
       case Some(identity) if isAuthorized(identity) =>
         super.doGet(request, response)
@@ -93,6 +97,14 @@ class HttpEventStreamServlet(
       case None =>
         withResponseFacade(authenticator.handleNotAuthenticated(requestFacade, _))
     }
+  }
+
+  override def doTrace(req: HttpServletRequest, resp: HttpServletResponse): Unit = {
+    resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED)
+  }
+
+  override def doOptions(req: HttpServletRequest, resp: HttpServletResponse): Unit = {
+    resp.setHeader("Allow", "GET, HEAD, OPTIONS")
   }
 
   override def newEventSource(request: HttpServletRequest): EventSource = new EventSource {

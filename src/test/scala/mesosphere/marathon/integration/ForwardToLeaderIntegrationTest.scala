@@ -2,184 +2,171 @@ package mesosphere.marathon
 package integration
 
 import java.net.URL
-
-import akka.actor.ActorSystem
-import mesosphere.IntegrationFunTest
+import org.apache.commons.io.IOUtils
+import mesosphere.AkkaIntegrationTest
 import mesosphere.marathon.api.{ JavaUrlConnectionRequestForwarder, LeaderProxyFilter }
 import mesosphere.marathon.integration.setup._
-import mesosphere.marathon.io.IO
 import mesosphere.util.PortAllocator
-import org.apache.commons.httpclient.HttpStatus
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.time.{ Milliseconds, Seconds, Span }
 
 /**
   * Tests forwarding requests.
   */
 @IntegrationTest
-class ForwardToLeaderIntegrationTest extends IntegrationFunTest {
-  implicit var actorSystem: ActorSystem = _
-  val forwarder = new ForwarderService
-
-  before {
-    actorSystem = ActorSystem()
+class ForwardToLeaderIntegrationTest extends AkkaIntegrationTest {
+  def withForwarder[T](testCode: ForwarderService => T): T = {
+    val forwarder = new ForwarderService
+    try {
+      testCode(forwarder)
+    } finally {
+      forwarder.close()
+    }
   }
 
-  after {
-    Await.result(actorSystem.terminate(), Duration.Inf)
-    forwarder.close()
-  }
+  val forwarderStartTimeout = PatienceConfiguration.Timeout(Span(60, Seconds))
+  val forwarderStartInterval = PatienceConfiguration.Interval(Span(100, Milliseconds))
 
-  override def afterAll(): Unit = {
-    forwarder.close()
-    super.afterAll()
-  }
+  "ForwardingToLeader" should {
+    "direct ping" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp().futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
+      val appFacade = new AppMockFacade()
+      val result = appFacade.ping("localhost", port = helloPort).futureValue
+      result should be(OK)
+      result.entityString should be("pong\n")
+      result.value.headers.exists(_.name == JavaUrlConnectionRequestForwarder.HEADER_VIA) should be(false)
+      result.value.headers.count(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER) should be(1)
+      result.value.headers.find(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER).get.value should be(s"http://localhost:$helloPort")
+    }
 
-  test("direct ping") {
-    val helloPort = forwarder.startHelloApp()
-    val appFacade = new AppMockFacade()
-    val result = appFacade.ping("localhost", port = helloPort)
-    assert(result.originalResponse.status.intValue == 200)
-    assert(result.entityString == "pong\n")
-    assert(!result.originalResponse.headers.exists(_.name == JavaUrlConnectionRequestForwarder.HEADER_VIA))
-    assert(result.originalResponse.headers.count(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER) == 1)
-    assert(
-      result.originalResponse.headers.find(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER).get.value
-        == s"http://localhost:$helloPort")
-  }
+    "forward ping" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp().futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
+      val forwardPort = forwarder.startForwarder(helloPort).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The forwarder service did not start in time"
 
-  test("forwarding ping") {
-    val helloPort = forwarder.startHelloApp()
-    val forwardPort = forwarder.startForwarder(helloPort)
+      val appFacade = new AppMockFacade()
+      val result = appFacade.ping("localhost", port = forwardPort).futureValue
+      result should be(OK)
+      result.entityString should be("pong\n")
+      result.value.headers.count(_.name == JavaUrlConnectionRequestForwarder.HEADER_VIA) should be(1)
+      result.value.headers.find(_.name == JavaUrlConnectionRequestForwarder.HEADER_VIA).get.value should be(s"1.1 localhost:$forwardPort")
+      result.value.headers.count(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER) should be(1)
+      result.value.headers.find(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER).get.value should be(s"http://localhost:$helloPort")
+    }
 
-    val appFacade = new AppMockFacade()
-    val result = appFacade.ping("localhost", port = forwardPort)
-    assert(result.originalResponse.status.intValue == 200)
-    assert(result.entityString == "pong\n")
-    assert(result.originalResponse.headers.count(_.name == JavaUrlConnectionRequestForwarder.HEADER_VIA) == 1)
-    assert(
-      result.originalResponse.headers.find(_.name == JavaUrlConnectionRequestForwarder.HEADER_VIA).get.value
-        == s"1.1 localhost:$forwardPort")
-    assert(result.originalResponse.headers.count(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER) == 1)
-    assert(
-      result.originalResponse.headers.find(_.name == LeaderProxyFilter.HEADER_MARATHON_LEADER).get.value
-        == s"http://localhost:$helloPort")
-  }
+    "direct HTTPS ping" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp("--https_port", Seq(
+        "--disable_http",
+        "--ssl_keystore_path", SSLContextTestUtil.selfSignedKeyStorePath,
+        "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
+        "--https_address", "localhost")).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
 
-  test("direct HTTPS ping") {
-    val helloPort = forwarder.startHelloApp("--https_port", Seq(
-      "--disable_http",
-      "--ssl_keystore_path", SSLContextTestUtil.selfSignedKeyStorePath,
-      "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
-      "--https_address", "localhost"))
+      val pingURL = new URL(s"https://localhost:$helloPort/ping")
+      val connection = SSLContextTestUtil.sslConnection(pingURL, SSLContextTestUtil.selfSignedSSLContext)
+      val via = connection.getHeaderField(JavaUrlConnectionRequestForwarder.HEADER_VIA)
+      val leader = connection.getHeaderField(LeaderProxyFilter.HEADER_MARATHON_LEADER)
+      val response = IOUtils.toString(connection.getInputStream, "UTF-8")
+      response should be("pong\n")
+      via should be(null)
+      leader should be(s"https://localhost:$helloPort")
+    }
 
-    val pingURL = new URL(s"https://localhost:$helloPort/ping")
-    val connection = SSLContextTestUtil.sslConnection(pingURL, SSLContextTestUtil.selfSignedSSLContext)
-    val via = connection.getHeaderField(JavaUrlConnectionRequestForwarder.HEADER_VIA)
-    val leader = connection.getHeaderField(LeaderProxyFilter.HEADER_MARATHON_LEADER)
-    val response = IO.using(connection.getInputStream)(IO.copyInputStreamToString)
-    assert(response == "pong\n")
-    assert(via == null)
-    assert(leader == s"https://localhost:$helloPort")
-  }
+    "forwarding HTTPS ping with a self-signed cert" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp("--https_port", Seq(
+        "--disable_http",
+        "--ssl_keystore_path", SSLContextTestUtil.selfSignedKeyStorePath,
+        "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
+        "--https_address", "localhost")).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
 
-  test("forwarding HTTPS ping with a self-signed cert") {
-    val helloPort = forwarder.startHelloApp("--https_port", Seq(
-      "--disable_http",
-      "--ssl_keystore_path", SSLContextTestUtil.selfSignedKeyStorePath,
-      "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
-      "--https_address", "localhost"))
+      val forwardPort = forwarder.startForwarder(helloPort, "--https_port", args = Seq(
+        "--disable_http",
+        "--ssl_keystore_path", SSLContextTestUtil.selfSignedKeyStorePath,
+        "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
+        "--https_address", "localhost")).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The forwarder service did not start in time"
 
-    val forwardPort = forwarder.startForwarder(helloPort, "--https_port", args = Seq(
-      "--disable_http",
-      "--ssl_keystore_path", SSLContextTestUtil.selfSignedKeyStorePath,
-      "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
-      "--https_address", "localhost"))
+      val pingURL = new URL(s"https://localhost:$forwardPort/ping")
+      val connection = SSLContextTestUtil.sslConnection(pingURL, SSLContextTestUtil.selfSignedSSLContext)
+      val via = connection.getHeaderField(JavaUrlConnectionRequestForwarder.HEADER_VIA)
+      val leader = connection.getHeaderField(LeaderProxyFilter.HEADER_MARATHON_LEADER)
+      val response = IOUtils.toString(connection.getInputStream, "UTF-8")
+      response should be("pong\n")
+      via should be(s"1.1 localhost:$forwardPort")
+      leader should be(s"https://localhost:$helloPort")
+    }
 
-    val pingURL = new URL(s"https://localhost:$forwardPort/ping")
-    val connection = SSLContextTestUtil.sslConnection(pingURL, SSLContextTestUtil.selfSignedSSLContext)
-    val via = connection.getHeaderField(JavaUrlConnectionRequestForwarder.HEADER_VIA)
-    val leader = connection.getHeaderField(LeaderProxyFilter.HEADER_MARATHON_LEADER)
-    val response = IO.using(connection.getInputStream)(IO.copyInputStreamToString)
-    assert(response == "pong\n")
-    assert(via == s"1.1 localhost:$forwardPort")
-    assert(leader == s"https://localhost:$helloPort")
-  }
-
-  test("forwarding HTTPS ping with a ca signed cert") {
-    val helloPort = forwarder.startHelloApp("--https_port", Seq(
-      "--disable_http",
-      "--ssl_keystore_path", SSLContextTestUtil.caKeyStorePath,
-      "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
-      "--https_address", "localhost"))
-
-    val forwardPort = forwarder.startForwarder(
-      helloPort,
-      "--https_port",
-      trustStorePath = Some(SSLContextTestUtil.caTrustStorePath),
-      args = Seq(
+    "forwarding HTTPS ping with a ca signed cert" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp("--https_port", Seq(
         "--disable_http",
         "--ssl_keystore_path", SSLContextTestUtil.caKeyStorePath,
         "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
-        "--https_address", "localhost"))
+        "--https_address", "localhost")).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
 
-    val pingURL = new URL(s"https://localhost:$forwardPort/ping")
-    val connection = SSLContextTestUtil.sslConnection(pingURL, SSLContextTestUtil.caSignedSSLContext)
-    val via = connection.getHeaderField(JavaUrlConnectionRequestForwarder.HEADER_VIA)
-    val leader = connection.getHeaderField(LeaderProxyFilter.HEADER_MARATHON_LEADER)
-    val response = IO.using(connection.getInputStream)(IO.copyInputStreamToString)
-    assert(response == "pong\n")
-    assert(via == s"1.1 localhost:$forwardPort")
-    assert(leader == s"https://localhost:$helloPort")
+      val forwardPort = forwarder.startForwarder(
+        helloPort,
+        "--https_port",
+        trustStorePath = Some(SSLContextTestUtil.caTrustStorePath),
+        args = Seq(
+          "--disable_http",
+          "--ssl_keystore_path", SSLContextTestUtil.caKeyStorePath,
+          "--ssl_keystore_password", SSLContextTestUtil.keyStorePassword,
+          "--https_address", "localhost")).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The forwarder service did not start in time"
+
+      val pingURL = new URL(s"https://localhost:$forwardPort/ping")
+      val connection = SSLContextTestUtil.sslConnection(pingURL, SSLContextTestUtil.caSignedSSLContext)
+      val via = connection.getHeaderField(JavaUrlConnectionRequestForwarder.HEADER_VIA)
+      val leader = connection.getHeaderField(LeaderProxyFilter.HEADER_MARATHON_LEADER)
+      val response = IOUtils.toString(connection.getInputStream, "UTF-8")
+      response should be("pong\n")
+      via should be(s"1.1 localhost:$forwardPort")
+      leader should be(s"https://localhost:$helloPort")
+    }
+
+    "direct 404" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp().futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
+      val appFacade = new AppMockFacade()
+      val result = appFacade.custom("/notfound")("localhost", port = helloPort).futureValue
+      result should be(NotFound)
+    }
+
+    "forwarding 404" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp().futureValue
+      val forwardPort = forwarder.startForwarder(helloPort).futureValue
+      val appFacade = new AppMockFacade()
+      val result = appFacade.custom("/notfound")("localhost", port = forwardPort).futureValue
+      result should be(NotFound)
+    }
+
+    "direct internal server error" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp().futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
+      val appFacade = new AppMockFacade()
+      val result = appFacade.custom("/hello/crash")("localhost", port = helloPort).futureValue
+      result should be(ServerError)
+      result.entityString should be("Error")
+    }
+
+    "forwarding internal server error" in withForwarder { forwarder =>
+      val helloPort = forwarder.startHelloApp().futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The hello app did not start in time"
+      val forwardPort = forwarder.startForwarder(helloPort).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The forwarder service did not start in time"
+      val appFacade = new AppMockFacade()
+      val result = appFacade.custom("/hello/crash")("localhost", port = forwardPort).futureValue
+      result should be(ServerError)
+      result.entityString should be("Error")
+    }
+
+    "forwarding connection failed" in withForwarder { forwarder =>
+      val forwardPort = forwarder.startForwarder(PortAllocator.ephemeralPort()).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The forwarder service did not start in time"
+      val appFacade = new AppMockFacade()
+      val result = appFacade.ping("localhost", port = forwardPort).futureValue
+      result should be(BadGateway)
+    }
+
+    "forwarding loop" in withForwarder { forwarder =>
+      val forwardPort1 = forwarder.startForwarder(PortAllocator.ephemeralPort()).futureValue(forwarderStartTimeout, forwarderStartInterval) withClue "The forwarder service did not start in time"
+      forwarder.startForwarder(PortAllocator.ephemeralPort()).futureValue
+
+      val appFacade = new AppMockFacade()
+      val result = appFacade.ping("localhost", port = forwardPort1).futureValue
+      result should be(BadGateway)
+    }
+
   }
-
-  test("direct 404") {
-    val helloPort = forwarder.startHelloApp()
-    val appFacade = new AppMockFacade()
-    val result = appFacade.custom("/notfound")("localhost", port = helloPort)
-    assert(result.originalResponse.status.intValue == 404)
-  }
-
-  test("forwarding 404") {
-    val helloPort = forwarder.startHelloApp()
-    val forwardPort = forwarder.startForwarder(helloPort)
-    val appFacade = new AppMockFacade()
-    val result = appFacade.custom("/notfound")("localhost", port = forwardPort)
-    assert(result.originalResponse.status.intValue == 404)
-  }
-
-  test("direct internal server error") {
-    val helloPort = forwarder.startHelloApp()
-    val appFacade = new AppMockFacade()
-    val result = appFacade.custom("/hello/crash")("localhost", port = helloPort)
-    assert(result.originalResponse.status.intValue == 500)
-    assert(result.entityString == "Error")
-  }
-
-  test("forwarding internal server error") {
-    val helloPort = forwarder.startHelloApp()
-    val forwardPort = forwarder.startForwarder(helloPort)
-    val appFacade = new AppMockFacade()
-    val result = appFacade.custom("/hello/crash")("localhost", port = forwardPort)
-    assert(result.originalResponse.status.intValue == 500)
-    assert(result.entityString == "Error")
-  }
-
-  test("forwarding connection failed") {
-    val forwardPort = forwarder.startForwarder(PortAllocator.ephemeralPort())
-    val appFacade = new AppMockFacade()
-    val result = appFacade.ping("localhost", port = forwardPort)
-    assert(result.originalResponse.status.intValue == HttpStatus.SC_BAD_GATEWAY)
-  }
-
-  test("forwarding loop") {
-    val forwardPort1 = forwarder.startForwarder(PortAllocator.ephemeralPort())
-    forwarder.startForwarder(PortAllocator.ephemeralPort())
-
-    val appFacade = new AppMockFacade()
-    val result = appFacade.ping("localhost", port = forwardPort1)
-    assert(result.originalResponse.status.intValue == HttpStatus.SC_BAD_GATEWAY)
-  }
-
 }

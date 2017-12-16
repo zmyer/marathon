@@ -1,39 +1,33 @@
-package mesosphere.marathon.core.matcher.base.util
+package mesosphere.marathon
+package core.matcher.base.util
 
 import akka.actor.ActorRef
-import akka.pattern.{ AskTimeoutException, ask }
-import akka.util.Timeout
-import mesosphere.marathon.core.base.Clock
+import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.core.matcher.base.OfferMatcher
 import mesosphere.marathon.core.matcher.base.OfferMatcher.MatchedInstanceOps
-import mesosphere.marathon.state.{ PathId, Timestamp }
+import mesosphere.marathon.state.PathId
 import org.apache.mesos.Protos.Offer
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
 
 /**
   * Provides a thin wrapper around an OfferMatcher implemented as an actors.
+  *
+  * @param actorRef Reference to actor that matches offers.
+  * @param precedenceFor Defines which matcher receives offers first. See [[mesosphere.marathon.core.matcher.base.OfferMatcher.precedenceFor]].
   */
-class ActorOfferMatcher(
-    clock: Clock,
-    actorRef: ActorRef,
-    override val precedenceFor: Option[PathId]) extends OfferMatcher {
-  def matchOffer(deadline: Timestamp, offer: Offer): Future[MatchedInstanceOps] = {
-    import mesosphere.util.CallerThreadExecutionContext.callerThreadExecutionContext
-    implicit val timeout: Timeout = clock.now().until(deadline)
-    if (timeout.duration > ActorOfferMatcher.MinimalOfferComputationTime) {
-      val answerFuture = actorRef ? ActorOfferMatcher.MatchOffer(deadline, offer)
-      answerFuture.mapTo[MatchedInstanceOps].recover {
-        case _: AskTimeoutException => MatchedInstanceOps(offer.getId)
-      }
-    } else {
-      // if deadline is exceeded return no match
-      Future.successful(MatchedInstanceOps(offer.getId))
-    }
+class ActorOfferMatcher(actorRef: ActorRef, override val precedenceFor: Option[PathId])
+  extends OfferMatcher with StrictLogging {
+
+  def matchOffer(offer: Offer): Future[MatchedInstanceOps] = {
+    val p = Promise[MatchedInstanceOps]()
+    actorRef ! ActorOfferMatcher.MatchOffer(offer, p)
+    p.future
   }
 
   override def toString: String = s"ActorOfferMatcher($actorRef)"
+
 }
 
 object ActorOfferMatcher {
@@ -47,6 +41,9 @@ object ActorOfferMatcher {
     *
     * This should always be replied to with a LaunchTasks message.
     * TODO(jdef) pods will probably require a non-LaunchTasks message
+    *
+    * @param remainingOffer Part of the offer that has not been matched.
+    * @param promise The promise to fullfil with match.
     */
-  case class MatchOffer(matchingDeadline: Timestamp, remainingOffer: Offer)
+  case class MatchOffer(remainingOffer: Offer, promise: Promise[MatchedInstanceOps])
 }

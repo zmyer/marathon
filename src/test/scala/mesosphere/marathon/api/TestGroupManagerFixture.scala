@@ -5,27 +5,33 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Provider
 
 import akka.event.EventStream
-import com.codahale.metrics.MetricRegistry
+import mesosphere.AkkaUnitTestLike
 import mesosphere.marathon.core.group.GroupManagerModule
-import mesosphere.marathon.core.leadership.AlwaysElectedLeadershipModule
-import mesosphere.marathon.io.storage.StorageProvider
-import mesosphere.marathon.metrics.Metrics
-import mesosphere.marathon.storage.repository.{ AppRepository, GroupRepository, PodRepository }
-import mesosphere.marathon.test.{ MarathonActorSupport, Mockito }
-import mesosphere.marathon.util.WorkQueue
+import mesosphere.marathon.state.RootGroup
+import mesosphere.marathon.storage.repository.GroupRepository
+import mesosphere.marathon.test.Mockito
 
-class TestGroupManagerFixture extends Mockito with MarathonActorSupport {
+import scala.concurrent.Future
+import mesosphere.marathon.core.async.ExecutionContexts
+import mesosphere.AkkaUnitTestLike
+
+class TestGroupManagerFixture(
+    initialRoot: RootGroup = RootGroup.empty,
+    authenticated: Boolean = true,
+    authorized: Boolean = true,
+    authFn: Any => Boolean = _ => true) extends Mockito with AkkaUnitTestLike {
   val service = mock[MarathonSchedulerService]
   val groupRepository = mock[GroupRepository]
-  val podRepository = mock[PodRepository]
-  val appRepository = mock[AppRepository]
   val eventBus = mock[EventStream]
-  val provider = mock[StorageProvider]
 
-  val config = AllConf.withTestConfig("--zk_timeout", "1000")
+  val authFixture = new TestAuthFixture()
+  authFixture.authenticated = authenticated
+  authFixture.authorized = authorized
+  authFixture.authFn = authFn
 
-  val metricRegistry = new MetricRegistry()
-  val metrics = new Metrics(metricRegistry)
+  implicit val authenticator = authFixture.auth
+
+  val config = AllConf.withTestConfig("--zk_timeout", "3000")
 
   val actorId = new AtomicInteger(0)
 
@@ -33,17 +39,12 @@ class TestGroupManagerFixture extends Mockito with MarathonActorSupport {
     override def get() = service
   }
 
+  groupRepository.root() returns Future.successful(initialRoot)
+
   private[this] val groupManagerModule = new GroupManagerModule(
     config = config,
-    AlwaysElectedLeadershipModule.forActorSystem(system),
-    serializeUpdates = WorkQueue("serializeGroupUpdates", 1, 10),
     scheduler = schedulerProvider,
-    groupRepo = groupRepository,
-    appRepo = appRepository,
-    podRepo = podRepository,
-    storage = provider,
-    eventBus = eventBus,
-    metrics = metrics)
+    groupRepo = groupRepository)(ExecutionContexts.global, eventBus, authenticator)
 
   val groupManager = groupManagerModule.groupManager
 }

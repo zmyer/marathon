@@ -2,6 +2,7 @@ package mesosphere.marathon
 package core.pod
 
 // scalastyle:off
+import mesosphere.marathon.api.v2.PodNormalization
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.raml.{ Endpoint, ExecutorResources, Pod, Raml, Resources }
 import mesosphere.marathon.state._
@@ -23,7 +24,7 @@ case class PodDefinition(
     containers: Seq[MesosContainer] = PodDefinition.DefaultContainers,
     instances: Int = PodDefinition.DefaultInstances,
     constraints: Set[Protos.Constraint] = PodDefinition.DefaultConstraints,
-    version: Timestamp = PodDefinition.DefaultVersion,
+    versionInfo: VersionInfo = VersionInfo.OnlyVersion(PodDefinition.DefaultVersion),
     podVolumes: Seq[Volume] = PodDefinition.DefaultVolumes,
     networks: Seq[Network] = PodDefinition.DefaultNetworks,
     backoffStrategy: BackoffStrategy = PodDefinition.DefaultBackoffStrategy,
@@ -32,6 +33,12 @@ case class PodDefinition(
     override val unreachableStrategy: UnreachableStrategy = PodDefinition.DefaultUnreachableStrategy,
     override val killSelection: KillSelection = KillSelection.DefaultKillSelection
 ) extends RunSpec with plugin.PodSpec with MarathonState[Protos.Json, PodDefinition] {
+
+  /**
+    * As an optimization, we precompute and cache the hash of this object
+    * This is done to speed up deployment plan computation.
+    */
+  override val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
 
   val endpoints: Seq[Endpoint] = containers.flatMap(_.endpoints)
   val resources = aggregateResources()
@@ -74,8 +81,7 @@ case class PodDefinition(
     case _ => throw new IllegalStateException("Can't change pod to app")
   }
 
-  // TODO(PODS) versionInfo
-  override val versionInfo: VersionInfo = VersionInfo.OnlyVersion(version)
+  override val version: Timestamp = versionInfo.version
 
   override def mergeFromProto(message: Protos.Json): PodDefinition = {
     Raml.fromRaml(Json.parse(message.getJson).as[Pod])
@@ -114,9 +120,8 @@ object PodDefinition {
   val DefaultConstraints = Set.empty[Protos.Constraint]
   val DefaultVersion = Timestamp.now()
   val DefaultVolumes = Seq.empty[Volume]
-  val DefaultNetworks = Seq.empty[Network]
+  val DefaultNetworks: Seq[Network] = PodNormalization.DefaultNetworks.map(_.fromRaml)
   val DefaultBackoffStrategy = BackoffStrategy()
   val DefaultUpgradeStrategy = AppDefinition.DefaultUpgradeStrategy
-  val DefaultUnreachableStrategy = UnreachableStrategy.defaultEphemeral
-
+  val DefaultUnreachableStrategy = UnreachableStrategy.default(resident = false)
 }

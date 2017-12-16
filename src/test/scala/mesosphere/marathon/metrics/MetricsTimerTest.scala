@@ -1,68 +1,117 @@
-package mesosphere.marathon.metrics
+package mesosphere.marathon
+package metrics
 
-import com.codahale.metrics.MetricRegistry
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
+import akka.stream.scaladsl.{ Keep, Sink, Source }
+import kamon.metric.instrument.CollectionContext
+import mesosphere.AkkaUnitTest
+import mesosphere.marathon.test.SettableClock
+import mesosphere.marathon.test.SettableClock
+import org.scalatest.Inside
+import org.scalatest.concurrent.Eventually
+import org.scalatest.exceptions.TestFailedException
 
+import scala.Exception
 import scala.concurrent.Promise
-import scala.util.Try
+import scala.concurrent.duration._
+import scala.util.{ Try, Failure }
 
-class MetricsTimerTest extends FunSuite with Matchers with GivenWhenThen with ScalaFutures {
-  test("time crashing call") {
-    When("doing the call (but the future is delayed)")
-    val metrics = new Metrics(new MetricRegistry)
-    val timer = metrics.timer("timer")
-    val failure: RuntimeException = new scala.RuntimeException("failed")
-    val attempt = Try(timer.timeFuture(throw failure))
+class MetricsTimerTest extends AkkaUnitTest with Eventually with Inside {
 
-    Then("we get the expected metric results")
-    timer.timer.getCount should be(1)
-    // TODO: check time but we need to mock the time first
+  "Metrics Timers" should {
+    "time crashing call" in {
+      When("doing the call (but the future is delayed)")
+      val timer = HistogramTimer("timer")
 
-    And("the original failure is preserved")
-    attempt.failed.get should be(failure)
-  }
+      val failure: RuntimeException = new scala.RuntimeException("failed")
+      val attempt = Try(timer(throw failure))
 
-  test("time delayed successful future") {
-    When("doing the call (but the future is delayed)")
-    val metrics = new Metrics(new MetricRegistry)
-    val timer = metrics.timer("timer")
-    val promise = Promise[Unit]()
-    val result = timer.timeFuture(promise.future)
+      Then("we get the expected metric results")
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
+      // TODO: check time but we need to mock the time first
 
-    Then("the call has not yet been registered")
-    timer.timer.getCount should be(0)
+      And("the original failure is preserved")
+      attempt.failed.get should be(failure)
+    }
 
-    When("we fulfill the future")
-    promise.success(())
+    "time delayed successful future" in {
+      When("doing the call (but the future is delayed)")
+      val timer = HistogramTimer("timer")
 
-    Then("we get the expected metric results")
-    timer.timer.getCount should be(1)
-    // TODO: check time but we need to mock the time first
+      val promise = Promise[Unit]()
+      val result = timer(promise.future)
 
-    And("the original result is preserved")
-    result.futureValue should be(())
-  }
+      Then("the call has not yet been registered")
+      Then("we get the expected metric results")
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(0L)
 
-  test("time delayed failed future") {
-    When("doing the call (but the future is delayed)")
-    val metrics = new Metrics(new MetricRegistry)
-    val timer = metrics.timer("timer")
-    val promise = Promise[Unit]()
-    val result = timer.timeFuture(promise.future)
+      When("we fulfill the future")
+      promise.success(())
 
-    Then("the call has not yet been registered")
-    timer.timer.getCount should be(0)
+      Then("we get the expected metric results")
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
+      // TODO: check time but we need to mock the time first
 
-    When("we fulfill the future")
-    val failure: RuntimeException = new scala.RuntimeException("simulated failure")
-    promise.failure(failure)
+      And("the original result is preserved")
+      result.futureValue should be(())
+    }
 
-    Then("we get the expected metric results")
-    timer.timer.getCount should be(1)
-    // TODO: check time but we need to mock the time first
+    "time delayed failed future" in {
+      When("doing the call (but the future is delayed)")
+      val timer = HistogramTimer("timer")
 
-    And("the failure should be preserved")
-    result.failed.futureValue should be(failure)
+      val promise = Promise[Unit]()
+      val result = timer(promise.future)
+
+      Then("the call has not yet been registered")
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(0L)
+
+      When("we fulfill the future")
+      val failure: RuntimeException = new scala.RuntimeException("simulated failure")
+      promise.failure(failure)
+
+      Then("we get the expected metric results")
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(1L)
+      // TODO: check time but we need to mock the time first
+
+      And("the failure should be preserved")
+      result.failed.futureValue should be(failure)
+    }
+
+    "measure a successful source" in {
+      implicit val clock = new SettableClock()
+      val timer = HistogramTimer("timer")
+      val promise = Promise[Int]()
+      val graph = timer.forSource(Source.fromFuture(promise.future))
+        .toMat(Sink.seq)(Keep.right)
+
+      clock += 1.second
+      val sourceFuture = graph.run
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(0L)
+      clock += 1.second
+      promise.success(1)
+      sourceFuture.futureValue should contain theSameElementsAs Seq(1)
+      // histograms are not precise, so we check the range
+      timer.histogram.collect(CollectionContext(10)).max shouldEqual (1000000000L +- 100000000L)
+    }
+
+    "measure a failed source (and propagate the exception)" in {
+      implicit val clock = new SettableClock()
+      val timer = HistogramTimer("timer")
+      val promise = Promise[Int]()
+      val graph = timer.forSource(Source.fromFuture(promise.future))
+        .toMat(Sink.seq)(Keep.right)
+      clock.plus(1.second)
+      val sourceFuture = graph.run
+      timer.histogram.collect(CollectionContext(10)).numberOfMeasurements should be(0L)
+      clock.plus(1.second)
+      val ex = new Exception("Very exception!")
+      promise.failure(ex)
+      inside(Try(sourceFuture.futureValue)) {
+        case Failure(testFailEx: TestFailedException) =>
+          testFailEx.cause shouldBe Some(ex)
+      }
+
+      timer.histogram.collect(CollectionContext(10)).max shouldEqual (1000000000L +- 100000000L)
+    }
   }
 }

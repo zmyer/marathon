@@ -5,15 +5,11 @@ import javax.inject.Inject
 import javax.servlet._
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 
-import mesosphere.marathon.stream._
+import mesosphere.marathon.stream.Implicits._
 
 class CORSFilter @Inject() (config: MarathonConf) extends Filter {
 
-  // Map access_control_allow_origin flag into separate headers
-  lazy val maybeOrigins: Option[Seq[String]] =
-    config.accessControlAllowOrigin.get.map { configValue =>
-      configValue.split(",").map(_.trim)(collection.breakOut)
-    }
+  lazy val maybeOrigins: Option[Seq[String]] = config.accessControlAllowOrigin.get
 
   override def init(filterConfig: FilterConfig): Unit = {}
 

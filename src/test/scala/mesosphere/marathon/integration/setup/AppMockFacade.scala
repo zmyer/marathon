@@ -1,34 +1,30 @@
-package mesosphere.marathon.integration.setup
+package mesosphere.marathon
+package integration.setup
 
-import akka.actor.ActorSystem
-import org.slf4j.LoggerFactory
-import spray.client.pipelining._
+import akka.actor.{ ActorSystem, Scheduler }
+import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.model.HttpResponse
+import akka.stream.Materializer
+import com.typesafe.scalalogging.StrictLogging
+import mesosphere.marathon.util.Retry
 
-import scala.concurrent.duration.{ Duration, _ }
-import scala.util.Try
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
-class AppMockFacade(https: Boolean = false, waitTime: Duration = 30.seconds)(implicit system: ActorSystem) {
-  import scala.concurrent.ExecutionContext.Implicits.global
+class AppMockFacade(https: Boolean = false)(implicit system: ActorSystem, mat: Materializer, waitTime: FiniteDuration = 30.seconds) extends StrictLogging {
+  import AkkaHttpResponse._
+  import mesosphere.marathon.core.async.ExecutionContexts.global
 
-  private[this] val log = LoggerFactory.getLogger(getClass)
+  implicit val scheduler: Scheduler = system.scheduler
 
-  private[this] def retry[T](retries: Int = 200, waitForNextTry: Duration = 50.milliseconds)(block: => T): T = {
-    val attempts = Iterator(Try(block)) ++ Iterator.continually(Try {
-      Thread.sleep(waitForNextTry.toMillis)
-      block
-    })
-    val firstSuccess = attempts.take(retries - 1).find(_.isSuccess).flatMap(_.toOption)
-    firstSuccess.getOrElse(block)
-  }
+  def ping(host: String, port: Int): Future[RestResult[HttpResponse]] = custom("/ping")(host, port)
 
-  val pipeline = sendReceive
-  def ping(host: String, port: Int): RestResult[String] = custom("/ping")(host, port)
+  val scheme: String = if (https) "https" else "http"
 
-  def scheme: String = if (https) "https" else "http"
-
-  def custom(uri: String)(host: String, port: Int): RestResult[String] = {
-    retry() {
-      RestResult.await(pipeline(Get(s"$scheme://$host:$port$uri")), waitTime).map(_.entity.asString)
+  def custom(uri: String)(host: String, port: Int): Future[RestResult[HttpResponse]] = {
+    val url = s"$scheme://$host:$port$uri"
+    Retry(s"query: $url", Int.MaxValue, maxDuration = waitTime) {
+      request(Get(url))
     }
   }
 }

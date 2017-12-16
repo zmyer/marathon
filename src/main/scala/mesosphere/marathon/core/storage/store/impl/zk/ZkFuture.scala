@@ -3,7 +3,7 @@ package core.storage.store.impl.zk
 
 import akka.Done
 import akka.util.ByteString
-import mesosphere.marathon.stream._
+import mesosphere.marathon.stream.Implicits._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.CuratorEventType._
 import org.apache.curator.framework.api.{ BackgroundCallback, CuratorEvent }
@@ -49,6 +49,26 @@ private[zk] abstract class ZkFuture[T] extends Future[T] with BackgroundCallback
   }
 
   protected def processEvent(event: CuratorEvent): Try[T]
+
+  override def transform[S](f: Try[T] => Try[S])(implicit executor: ExecutionContext): Future[S] = {
+    val p = Promise[S]
+    onComplete { tryT =>
+      p.complete(Try(f(tryT)).flatten)
+    }(executor)
+    p.future
+  }
+
+  override def transformWith[S](f: Try[T] => Future[S])(implicit executor: ExecutionContext): Future[S] = {
+    val p = Promise[S]
+    onComplete { tryT =>
+      try p.completeWith(f(tryT))
+      catch {
+        case ex: Throwable =>
+          p.failure(ex)
+      }
+    }(executor)
+    p.future
+  }
 }
 
 private class CreateOrDeleteFuture extends ZkFuture[String] {

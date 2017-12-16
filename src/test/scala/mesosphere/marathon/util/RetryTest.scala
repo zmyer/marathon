@@ -6,14 +6,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.{ Cancellable, Scheduler }
 import mesosphere.AkkaUnitTest
 import mesosphere.marathon.util.Retry.RetryOnFn
-import org.scalatest.ParallelTestExecution
 import org.scalatest.prop.PropertyChecks
 
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
-class RetryTest extends AkkaUnitTest with PropertyChecks with ParallelTestExecution {
+class RetryTest extends AkkaUnitTest with PropertyChecks {
   val retryFn: RetryOnFn = {
     case _: IllegalArgumentException => true
     case _ => false
@@ -141,9 +140,9 @@ class RetryTest extends AkkaUnitTest with PropertyChecks with ParallelTestExecut
         }.failed.futureValue
       }
       "never exceed maxDelay" in {
-        var delays = mutable.Queue.empty[FiniteDuration]
+        val delays = mutable.Queue.empty[FiniteDuration]
         implicit val scheduler = trackingScheduler(delays)
-        val result = util.Retry.blocking("failure", maxAttempts = 100, minDelay = 1.milli, maxDelay = 5.seconds) {
+        util.Retry.blocking("failure", maxAttempts = 100, minDelay = 1.milli, maxDelay = 5.seconds) {
           throw new Exception("")
         }.failed.futureValue
 

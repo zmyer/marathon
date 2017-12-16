@@ -2,7 +2,7 @@ package mesosphere.marathon
 package state
 
 import org.apache.mesos.{ Protos => MesosProtos }
-import stream._
+import mesosphere.marathon.stream.Implicits._
 
 sealed trait Executable
 
@@ -43,7 +43,7 @@ case class ArgvList(value: Seq[String]) extends Executable with MarathonState[Me
   def toProto: MesosProtos.CommandInfo = {
     val builder = MesosProtos.CommandInfo.newBuilder
       .setShell(false)
-      .addAllArguments(value)
+      .addAllArguments(value.asJava)
 
     value.headOption.foreach(builder.setValue)
     builder.build()
